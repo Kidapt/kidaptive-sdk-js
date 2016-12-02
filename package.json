@@ -2,7 +2,7 @@
   "name": "kidaptive-sdk-js",
   "version": "0.1.0",
   "description": "Kidaptive ALP Javascript SDK",
-  "main": "./dist/kidaptive_sdk.min.js",
+  "main": "./dist/kidaptive_sdk.js",
   "dependencies": {
     "bluebird": "^3.4.6",
     "browserify": "^13.1.1",
