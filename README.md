@@ -1,30 +1,38 @@
 # kidaptive-sdk-js
 
-## Dependencies
-* Node Package Manager (npm)
-* Emscripten
-* Swagger Codegen
+##Usage
+Quickstart [Link coming soon]
 
-### Global Node Modules
-* Typescript `[sudo] npm install -g typescript`
-* Typings `[sudo] npm install -g typings`
-* Browserify `[sudo] npm install -g browserify`
-* Watchify `[sudo] npm install -g watchify`
+API Documentation [Link coming soon]
 
 ##Building
 
+### Dependencies
+* Node Package Manager (npm)
+* Emscripten
+* Swagger Codegen
+* Make
+
+### Global Node Modules
+* Typings `[sudo] npm install -g typings`
+* Watchify `[sudo] npm install -g watchify`
+
 ###Build IRT (Emscripten)
-`cd src/js/main/irt`
-`make EMCC=<location of emcc>`
+```
+cd src/js/main/irt
+make EMCC=<location of emcc>
+```
 
 ###Generate Swagger Client Library
 `swagger-codegen generate -i https://develop.kidaptive.com/swagger/v3.json -l typescript-node -o swagger-client`
 
 ###Build SDK
-`npm install`
-`typings install`
-`mkdir dist`
-`npm run build`
+```
+npm install
+typings install
+mkdir dist
+npm run build
+```
 
 ####Debug
 `npm run build:debug`
