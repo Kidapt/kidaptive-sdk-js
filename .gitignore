@@ -1,0 +1,6 @@
+typings/
+node_modules/
+swagger-client/
+.idea/
+src/js/main/irt/irt.js
+dist/

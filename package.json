@@ -1,0 +1,38 @@
+{
+  "name": "kidaptive-sdk-js",
+  "version": "0.1.0",
+  "description": "Kidaptive ALP Javascript SDK",
+  "main": "./dist/kidaptive_sdk.min.js",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "browserify": "^13.1.1",
+    "jquery": "^3.1.1",
+    "request": "^2.79.0",
+    "tsify": "^2.0.3",
+    "typescript": "^2.0.10"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "watchify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js -v",
+    "build:debug": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js",
+    "build:prod": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify | uglifyjs > dist/kidaptive_sdk.min.js",
+    "build": "npm run build:debug; npm run build:prod"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kidapt/kidaptive-sdk-js.git"
+  },
+  "keywords": [
+    "kidaptive",
+    "javascript",
+    "alp",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Kidapt/kidaptive-sdk-js/issues"
+  },
+  "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme"
+}

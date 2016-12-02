@@ -1,0 +1,10 @@
+{
+  "globalDependencies": {
+    "jquery": "registry:dt/jquery",
+    "node": "registry:dt/node"
+  },
+  "dependencies": {
+    "bluebird": "registry:npm/bluebird",
+    "request": "registry:npm/request"
+  }
+}
