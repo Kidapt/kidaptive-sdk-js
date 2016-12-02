@@ -1,7 +1,7 @@
 {
   "name": "kidaptive-sdk-js",
   "description": "Kidaptive ALP Javascript SDK",
-  "main": "./dist/kidaptive_sdk.min.js",
+  "main": "./dist/kidaptive_sdk.js",
   "authors": [
     "Solomon Liu <sliu198@gmail.com>"
   ],
@@ -18,6 +18,10 @@
     "node_modules",
     "bower_components",
     "test",
-    "tests"
+    "tests",
+    "jasmine-standalone-2.5.0",
+    "src",
+    "*.json"
+
   ]
 }
