@@ -23,6 +23,7 @@
 ###Build SDK
 `npm install`
 `typings install`
+`mkdir dist`
 `npm run build`
 
 ####Debug
