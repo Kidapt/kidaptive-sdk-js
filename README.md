@@ -42,3 +42,6 @@ npm run build
 
 ####Watch
 `npm run watch`
+
+##Testing
+Open `jasmine-standalone-2.5.0/SpecRunner.html` to run unit tests
