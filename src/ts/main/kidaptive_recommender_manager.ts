@@ -1,12 +1,15 @@
 import {EntityType} from "./kidaptive_model_manager";
-import {KidaptiveError} from "./kidaptive_error";
-import {KidaptiveErrorCode} from "./kidaptive_error";
-import {PromptCategory, LearnerInsight, LatentAbility} from "../../../swagger-client/api";
-import {Learner} from "../../../swagger-client/api";
-import {Item} from "../../../swagger-client/api";
-import {Prompt} from "../../../swagger-client/api";
-import {LocalAbility} from "../../../swagger-client/api";
-import {LocalDimension} from "../../../swagger-client/api";
+import {KidaptiveError, KidaptiveErrorCode} from "./kidaptive_error";
+import {
+    PromptCategory,
+    LearnerInsight,
+    LatentAbility,
+    Learner,
+    Item,
+    Prompt,
+    LocalAbility,
+    LocalDimension
+} from "../../../swagger-client/api";
 /**
  * Created by solomonliu on 11/7/16.
  */

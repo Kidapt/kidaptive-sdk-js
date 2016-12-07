@@ -2,14 +2,22 @@ import Promise = require("bluebird");
 
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
 import {
-    User, Learner, PromptCategory, Dimension, LearnerInsight,
-    AppApi, CategoryApi, SkillsframeworkApi, LearnerApi, LatentAbility
+    User,
+    Learner,
+    PromptCategory,
+    Dimension,
+    LearnerInsight,
+    AppApi,
+    CategoryApi,
+    SkillsframeworkApi,
+    LearnerApi,
+    LatentAbility,
+    Item,
+    Prompt,
+    LocalAbility,
+    LocalDimension
 } from "../../../swagger-client/api";
 import {KidaptiveConstants} from "./kidaptive_constants";
-import {Item} from "../../../swagger-client/api";
-import {Prompt} from "../../../swagger-client/api";
-import {LocalAbility} from "../../../swagger-client/api";
-import {LocalDimension} from "../../../swagger-client/api";
 
 /**
  * Created by solomonliu on 8/9/16.

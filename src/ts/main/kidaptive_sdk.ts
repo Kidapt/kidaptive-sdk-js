@@ -3,25 +3,31 @@ import Promise = require("bluebird");
 import {AttemptProcessor, AttemptProcessorDelegate} from "./kidaptive_attempt_processor";
 import {EventManager, EventManagerDelegate} from "./kidaptive_event_manager";
 import {LearnerManager, LearnerManagerDelegate} from "./kidaptive_learner_manager";
-import {ModelManager, ModelManagerDelegate} from "./kidaptive_model_manager";
+import {ModelManager, ModelManagerDelegate, EntityType} from "./kidaptive_model_manager";
 import {TrialManager, TrialManagerDelegate} from "./kidaptive_trial_manager";
 import {UserManager, UserManagerDelegate} from "./kidaptive_user_manager";
 import {KidaptiveConstants} from "./kidaptive_constants";
 import {KidaptiveError, KidaptiveErrorCode} from "./kidaptive_error";
 import {
-    User, Learner, AgentRequestAttempts, AgentRequest, LearnerInsight,
-    LatentAbility
+    User,
+    Learner,
+    AgentRequestAttempts,
+    AgentRequest,
+    LearnerInsight,
+    LatentAbility,
+    AgentRequestAppInfo,
+    AppApi,
+    App,
+    PromptCategory,
+    Item,
+    LocalAbility
 } from "../../../swagger-client/api";
-import {AgentRequestAppInfo} from "../../../swagger-client/api";
-import {AppApi} from "../../../swagger-client/api";
-import {App} from "../../../swagger-client/api";
-import {EntityType} from "./kidaptive_model_manager";
-import {PromptCategory, Item} from "../../../swagger-client/api";
 import {
-    RecommenderManager, RecommenderManagerDelegate, Recommender,
+    RecommenderManager,
+    RecommenderManagerDelegate,
+    Recommender,
     RecommendationResult
 } from "./kidaptive_recommender_manager";
-import {LocalAbility} from "../../../swagger-client/api";
 /**
  * Created by solomonliu on 9/9/16.
  */

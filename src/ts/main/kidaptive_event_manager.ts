@@ -2,14 +2,24 @@ import Promise = require("bluebird");
 
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
 import {
-    User, Learner, Game, Prompt, Item, AgentRequest, AgentRequestAppInfo, AgentRequestDeviceInfo,
-    AgentRequestEvents, AgentRequestAttempts, LearnerApi, Category
+    User,
+    Learner,
+    Game,
+    Prompt,
+    Item,
+    AgentRequest,
+    AgentRequestAppInfo,
+    AgentRequestDeviceInfo,
+    AgentRequestEvents,
+    AgentRequestAttempts,
+    LearnerApi,
+    Category,
+    PromptCategory,
+    Instance,
+    SubCategory
 } from "../../../swagger-client/api";
 import {KidaptiveConstants} from "./kidaptive_constants";
 import {EntityType} from "./kidaptive_model_manager";
-import {PromptCategory} from "../../../swagger-client/api";
-import {Instance} from "../../../swagger-client/api";
-import {SubCategory} from "../../../swagger-client/api";
 
 /**
  * Created by solomonliu on 7/13/16.

@@ -1,12 +1,8 @@
 import * as irt from "../../js/main/irt/irt";
-import {KidaptiveError} from "./kidaptive_error";
-import {KidaptiveErrorCode} from "./kidaptive_error";
+import {KidaptiveError, KidaptiveErrorCode} from "./kidaptive_error";
 import {KidaptiveTrial} from "./kidaptive_trial_manager";
 import {EntityType} from "./kidaptive_model_manager";
-import {LocalAbility, LatentAbility} from "../../../swagger-client/api";
-import {Item} from "../../../swagger-client/api";
-import {LocalDimension} from "../../../swagger-client/api";
-import {Dimension} from "../../../swagger-client/api";
+import {LocalAbility, LatentAbility, Item, LocalDimension, Dimension} from "../../../swagger-client/api";
 /**
  * Created by solomonliu on 8/11/16.
  */
