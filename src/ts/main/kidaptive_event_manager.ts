@@ -96,9 +96,6 @@ class EventManager {
 
         for (let pa of this.delegate.getPromptCategoriesForPrompt(promptUri) || []) {
             let category: Category = this.delegate.getEntityById(EntityType.category, pa.categoryId);
-            if (!category) {
-                throw new KidaptiveError(KidaptiveErrorCode.ENTITY_NOT_FOUND, "Category " + pa.categoryId + " not found");
-            }
 
             let value: string = promptAnswers[category.uri];
             if (!value) {

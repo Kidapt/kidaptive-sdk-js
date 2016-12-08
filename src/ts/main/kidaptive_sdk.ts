@@ -19,7 +19,13 @@ import {
     AppApi,
     App,
     Item,
-    LocalAbility
+    LocalAbility,
+    Game,
+    Prompt,
+    Dimension,
+    LocalDimension,
+    Category,
+    Instance
 } from "../../../swagger-client/api";
 import {
     RecommenderManager,
@@ -299,6 +305,34 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         return this.modelManager.getInsights(learnerId, uriFilter, startDate, endDate, latest);
     }
 
+    getGames():Game[] {
+        return this.modelManager.getGames();
+    }
+
+    getPrompts(gameUri):Prompt[] {
+        return this.modelManager.getPrompts(gameUri)
+    }
+
+    getItems(gameUri:string, promptUri:string, dimensionUri:string, localDimensionUri:string): Item[] {
+        return this.modelManager.getItems(gameUri, promptUri, dimensionUri, localDimensionUri);
+    }
+
+    getDimensions():Dimension[] {
+        return this.modelManager.getDimensions();
+    }
+
+    getLocalDimensions(dimensionUri, gameUri):LocalDimension[] {
+        return this.modelManager.getLocalDimensions(dimensionUri, gameUri);
+    }
+
+    getCategories(promptUri, gameUri):Category[] {
+        return this.modelManager.getCategories(promptUri, gameUri);
+    }
+
+    getInstances(categoryUri):Instance[] {
+        return this.modelManager.getInstances(categoryUri);
+    }
+
     /* Trial Management */
     startTrial(learnerId: number): void {
         this.trialManager.startTrial(learnerId);
@@ -407,10 +441,6 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
 
     processEvidence(learnerId:number, attempt:AgentRequestAttempts) {
         this.attemptProcessor.processEvidence(learnerId, attempt.itemURI, attempt.outcome);
-    }
-
-    getItems(gameUri:string, promptUri:string, dimensionUri:string, localDimensionUri:string): Item[] {
-        return this.modelManager.getItems(gameUri, promptUri, dimensionUri, localDimensionUri);
     }
 
     getLocalAbility(learnerId:number, localDimensionUri:string): LocalAbility {

@@ -15,7 +15,11 @@ import {
     Item,
     Prompt,
     LocalAbility,
-    LocalDimension
+    LocalDimension,
+    Game,
+    Category,
+    Instance,
+    SubCategory
 } from "../../../swagger-client/api";
 import {KidaptiveConstants} from "./kidaptive_constants";
 
@@ -93,6 +97,21 @@ class ModelManager{
         return this.getEntityById(type, this.uriToId[type][uri]);
     }
 
+    getGames(): Game[] {
+        return Object.keys(this.idToEntity[EntityType.game]).map(function(gameId) {
+            return this.idToEntity[EntityType.game][gameId];
+        }.bind(this)) as Game[];
+    }
+
+    getPrompts(gameUri): Prompt[] {
+        let gameId = this.uriToId[EntityType.game][gameUri];
+        return Object.keys(this.idToEntity[EntityType.prompt]).map(function(promptId) {
+            return this.idToEntity[EntityType.prompt][promptId];
+        }.bind(this)).filter(function(prompt:Prompt) {
+            return !gameUri || (prompt.gameId && prompt.gameId == gameId);
+        }) as Prompt[];
+    }
+
     getItems(gameUri:string, promptUri:string, dimensionUri:string, localDimensionUri: string): Item[] {
         let gameId = this.uriToId[EntityType.game][gameUri];
         let promptId = this.uriToId[EntityType.prompt][promptUri];
@@ -104,18 +123,84 @@ class ModelManager{
         }.bind(this)).filter(function(item:Item) {
             let prompt:Prompt = this.idToEntity[EntityType.prompt][item.promptId];
             let localDimension:LocalDimension = this.idToEntity[EntityType.localDimension][item.localDimensionId];
-            if (gameId && (!prompt || !prompt.gameId || gameId != prompt.gameId)) {
+            if (gameUri && (!prompt || !prompt.gameId || gameId != prompt.gameId)) {
                 return false;
             }
-            if (promptId && promptId != item.promptId) {
+            if (promptUri && (!item.promptId || promptId != item.promptId)) {
                 return false;
             }
-            if (dimensionId && (!localDimension || !localDimension.dimensionId || dimensionId != localDimension.dimensionId)) {
+            if (dimensionUri && (!localDimension || !localDimension.dimensionId || dimensionId != localDimension.dimensionId)) {
                 return false
             }
 
-            return !(localDimensionId && localDimensionId != item.localDimensionId);
+            return !localDimensionUri || (item.localDimensionId && localDimensionId == item.localDimensionId);
         }.bind(this)) as Item[];
+    }
+
+    getDimensions():Dimension[] {
+        return Object.keys(this.idToEntity[EntityType.dimension]).map(function(dimensionId) {
+            return this.idToEntity[EntityType.dimension][dimensionId];
+        }.bind(this)) as Dimension[];
+    }
+
+    getLocalDimensions(dimensionUri:string, gameUri:string): LocalDimension[] {
+        let dimensionId = this.uriToId[EntityType.dimension][dimensionUri];
+        let gameId = this.uriToId[EntityType.game][gameUri];
+        return Object.keys(this.idToEntity[EntityType.localDimension]).map(function(localDimensionId) {
+            return this.idToEntity[EntityType.localDimension][localDimensionId];
+        }.bind(this)).filter(function(localDimension:LocalDimension) {
+            if (dimensionUri && (!localDimension.dimensionId || dimensionId != localDimension.dimensionId)) {
+                return false;
+            }
+
+            return !gameUri || (localDimension.gameId && gameId == localDimension.gameId);
+        }) as LocalDimension[]
+    }
+
+    getCategories(promptUri:string, gameUri:string): Category[] {
+        if (!promptUri && !gameUri) {
+            return Object.keys(this.idToEntity[EntityType.category]).map(function(categoryId) {
+                return this.idToEntity[EntityType.category][categoryId];
+            }.bind(this)) as Category[];
+        }
+
+        let promptIds;
+        if (promptUri) {
+            let prompt:Prompt = this.getEntityByUri(EntityType.prompt, promptUri);
+            let game:Game = this.getEntityByUri(EntityType.game, gameUri);
+            if (!prompt || (gameUri && (!game || !prompt.gameId || prompt.gameId != game.id))) {
+                return [];
+            }
+            promptIds = [prompt.id];
+        } else {
+            promptIds = this.getPrompts(gameUri).map(function(prompt) {
+                return prompt.id;
+            });
+        }
+
+        let categories: Category[] = [];
+        let catMap :{[key:number]:boolean} = {};
+        promptIds.forEach(function(promptId) {
+            this.promptCategories[promptId].forEach(function(promptCategory:PromptCategory) {
+                if (catMap[promptCategory.categoryId]) {
+                    return;
+                }
+                catMap[promptCategory.categoryId] = true;
+                categories.push(this.idToEntity[EntityType.category][promptCategory.categoryId]);
+            }.bind(this));
+        }.bind(this))
+
+        return categories;
+    }
+
+    getInstances(categoryUri:string): Instance[] {
+        let categoryId = this.uriToId[EntityType.category][categoryUri];
+        return Object.keys(this.idToEntity[EntityType.instance]).map(function(instanceId) {
+            return this.idToEntity[EntityType.instance][instanceId];
+        }).filter(function(instance:Instance) {
+            let subCategory:SubCategory = this.idToEntity[EntityType.subCategory][instance.subCategoryId];
+            return !categoryUri || (subCategory && subCategory.categoryId && subCategory.categoryId == categoryId);
+        });
     }
 
     syncModels(): Promise<any> {

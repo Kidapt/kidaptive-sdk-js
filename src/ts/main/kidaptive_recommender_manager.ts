@@ -8,7 +8,11 @@ import {
     Item,
     Prompt,
     LocalAbility,
-    LocalDimension
+    LocalDimension,
+    Game,
+    Dimension,
+    Category,
+    Instance
 } from "../../../swagger-client/api";
 /**
  * Created by solomonliu on 11/7/16.
@@ -22,7 +26,13 @@ interface RecommenderManagerDelegate {
     getLocalAbility: (learnerId:number, localDimensionUri:string) => LocalAbility;
     getLatentAbility: (learnerId:number, dimensionUri:string) => LatentAbility;
     getInsights: (learnerId:number, uriFilter:string[], startDate:Date, endDate:Date, latest:boolean) => LearnerInsight[];
+    getGames: () => Game[];
+    getPrompts: (gameUri:string) => Prompt[];
     getItems: (gameUri: string, promptUri:string, dimensionUri:string, localDimensionUri:string) => Item[];
+    getDimensions: () => Dimension[];
+    getLocalDimensions: (dimensionUri:string, gameUri:string) => LocalDimension[];
+    getCategories: (promptUri:string, gameUri:string) => Category[];
+    getInstances: (categoryUri:string) => Instance[];
 }
 
 class RecommendationResult {
