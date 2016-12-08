@@ -38,7 +38,7 @@ interface EventManagerDelegate {
     getLearner: (learnerId:number) => Learner;
     getEntityById: (type:EntityType, id:number) => any;
     getEntityByUri: (type:EntityType, uri:string) => any;
-    getCategoriesForPrompt: (promptUri: string) => {[key:number]:PromptCategory};
+    getPromptCategoriesForPrompt: (promptUri: string) => PromptCategory[];
 
     //called on event forwarding. used for logging/notification of event forwarding failure
     payloadProcessed: (payload:Promise<AgentRequest>) => void;
@@ -91,38 +91,36 @@ class EventManager {
             args.promptAnswers = {};
         }
 
-        //validate all categories reported are associated with the prompt
-        let promptCats = JSON.parse(JSON.stringify(this.delegate.getCategoriesForPrompt(promptUri) || {})); //deep copy
+        //validate all categories associated with a prompt are reported
+        let promptAnswers = JSON.parse(JSON.stringify(args.promptAnswers)); //deep copy
 
-        for (let key in args.promptAnswers) {
-            let category: Category = this.delegate.getEntityByUri(EntityType.category, key);
+        for (let pa of this.delegate.getPromptCategoriesForPrompt(promptUri) || []) {
+            let category: Category = this.delegate.getEntityById(EntityType.category, pa.categoryId);
             if (!category) {
-                throw new KidaptiveError(KidaptiveErrorCode.URI_NOT_FOUND, "Category " + key + " not found");
+                throw new KidaptiveError(KidaptiveErrorCode.ENTITY_NOT_FOUND, "Category " + pa.categoryId + " not found");
             }
 
-            let pc:PromptCategory = promptCats[category.id];
-            if (!pc) {
-                throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Category " + key + " is not associated with prompt " + promptUri);
+            let value: string = promptAnswers[category.uri];
+            if (!value) {
+                throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Missing category " + category.uri + " for prompt " + promptUri);
             }
-            if (pc.instanceId) { //if prompt-category has an instanceId, validate value is a valid instanceUri belong to that category
-                let instanceUri = args.promptAnswers[key];
-                let instance: Instance = this.delegate.getEntityByUri(EntityType.instance, instanceUri);
+            if (pa.instanceId) {
+                let instance: Instance = this.delegate.getEntityByUri(EntityType.instance, value);
                 if (!instance) {
-                    throw new KidaptiveError(KidaptiveErrorCode.URI_NOT_FOUND, "Instance " + instanceUri + " not found");
+                    throw new KidaptiveError(KidaptiveErrorCode.URI_NOT_FOUND, "Instance " + value + " not found");
                 }
                 let subCat: SubCategory = this.delegate.getEntityById(EntityType.subCategory, instance.subCategoryId);
                 if (!subCat || subCat.categoryId != category.id) {
-                    throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Category " + key + " does not have instance " + instanceUri)
+                    throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Category " + category.uri + " does not have instance " + value);
                 }
             }
-            delete promptCats[category.id];
+            delete promptAnswers[category.uri];
         }
 
-        //validate all categories associated with a prompt are reported
-        let missing = Number(Object.keys(promptCats)[0]);
-        if (missing) {
-            let category: Category = this.delegate.getEntityById(EntityType.category, missing);
-            throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Missing category " + category.uri + " for prompt " + promptUri);
+        //validate all categories reported are associated with the prompt
+        let extra = Object.keys(promptAnswers)[0];
+        if (extra) {
+            throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Category " + extra + " is not associated with prompt " + promptUri);
         }
 
 

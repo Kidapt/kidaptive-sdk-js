@@ -377,7 +377,7 @@ describe("Recommender Manager", function() {
             return entities[type][id];
         });
 
-        spyOn(sdk, 'getItems').and.callFake(function(gameUri, ldUri) {
+        spyOn(sdk, 'getItems').and.callFake(function(gameUri, promptUri, dimUri, ldUri) {
             if (!sdk.getEntityByUri('game', gameUri)) {
                 return null;
             }

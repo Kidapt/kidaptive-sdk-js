@@ -18,7 +18,6 @@ import {
     AgentRequestAppInfo,
     AppApi,
     App,
-    PromptCategory,
     Item,
     LocalAbility
 } from "../../../swagger-client/api";
@@ -296,6 +295,10 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         });
     }
 
+    getInsights(learnerId:number, uriFilter:string[], startDate:Date, endDate:Date, latest:boolean): LearnerInsight[] {
+        return this.modelManager.getInsights(learnerId, uriFilter, startDate, endDate, latest);
+    }
+
     /* Trial Management */
     startTrial(learnerId: number): void {
         this.trialManager.startTrial(learnerId);
@@ -303,10 +306,6 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
 
     getCurrentTrial(learnerId: number){
         return this.trialManager.getCurrentTrial(learnerId);
-    }
-
-    getInsights(learnerId:number, uriFilter:string[], startDate:Date, endDate:Date, latest:boolean): LearnerInsight[] {
-        return this.modelManager.getInsights(learnerId, uriFilter, startDate, endDate, latest);
     }
 
     closeTrial(learnerId: number): void {
@@ -398,8 +397,8 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         return this.deviceInfo;
     }
 
-    getCategoriesForPrompt(promptUri):{[key:number]:PromptCategory} {
-        return this.modelManager.getCategoriesForPrompt(promptUri);
+    getPromptCategoriesForPrompt(promptUri) {
+        return this.modelManager.getPromptCategoriesForPrompt(promptUri);
     }
 
     payloadProcessed(payload:Promise<AgentRequest>) {
@@ -410,8 +409,8 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         this.attemptProcessor.processEvidence(learnerId, attempt.itemURI, attempt.outcome);
     }
 
-    getItems(gameUri:string, localDimensionUri:string): Item[] {
-        return this.modelManager.getItems(gameUri, localDimensionUri);
+    getItems(gameUri:string, promptUri:string, dimensionUri:string, localDimensionUri:string): Item[] {
+        return this.modelManager.getItems(gameUri, promptUri, dimensionUri, localDimensionUri);
     }
 
     getLocalAbility(learnerId:number, localDimensionUri:string): LocalAbility {

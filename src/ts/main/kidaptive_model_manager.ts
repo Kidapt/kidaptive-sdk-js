@@ -67,11 +67,7 @@ class ModelManager{
     } = {};
 
     private promptCategories: {
-        [key:number]: {[key:number]: PromptCategory}
-    } = {};
-
-    private gameLocalItems: {
-        [key:number]: {[key: number]: number[]}
+        [key:number]: PromptCategory[]
     } = {};
 
     private appApi = new AppApi(KidaptiveConstants.ALP_BASE_URL);
@@ -97,30 +93,29 @@ class ModelManager{
         return this.getEntityById(type, this.uriToId[type][uri]);
     }
 
-    getItems(gameUri:string, localDimensionUri: string): Item[] {
+    getItems(gameUri:string, promptUri:string, dimensionUri:string, localDimensionUri: string): Item[] {
         let gameId = this.uriToId[EntityType.game][gameUri];
-        if (!gameId) {
-            return null;
-        }
+        let promptId = this.uriToId[EntityType.prompt][promptUri];
+        let dimensionId = this.uriToId[EntityType.dimension][dimensionUri];
+        let localDimensionId = this.uriToId[EntityType.localDimension][localDimensionUri];
 
-        let localItems = this.gameLocalItems[gameId] || [];
-        let itemIds = [];
-        if (localDimensionUri) {
-            let localDimensionId = this.uriToId[EntityType.localDimension][localDimensionUri];
-            if (!localDimensionId) {
-                return null;
-            }
-            itemIds = localItems[localDimensionId] || [];
-        } else {
-            Object.keys(localItems).forEach(function(ld) {
-                itemIds = itemIds.concat(localItems[ld]);
-            });
-        }
-        return itemIds.map(function(itemId) {
+        return Object.keys(this.idToEntity[EntityType.item]).map(function(itemId) {
             return this.idToEntity[EntityType.item][itemId];
-        }.bind(this)).filter(function(item) {
-            return item != null;
-        }) as Item[];
+        }.bind(this)).filter(function(item:Item) {
+            let prompt:Prompt = this.idToEntity[EntityType.prompt][item.promptId];
+            let localDimension:LocalDimension = this.idToEntity[EntityType.localDimension][item.localDimensionId];
+            if (gameId && (!prompt || !prompt.gameId || gameId != prompt.gameId)) {
+                return false;
+            }
+            if (promptId && promptId != item.promptId) {
+                return false;
+            }
+            if (dimensionId && (!localDimension || !localDimension.dimensionId || dimensionId != localDimension.dimensionId)) {
+                return false
+            }
+
+            return !(localDimensionId && localDimensionId != item.localDimensionId);
+        }.bind(this)) as Item[];
     }
 
     syncModels(): Promise<any> {
@@ -157,10 +152,10 @@ class ModelManager{
                 for (let d of data.body) {
                     let prompt = promptCategories[d.promptId];
                     if (!prompt) {
-                        prompt = {};
+                        prompt = [];
                         promptCategories[d.promptId] = prompt;
                     }
-                    prompt[d.categoryId] = d;
+                    prompt.push(d);
                 }
                 return promptCategories;
             })]
@@ -174,33 +169,9 @@ class ModelManager{
 
             this.promptCategories = data[1];
 
-            //build game-dimension-item map
-            this.gameLocalItems = {};
-            for (let itemId of Object.keys(this.idToEntity[EntityType.item])){
-                let item:Item = this.getEntityById(EntityType.item, itemId);
-                let prompt:Prompt = this.getEntityById(EntityType.prompt, item.promptId);
-                if (!prompt || !prompt.gameId || !item.localDimensionId) {
-                    continue;
-                }
-
-                let localItems = this.gameLocalItems[prompt.gameId];
-                if (!localItems) {
-                    localItems = {};
-                    this.gameLocalItems[prompt.gameId] = localItems;
-                }
-
-                let items = localItems[item.localDimensionId];
-                if (!items) {
-                    items = [];
-                    localItems[item.localDimensionId] = items;
-                }
-                items.push(itemId);
-            }
-
             localStorage.setItem("kidaptive.alp.models.uriToId", JSON.stringify(this.uriToId));
             localStorage.setItem("kidaptive.alp.models.idToEntity", JSON.stringify(this.idToEntity));
             localStorage.setItem("kidaptive.alp.models.promptCategories", JSON.stringify(this.promptCategories));
-            localStorage.setItem("kidaptive.alp.models.gameLocalItems", JSON.stringify(this.gameLocalItems));
 
             return data;
         }.bind(this)).catch(function(error) {
@@ -221,11 +192,9 @@ class ModelManager{
         let uriToId = JSON.parse(localStorage.getItem("kidaptive.alp.models.uriToId"));
         let idToEntity = JSON.parse(localStorage.getItem("kidaptive.alp.models.idToEntity"));
         let promptCategories = JSON.parse(localStorage.getItem("kidaptive.alp.models.promptCategories"));
-        let gameLocalItems = JSON.parse(localStorage.getItem("kidaptive.alp.models.gameLocalItems"));
         this.uriToId = uriToId;
         this.idToEntity = idToEntity;
         this.promptCategories = promptCategories;
-        this.gameLocalItems = gameLocalItems;
     }
 
     //sync ability estimates for a list of learners. Returns a promise that is always resolved. Value will be list of
@@ -344,8 +313,8 @@ class ModelManager{
         if (!learnerList) {
             this.localAbilities = {};
             this.latentAbilities = {};
-            this.deleteStoredLocalAbilities();
-            this.deleteStoredLatentAbilities();
+            ModelManager.deleteStoredLocalAbilities();
+            ModelManager.deleteStoredLatentAbilities();
         } else {
             for (let l of learnerList) {
                 delete this.localAbilities[l];
@@ -359,7 +328,7 @@ class ModelManager{
     clearInsights(learnerList:number[] = null) {
         if (!learnerList) {
             this.insights = {};
-            this.deleteStoredInsights();
+            ModelManager.deleteStoredInsights();
         } else {
             for (let l of learnerList) {
                 delete this.insights[l];
@@ -503,7 +472,7 @@ class ModelManager{
         }
     }
 
-    getCategoriesForPrompt(promptUri) {
+    getPromptCategoriesForPrompt(promptUri) {
         return this.promptCategories[this.uriToId[EntityType.prompt][promptUri]];
     }
 
@@ -590,7 +559,7 @@ class ModelManager{
         this.localAbilities = JSON.parse(localStorage.getItem('kidaptive.alp.models.localAbilities')) || {};
     }
 
-    private deleteStoredLocalAbilities() {
+    private static deleteStoredLocalAbilities() {
         localStorage.removeItem('kidaptive.alp.models.localAbilities');
     }
 
@@ -602,7 +571,7 @@ class ModelManager{
         this.latentAbilities = JSON.parse(localStorage.getItem('kidaptive.alp.models.latentAbilities')) || {};
     }
 
-    private deleteStoredLatentAbilities() {
+    private static deleteStoredLatentAbilities() {
         localStorage.removeItem('kidaptive.alp.models.latentAbilities');
     }
 
@@ -614,7 +583,7 @@ class ModelManager{
         this.insights = JSON.parse(localStorage.getItem('kidaptive.alp.models.insights')) || {};
     }
 
-    private deleteStoredInsights() {
+    private static deleteStoredInsights() {
         localStorage.removeItem('kidaptive.alp.models.insights');
     }
 }

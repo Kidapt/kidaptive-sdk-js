@@ -18,11 +18,11 @@ interface RecommenderManagerDelegate {
     getLearner:(learnerId:number) => Learner;
     getEntityByUri: (type:EntityType, uri:string) => any;
     getEntityById: (type:EntityType, id:number) => any;
-    getCategoriesForPrompt: (promptUri: string) => {[key:number]:PromptCategory};
+    getPromptCategoriesForPrompt: (promptUri: string) => PromptCategory[];
     getLocalAbility: (learnerId:number, localDimensionUri:string) => LocalAbility;
     getLatentAbility: (learnerId:number, dimensionUri:string) => LatentAbility;
     getInsights: (learnerId:number, uriFilter:string[], startDate:Date, endDate:Date, latest:boolean) => LearnerInsight[];
-    getItems: (gameUri: string, localDimensionUri:string) => Item[];
+    getItems: (gameUri: string, promptUri:string, dimensionUri:string, localDimensionUri:string) => Item[];
 }
 
 class RecommendationResult {
@@ -51,7 +51,7 @@ class RandomRecommender implements Recommender {
             throw new KidaptiveError(KidaptiveErrorCode.RECOMMENDER_ERROR,"Local dimension " + parameters['localDimensionUri'] + " not found");
         }
 
-        let promptUris:string[] = this.delegate.getItems(parameters['gameUri'], parameters['localDimensionUri']).map(function(item) {
+        let promptUris:string[] = this.delegate.getItems(parameters['gameUri'], null, null, parameters['localDimensionUri']).map(function(item) {
             let prompt:Prompt = this.delegate.getEntityById(EntityType.prompt, item ? item.promptId : null);
             return prompt ? prompt.uri : null;
         }.bind(this)).filter(function(uri) {
@@ -110,7 +110,7 @@ class OptimalDifficultyRecommender implements Recommender {
             throw new KidaptiveError(KidaptiveErrorCode.RECOMMENDER_ERROR,"Local dimension " + localDimensionUri + " not found");
         }
 
-        let items: Item[] = this.delegate.getItems(gameUri, localDimensionUri);
+        let items: Item[] = this.delegate.getItems(gameUri, null, null, localDimensionUri);
 
         let sortedItems : Item[] = items.sort(function(item1:Item, item2:Item) {
                 let localDim1:LocalDimension = this.delegate.getEntityById(EntityType.localDimension, item1.localDimensionId);

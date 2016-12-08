@@ -34,19 +34,17 @@ describe("Event Management", function() {
             promptAnswers = {};
             badPA1 = {};
             badPA2 = {};
-            var pa = sdk.getCategoriesForPrompt(p.uri);
+            var pa = sdk.getPromptCategoriesForPrompt(p.uri);
             for (var j in pa) {
-                if (pa.hasOwnProperty(j)) {
-                    var cat = sdk.getEntityById("category", j);
-                    if (pa[j].instanceId) {
-                        promptAnswers[cat.uri] = sdk.getEntityById("instance", pa[j].instanceId).uri;
-                        badPA1[cat.uri] = 'bad_instance';
-                        badPA2[cat.uri] = 'extra_instance';
-                    } else {
-                        promptAnswers[cat.uri] = 'catValue';
-                        badPA1[cat.uri] = 'catValue';
-                        badPA2[cat.uri] = 'catValue';
-                    }
+                var cat = sdk.getEntityById("category", pa[j].categoryId);
+                if (pa[j].instanceId) {
+                    promptAnswers[cat.uri] = sdk.getEntityById("instance", pa[j].instanceId).uri;
+                    badPA1[cat.uri] = 'bad_instance';
+                    badPA2[cat.uri] = 'extra_instance';
+                } else {
+                    promptAnswers[cat.uri] = 'catValue';
+                    badPA1[cat.uri] = 'catValue';
+                    badPA2[cat.uri] = 'catValue';
                 }
             }
             return sdk.createUser(user.email, user.password);
@@ -243,16 +241,14 @@ describe("Event Management", function() {
         sdkPromise = sdkPromise.then(function (sdk) {
             var prompts = Object.keys(sdk.modelManager.idToEntity.prompt);
             var bad_prompt = p.id == prompts[0] ? sdk.getEntityById("prompt", prompts[1]) : sdk.getEntityById("prompt", prompts[0]);
-            var pa = sdk.getCategoriesForPrompt(bad_prompt.uri);
+            var pa = sdk.getPromptCategoriesForPrompt(bad_prompt.uri);
             var badPromptAnswers = {};
             for (var j in pa) {
-                if (pa.hasOwnProperty(j)) {
-                    var cat = sdk.getEntityById("category", j);
-                    if (pa[j].instanceId) {
-                        badPromptAnswers[cat.uri] = sdk.getEntityById("instance", pa[j].instanceId).uri;
-                    } else {
-                        badPromptAnswers[cat.uri] = 'catValue';
-                    }
+                var cat = sdk.getEntityById("category", pa[j].categoryId);
+                if (pa[j].instanceId) {
+                    badPromptAnswers[cat.uri] = sdk.getEntityById("instance", pa[j].instanceId).uri;
+                } else {
+                    badPromptAnswers[cat.uri] = 'catValue';
                 }
             }
             sdk.reportEvidence("js_sdk_evidence_test_event", learnerId, bad_prompt.uri, [{itemURI: i.uri, outcome:1}, {itemURI: i.uri, outcome:0}], {
@@ -369,16 +365,18 @@ describe("Event Management", function() {
     });
 
     it("evidence bad category", function(done) {
+        var pa = JSON.parse(JSON.stringify(promptAnswers));
+        pa.bad_category = "bad_catVal";
         sdkPromise = sdkPromise.then(function (sdk) {
             sdk.reportEvidence("js_sdk_evidence_test_event", learnerId, p.uri, [{itemURI: i.uri, outcome:1}, {itemURI: i.uri, outcome:0}], {
                 duration:4.56,
-                promptAnswers:{"bad_category": "bad_catVal"},
+                promptAnswers:pa,
                 additionalFields: {af1:"val1", af2:"val2"},
                 tags:{tag1:"val1", tag2:"val2"}
             });
             expect(true).toBeFalsy();
         }).catch(function(error) {
-            expect(error.code).toBe("URI_NOT_FOUND");
+            expect(error.code).toBe("INVALID_PARAMETER");
         }).then(function () {
             done();
             return sdk;

@@ -13,6 +13,7 @@ enum KidaptiveErrorCode {
     LEARNER_NOT_FOUND = <any> "LEARNER_NOT_FOUND",
     TRIAL_NOT_OPEN = <any> "TRIAL_NOT_OPEN",
     URI_NOT_FOUND = <any> "URI_NOT_FOUND",
+    ENTITY_NOT_FOUND = <any> "ENTITY_NOT_FOUND",
 
     RECOMMENDER_ERROR = <any> "RECOMMENDER_ERROR",
 
