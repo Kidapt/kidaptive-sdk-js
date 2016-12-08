@@ -17,9 +17,7 @@ enum KidaptiveErrorCode {
     RECOMMENDER_ERROR = <any> "RECOMMENDER_ERROR",
 
     API_KEY_ERROR = <any> "API_KEY_ERROR",
-    WEB_API_ERROR = <any> "WEB_API_ERROR",
-
-    MULTIPLE_ERRORS = <any> "MULTIPLE_ERRORS"
+    WEB_API_ERROR = <any> "WEB_API_ERROR"
 }
 
 class KidaptiveError extends Error {
