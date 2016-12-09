@@ -284,7 +284,7 @@ class ModelManager{
 
     //sync ability estimates for a list of learners. Returns a promise that is always resolved. Value will be list of
     //{learnerId:number; abilities:LocalAbility[]|LatentAbility[]} or {learnerId:number; error:KidaptiveError} for each learner
-    syncAbility(learners:number[] = null):Promise<any> {
+    syncAbilities(learners:number[] = null):Promise<any> {
         if (learners == null) {
             learners = this.delegate.getLearnerList().map(function(d) {return d.id});
         }

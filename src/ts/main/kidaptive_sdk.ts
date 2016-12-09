@@ -162,7 +162,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
                return Promise.reject(error);
            });
         });
-        this.syncAbility();
+        this.syncAbilities();
         this.syncInsights();
         return this.updateNetworkQueue(function() {
             return userPromise;
@@ -181,7 +181,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
                 return Promise.reject(error);
             });
         });
-        this.syncAbility();
+        this.syncAbilities();
         this.syncInsights();
         return this.updateNetworkQueue(function() {
             return userPromise;
@@ -245,7 +245,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         let learnerListPromise = this.updateNetworkQueue(function(sdk) {
             return sdk.learnerManager.syncLearnerList();
         });
-        this.syncAbility(); //TODO: fails silently, may want to log
+        this.syncAbilities(); //TODO: fails silently, may want to log
         this.syncInsights(); //TODO: fails silently, may want to log
         return this.updateNetworkQueue(function() {
             return learnerListPromise;
@@ -289,9 +289,9 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         });
     }
 
-    syncAbility(learners?: number[]): Promise<any> {
+    syncAbilities(learners?: number[]): Promise<any> {
         return this.updateNetworkQueue(function(sdk) {
-            return sdk.modelManager.syncAbility(learners);
+            return sdk.modelManager.syncAbilities(learners);
         });
     }
 
