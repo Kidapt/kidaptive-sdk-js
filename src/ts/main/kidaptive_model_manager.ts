@@ -188,7 +188,7 @@ class ModelManager{
                 catMap[promptCategory.categoryId] = true;
                 categories.push(this.idToEntity[EntityType.category][promptCategory.categoryId]);
             }.bind(this));
-        }.bind(this))
+        }.bind(this));
 
         return categories;
     }
