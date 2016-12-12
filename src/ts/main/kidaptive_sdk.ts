@@ -360,6 +360,14 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         this.eventManager.reportBehavior(eventName, args);
     }
 
+    startAutoFlush(): void {
+        this.eventManager.startAutoFlush();
+    }
+
+    stopAutoFlush(): void {
+        this.eventManager.stopAutoFlush();
+    }
+
     flushEvents(): void {
         this.eventManager.flushEvents();
     }

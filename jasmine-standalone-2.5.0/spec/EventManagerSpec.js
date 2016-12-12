@@ -436,4 +436,18 @@ describe("Event Management", function() {
             return sdk;
         });
     });
+
+    it("flush events", function(done) {
+        sdkPromise = sdkPromise.then(function(sdk) {
+            sdk.flushEvents();
+            expect(true).toBeTruthy();
+        }).catch(function (error) {
+            expect(true).toBeFalsy();
+            console.log(error);
+        }).then(function () {
+            sdk.stopAutoFlush();
+            done();
+            return sdk;
+        });
+    })
 });

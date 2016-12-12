@@ -319,6 +319,7 @@ describe("Learner Management", function() {
             expect(true).toBeFalsy();
             console.log(error);
         }).then(function () {
+            sdk.stopAutoFlush();
             done();
             return sdk;
         });

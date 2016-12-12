@@ -280,6 +280,7 @@ describe("User Management", function() {
         }).catch(function(error) {
             expect(error.code).toBe("AUTH_ERROR");
         }).then(function () {
+            sdk.stopAutoFlush();
             done();
             return sdk;
         });

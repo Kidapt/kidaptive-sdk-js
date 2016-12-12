@@ -165,6 +165,7 @@ describe("Insight Management", function() {
             expect(true).toBeFalsy();
         }).then(function () {
             done();
+            sdk.stopAutoFlush();
             return sdk;
         });
     });

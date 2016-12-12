@@ -53,12 +53,23 @@ class EventManager {
     private payloadQueue: AgentRequest[] = []; //holding area for payloads to be sent
 
     private learnerApi = new LearnerApi(KidaptiveConstants.ALP_BASE_URL);
+    private flushTimeoutId = null;
 
     constructor(private delegate: EventManagerDelegate, private flushInterval:number) {
         if (!delegate) {
             throw new KidaptiveError(KidaptiveErrorCode.MISSING_DELEGATE, "EventManagerDelegate not found");
         }
-        setTimeout(this.autoFlush.bind(this), this.flushInterval);
+        this.startAutoFlush();
+    }
+
+    startAutoFlush() {
+        clearTimeout(this.flushTimeoutId);
+        this.flushTimeoutId = setTimeout(this.autoFlush.bind(this), this.flushInterval);
+    }
+
+    stopAutoFlush() {
+        clearTimeout(this.flushTimeoutId);
+        this.flushTimeoutId = null;
     }
 
     reportEvidence(eventName:string, learnerId:number, promptUri:string, attempts:AgentRequestAttempts[],
@@ -288,7 +299,7 @@ class EventManager {
 
     private autoFlush() {
         this.flushEvents();
-        setTimeout(this.autoFlush.bind(this), this.flushInterval); //schedule next flush
+        this.flushTimeoutId = setTimeout(this.autoFlush.bind(this), this.flushInterval); //schedule next flush
     }
 
     private generateBaseEvent(): AgentRequestEvents{
