@@ -1,4 +1,9 @@
 describe("Attempt Processor", function() {
+    var user = {
+        email: Date.now() + 4 + "@kidaptive.com",
+        password: "password"
+    };
+
     var sdk;
     var learner1;
     var learner2;
@@ -23,7 +28,7 @@ describe("Attempt Processor", function() {
             sdk.modelManager.idToEntity.dimension[2] = {id:2, uri:'dim2'};
             sdk.modelManager.uriToId.dimension['dim2'] = 2;
 
-            return sdk.createUser(Date.now() + 3 + "@kidaptive.com", "password");
+            return sdk.createUser(user.email, user.password);
         }).then(function() {
             return sdk.createLearner("L1");
         }).then(function(learner) {

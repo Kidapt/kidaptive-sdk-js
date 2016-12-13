@@ -1,4 +1,9 @@
 describe("Insight Management", function() {
+    var user = {
+        email: Date.now() + 5 + "@kidaptive.com",
+        password: "password"
+    };
+
     var sdk;
     var curLearner;
     var curUser;
@@ -17,7 +22,7 @@ describe("Insight Management", function() {
             build: expAppInfo.build
         }).then(function (data) {
             sdk = data;
-            return sdk.createUser(Date.now() + 4 + "@kidaptive.com", "password");
+            return sdk.createUser(user.email, user.password);
         }).then(function (user) {
             curUser = user;
             return sdk.createLearner("L");
