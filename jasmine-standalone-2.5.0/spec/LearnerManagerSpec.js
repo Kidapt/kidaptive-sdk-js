@@ -1,6 +1,6 @@
 describe("Learner Management", function() {
     var user = {
-        email: Date.now() + 1 + "@kidaptive.com",
+        email: Date.now() + "learner@kidaptive.com",
         password: "password"
     };
     var expLearner = {
@@ -9,6 +9,7 @@ describe("Learner Management", function() {
         gender: "female"
     };
     var sdk;
+    var sdkPromise;
     var learnerId;
 
     beforeAll(function() {

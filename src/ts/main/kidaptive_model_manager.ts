@@ -197,10 +197,10 @@ class ModelManager{
         let categoryId = this.uriToId[EntityType.category][categoryUri];
         return Object.keys(this.idToEntity[EntityType.instance]).map(function(instanceId) {
             return this.idToEntity[EntityType.instance][instanceId];
-        }).filter(function(instance:Instance) {
+        }.bind(this)).filter(function(instance:Instance) {
             let subCategory:SubCategory = this.idToEntity[EntityType.subCategory][instance.subCategoryId];
             return !categoryUri || (subCategory && subCategory.categoryId && subCategory.categoryId == categoryId);
-        });
+        }.bind(this)) as Instance[];
     }
 
     syncModels(): Promise<any> {

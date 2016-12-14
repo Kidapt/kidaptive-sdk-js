@@ -1,6 +1,6 @@
 describe("Event Management", function() {
     var user = {
-        email: Date.now() + 3 + "@kidaptive.com",
+        email: Date.now() + "event@kidaptive.com",
         password: "password"
     };
 

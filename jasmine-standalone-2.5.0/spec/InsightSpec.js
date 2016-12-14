@@ -1,10 +1,11 @@
 describe("Insight Management", function() {
     var user = {
-        email: Date.now() + 5 + "@kidaptive.com",
+        email: Date.now() + "insight@kidaptive.com",
         password: "password"
     };
 
     var sdk;
+    var sdkPromise;
     var curLearner;
     var curUser;
     var insights = [

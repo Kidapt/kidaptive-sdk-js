@@ -1,10 +1,11 @@
 describe("Trial Management", function() {
     var user = {
-        email: Date.now() + 2 + "@kidaptive.com",
+        email: Date.now() + "trial@kidaptive.com",
         password: "password"
     };
 
     var sdk;
+    var sdkPromise;
     beforeAll(function() {
         localStorage.clear();
         sdkPromise = KidaptiveSdk.init(appKey, {version:"1.0", build:expAppInfo.build}).then(function(data) {

@@ -1,6 +1,6 @@
 describe("Attempt Processor", function() {
     var user = {
-        email: Date.now() + 4 + "@kidaptive.com",
+        email: Date.now() + "attempt@kidaptive.com",
         password: "password"
     };
 

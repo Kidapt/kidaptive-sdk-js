@@ -1,6 +1,6 @@
 describe("User Management", function() {
     var expUser = {
-        email: Date.now() + "@kidaptive.com",
+        email: Date.now() + "user@kidaptive.com",
         password: "password",
         nickname: "test user"
     };
