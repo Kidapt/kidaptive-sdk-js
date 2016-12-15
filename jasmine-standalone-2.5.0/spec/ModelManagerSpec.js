@@ -135,9 +135,33 @@ describe("Model Management", function() {
             expect(true).toBeFalsy();
             console.log(error);
         }).then(function() {
-            sdk.stopAutoFlush();
             done();
             return sdk;
         });
     });
+
+    it("check promptCategory data", function(done) {
+        sdkPromise = sdkPromise.then(function() {
+            sdk.getPrompts().forEach(function(prompt) {
+                var promptCats = sdk.getPromptCategoriesForPrompt(prompt.uri);
+                var catIds = {};
+                promptCats.forEach(function(promptCategory) {
+                    expect(promptCategory.promptId).toBe(prompt.id);
+                    catIds[promptCategory.categoryId] = true;
+                });
+                var cats = sdk.getCategories(prompt.uri);
+                expect(cats.length).toBe(promptCats.length);
+                cats.forEach(function(cat) {
+                    expect(catIds[cat.id]).toBeTruthy();
+                });
+            });
+        }).catch(function(error) {
+            expect(true).toBeFalsy();
+            console.log(error);
+        }).then(function() {
+            sdk.stopAutoFlush();
+            done();
+            return sdk;
+        });
+    })
 });
