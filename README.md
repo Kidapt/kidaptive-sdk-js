@@ -3,6 +3,11 @@
 ##Usage
 The [wiki](https://github.com/Kidapt/kidaptive-sdk-js/wiki) page contains a [Conceptional Introduction to ALP](https://github.com/Kidapt/kidaptive-sdk-js/wiki/Adaptive-Learning-Platform-Introduction), [Quickstart Guide](https://github.com/Kidapt/kidaptive-sdk-js/wiki/Quickstart-Guide), [Developer's Guide](https://github.com/Kidapt/kidaptive-sdk-js/wiki/Developer's-Guide), and [API Reference](https://github.com/Kidapt/kidaptive-sdk-js/wiki/API-Reference)
 
+##Sample App
+View the sample app [here](https://kidapt.github.io/kidaptive-sdk-js-demo/src/html/example_app.html)
+
+[Source](https://github.com/Kidapt/kidaptive-sdk-js-demo/tree/gh-pages)
+
 ##Building
 
 ### Dependencies
