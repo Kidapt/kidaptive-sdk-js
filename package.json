@@ -22,7 +22,8 @@
     "build:debug": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js",
     "build:prod": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify | uglifyjs > dist/kidaptive_sdk.min.js",
     "build": "npm run build:debug; npm run build:prod",
-    "deploy": "npm run build && git commit -a && npm version $1 && git push --tags"
+    "version": "npm run build && git add -A dist",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",
