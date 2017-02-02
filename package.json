@@ -9,7 +9,7 @@
     "jquery": "^3.1.1",
     "request": "^2.79.0",
     "tsify": "^2.0.3",
-    "typescript": "^2.0.10"
+    "typescript": "~2.0.10"
   },
   "devDependencies": {},
   "scripts": {
