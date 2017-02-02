@@ -16,10 +16,6 @@ View the sample app [here](https://kidapt.github.io/kidaptive-sdk-js-demo/src/ht
 * Swagger Codegen
 * Make
 
-### Global Node Modules
-* Typings `[sudo] npm install -g typings`
-* Watchify `[sudo] npm install -g watchify`
-
 ###Build IRT (Emscripten)
 ```
 cd src/js/main/irt
@@ -32,19 +28,29 @@ make EMCC=<location of emcc>
 ###Build SDK
 ```
 npm install
-typings install
 mkdir dist
 npm run build
 ```
 
 ####Debug
+Build dist/kidaptive_sdk.min.js
+
 `npm run build:debug`
 
 ####Production
+Build dist/kidaptive_sdk.js
+
 `npm run build:prod`
 
 ####Watch
+Automatically build debug on file change
+
 `npm run watch`
+
+####Deploy
+Build, bump version by specified increment (patch, minor, major) and push
+
+`npm run deploy <version_increment>`
 
 ##Testing
 Open `jasmine-standalone-2.5.0/SpecRunner.html` to run unit tests

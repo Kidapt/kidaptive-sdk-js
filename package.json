@@ -9,15 +9,20 @@
     "jquery": "^3.1.1",
     "request": "^2.79.0",
     "tsify": "^2.0.3",
-    "typescript": "~2.0.10"
+    "typescript": "~2.0.10",
+    "typings": "^2.1.0",
+    "uglifyjs": "^2.4.10",
+    "watchify": "^3.9.0"
   },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "typings install",
     "watch": "watchify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js -v",
     "build:debug": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js",
     "build:prod": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify | uglifyjs > dist/kidaptive_sdk.min.js",
-    "build": "npm run build:debug; npm run build:prod"
+    "build": "npm run build:debug; npm run build:prod",
+    "deploy": "npm run build && git commit -a && npm version $1 && git push --tags"
   },
   "repository": {
     "type": "git",
