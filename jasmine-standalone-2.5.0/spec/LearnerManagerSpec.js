@@ -1,8 +1,4 @@
 describe("Learner Management", function() {
-    var user = {
-        email: Date.now() + "learner@kidaptive.com",
-        password: "password"
-    };
     var expLearner = {
         name: 'L1',
         birthday: Date.now() - 3600 * 24 * 365 * 3,
@@ -16,9 +12,11 @@ describe("Learner Management", function() {
         localStorage.clear();
         sdkPromise = KidaptiveSdk.init(appKey, {version:"1.0", build:expAppInfo.build}).then(function(data) {
             sdk = data;
-            return sdk.createUser(user.email, user.password);
+            return sdk.refreshUser();
         }).then(function() {
             return sdk;
+        }).catch(function (error) {
+            console.log(error);
         });
     });
 

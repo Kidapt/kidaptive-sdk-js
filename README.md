@@ -18,18 +18,19 @@ View the sample app [here](https://kidapt.github.io/kidaptive-sdk-js-demo/src/ht
 
 ###Build IRT (Emscripten)
 ```
-cd src/js/main/irt
-make EMCC=<location of emcc>
+EMCC=<location of emcc> npm run build:irt
 ```
 
 ###Generate Swagger Client Library
-`swagger-codegen generate -i https://develop.kidaptive.com/swagger/v3.json -l typescript-node -o swagger-client`
+```
+npm run build:swagger
+```
 
 ###Build SDK
 ```
 npm install
 mkdir dist
-npm run build
+EMCC=<location of emcc> npm run build
 ```
 
 ####Debug

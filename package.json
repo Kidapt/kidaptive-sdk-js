@@ -19,9 +19,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "install": "typings install",
     "watch": "watchify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js -v",
+    "build:swagger": "rm -rf swager-client; swagger-codegen generate -i https://develop.kidaptive.com/swagger/v3.json -l typescript-node -o swagger-client",
+    "build:irt": "cd src/js/main/irt && (make clean; make)",
     "build:debug": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js",
     "build:prod": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify | uglifyjs > dist/kidaptive_sdk.min.js",
-    "build": "npm run build:debug; npm run build:prod",
+    "build": "npm run build:swagger && npm run build:irt && (npm run build:debug; npm run build:prod)",
     "version": "npm run build && git add -A dist",
     "postversion": "git push && git push --tags"
   },

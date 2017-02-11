@@ -29,6 +29,8 @@ interface EventManagerDelegate {
     //not sure if this is useful. currently 1.9.1 for hodoo
     getEventVersion: () => string;
 
+    getAppApiKey: () => string;
+
     getCurrentUser: () => User;
     getAppInfo: () => AgentRequestAppInfo;
     getDeviceInfo: () => AgentRequestDeviceInfo;
@@ -268,7 +270,7 @@ class EventManager {
         }
 
         for (let payload of this.payloadQueue) {
-            let p: Promise<AgentRequest> = this.learnerApi.ingestionPost(currentUser.apiKey, payload).then(function() {
+            let p: Promise<AgentRequest> = this.learnerApi.ingestionPost(this.delegate.getAppApiKey(), payload).then(function() {
                 return payload;
             }).catch(function(error) {
                 if (error.response) {

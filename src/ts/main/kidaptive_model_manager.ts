@@ -571,7 +571,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.localAbilityGet(currentUser.apiKey, learnerId).then(function(data) {
+        return this.learnerApi.localAbilityGet(this.delegate.getAppApiKey(), learnerId).then(function(data) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {
@@ -596,7 +596,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.abilityGet(currentUser.apiKey, learnerId).then(function(data) {
+        return this.learnerApi.abilityGet(this.delegate.getAppApiKey(), learnerId).then(function(data) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {
@@ -621,7 +621,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.insightGet(currentUser.apiKey, learnerId, after).then(function(data) {
+        return this.learnerApi.insightGet(this.delegate.getAppApiKey(), learnerId, after).then(function(data) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {

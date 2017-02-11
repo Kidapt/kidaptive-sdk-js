@@ -10,6 +10,7 @@ import {KidaptiveConstants} from "./kidaptive_constants";
 
 interface LearnerManagerDelegate {
     getCurrentUser: () => User;
+    getAppApiKey: () => string;
 }
 
 class LearnerManager {
@@ -46,7 +47,7 @@ class LearnerManager {
         learner.gender = gender;
         learner.birthday = birthdayNumber;
 
-        return this.learnerApi.learnerPost(currentUser.apiKey, learner).then(function(data) {
+        return this.learnerApi.learnerPost(this.delegate.getAppApiKey(), learner).then(function(data) {
             this.learnerMap[data.body.id] = data.body;
             this.storeLearners();
             return data.body;
@@ -71,7 +72,7 @@ class LearnerManager {
             throw new KidaptiveError(KidaptiveErrorCode.NOT_LOGGED_IN, "not logged in");
         }
 
-        return this.learnerApi.learnerGet(currentUser.apiKey).then(function(data) {
+        return this.learnerApi.learnerGet(this.delegate.getAppApiKey()).then(function(data) {
             let learners: {[key: number]: Learner} = {};
             for (let l of data.body) {
                 learners[l.id] = l;
@@ -108,7 +109,7 @@ class LearnerManager {
     //clears local copy of learner info; used when logging out
     clearLearnerList() {
         this.learnerMap = {};
-        this.deleteStoredLearners();
+        LearnerManager.deleteStoredLearners();
     }
 
     updateLearner(learnerId:number, data?:{name?:string, birthday?:Date, gender?:Learner.GenderEnum}): Promise<Learner> {
@@ -148,7 +149,7 @@ class LearnerManager {
             updateData.gender = data.gender;
         }
 
-        return this.learnerApi.learnerLearnerIdPost(currentUser.apiKey,learnerId,updateData).then(function(data) {
+        return this.learnerApi.learnerLearnerIdPost(this.delegate.getAppApiKey(),learnerId,updateData).then(function(data) {
             this.learnerMap[data.body.id] = data.body;
             this.storeLearners();
             return data.body;
@@ -182,7 +183,7 @@ class LearnerManager {
             throw new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found");
         }
 
-        return this.learnerApi.learnerLearnerIdDelete(currentUser.apiKey,learnerId).then(function() {
+        return this.learnerApi.learnerLearnerIdDelete(this.delegate.getAppApiKey(),learnerId).then(function() {
             learner = this.learnerMap[learnerId];
             delete this.learnerMap[learnerId];
             this.storeLearners();
@@ -210,7 +211,7 @@ class LearnerManager {
         this.learnerMap = JSON.parse(localStorage.getItem('kidaptive.alp.learners'));
     }
 
-    private deleteStoredLearners() {
+    private static deleteStoredLearners() {
         localStorage.removeItem('kidaptive.alp.learners');
     }
 }

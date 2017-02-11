@@ -56,7 +56,7 @@ describe("Insight Management", function() {
 
             return sdk.syncInsights();
         }).then(function () {
-            expect(sdk.modelManager.learnerApi.insightGet).toHaveBeenCalledWith(curUser.apiKey, curLearner.id, 0);
+            expect(sdk.modelManager.learnerApi.insightGet).toHaveBeenCalledWith(sdk.getAppApiKey(), curLearner.id, 0);
             var learnerInsights = sdk.getInsights(curLearner.id);
             expect(learnerInsights.length).toBe(insights.length);
             for (var i in insights) {
@@ -65,7 +65,7 @@ describe("Insight Management", function() {
             }
             return sdk.syncInsights();
         }).then(function() {
-            expect(sdk.modelManager.learnerApi.insightGet).toHaveBeenCalledWith(curUser.apiKey, curLearner.id, 5);
+            expect(sdk.modelManager.learnerApi.insightGet).toHaveBeenCalledWith(sdk.getAppApiKey(), curLearner.id, 5);
             var learnerInsights = sdk.getInsights(curLearner.id);
             expect(learnerInsights.length).toBe(insights.length);
             for (var i in insights) {

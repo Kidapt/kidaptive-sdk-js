@@ -143,51 +143,6 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
     }
 
     /* User Management */
-    createUser(email: string, password: string, name?: string): Promise<User> {
-        return this.updateNetworkQueue(function(sdk) {
-            sdk.logoutUser();
-            return sdk.userManager.createUser(email, password, name);
-        });
-    }
-
-    loginUser(email: string, password: string): Promise<User> {
-        let userPromise = this.updateNetworkQueue(function(sdk) {
-           sdk.logoutUser();
-           return sdk.userManager.loginUser(email, password).then(function() {
-               return sdk.learnerManager.syncLearnerList();
-           }).then(function() {
-               return sdk.getCurrentUser();
-           }).catch(function(error:any) {
-               sdk.logoutUser(); //if there is an error, logout
-               return Promise.reject(error);
-           });
-        });
-        this.syncAbilities();
-        this.syncInsights();
-        return this.updateNetworkQueue(function() {
-            return userPromise;
-        });
-    }
-
-    setUser(userJson: string): Promise<User> {
-        let userPromise = this.updateNetworkQueue(function(sdk) {
-            sdk.logoutUser();
-            return sdk.userManager.setUser(userJson).then(function() {
-                return sdk.learnerManager.syncLearnerList();
-            }).then(function() {
-                return sdk.getCurrentUser();
-            }).catch(function(error:any) {
-                sdk.logoutUser(); //if there is an error, logout
-                return Promise.reject(error);
-            });
-        });
-        this.syncAbilities();
-        this.syncInsights();
-        return this.updateNetworkQueue(function() {
-            return userPromise;
-        });
-    }
-
     refreshUser(): Promise<User> {
         let userPromise = this.updateNetworkQueue(function(sdk) {
             return sdk.userManager.refreshUser();
@@ -218,19 +173,6 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
                 sdk.logoutUser();
                 return user;
             });
-        });
-    }
-
-    recoverPassword(email: string): Promise<string> {
-        return this.userManager.recoverPassword(email);
-    }
-
-    updateUser(userProps?: {
-        nickname?: string;
-        password?: string;
-    }): Promise<User> {
-        return this.updateNetworkQueue(function(sdk) {
-            return sdk.userManager.updateUser(userProps);
         });
     }
 
