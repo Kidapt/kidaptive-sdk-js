@@ -1,5 +1,7 @@
 /// <reference path="../../../typings/index.d.ts" />
+
 import Promise = require("bluebird");
+// import SwaggerClient = require("swagger-client");
 import {AttemptProcessor, AttemptProcessorDelegate} from "./kidaptive_attempt_processor";
 import {EventManager, EventManagerDelegate} from "./kidaptive_event_manager";
 import {LearnerManager, LearnerManagerDelegate} from "./kidaptive_learner_manager";
@@ -33,6 +35,7 @@ import {
     Recommender,
     RecommendationResult
 } from "./kidaptive_recommender_manager";
+
 /**
  * Created by solomonliu on 9/9/16.
  */
@@ -50,6 +53,13 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
     private networkQueue: Promise<KidaptiveSdk>;
 
     private deviceInfo = null;
+
+    // static swaggerPromise:any = new SwaggerClient(KidaptiveConstants.SWAGGER_URL,{
+    //     usePromise: true
+    // }).then(function (swagger) {
+    //     swagger.setHost(KidaptiveConstants.SWAGGER_HOST);
+    //     swagger.setSchemes(KidaptiveConstants.SWAGGER_SCHEMES);
+    // });
 
     constructor(private appInfo:AgentRequestAppInfo, private appSecret:string) {
         this.attemptProcessor = new AttemptProcessor(this);
@@ -79,6 +89,73 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
                 build = appVersion.build;
             }
         }
+
+        // return KidaptiveSdk.swaggerPromise.then(function(swagger) {
+        //     return swagger.app.get_app_me({"Api-Key": appSecret});
+        // }).then(function(success) {
+        //     return success.obj;
+        // }, function(fail) {
+        //     return Promise.reject(fail.errObj);
+        // }).then(function(app:App) {
+        //     if (app.minVersion > version) {
+        //         return Promise.reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
+        //     }
+        //     let appInfo = new AgentRequestAppInfo();
+        //     appInfo.build = build;
+        //     appInfo.version = version;
+        //     appInfo.uri = app.uri;
+        //     let sdk = new KidaptiveSdk(appInfo, appSecret);
+        //     return sdk.syncModels().then(function() {
+        //         //app metadata successfully loaded, save to localStorage
+        //         localStorage.setItem("kidaptive.alp.app", JSON.stringify(app));
+        //         return sdk;
+        //     });
+        // }).catch(function(error) {
+        //     if (error instanceof KidaptiveError) {
+        //         return Promise.reject(error);
+        //     } else if (error.response) {
+        //         if (error.response.statusCode == 401) {
+        //             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.API_KEY_ERROR, error.response.statusMessage));
+        //         } else {
+        //             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.WEB_API_ERROR, error.response.statusMessage));
+        //         }
+        //     } else { //possibly a network error. load from localStorage
+        //         let appString = localStorage.getItem("kidaptive.alp.app");
+        //         if (appString) {
+        //             let app = JSON.parse(appString);
+        //             if (app.minVersion > version) {
+        //                 return Promise.reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
+        //             }
+        //             let appInfo = new AgentRequestAppInfo();
+        //             appInfo.build = build;
+        //             appInfo.version = version;
+        //             appInfo.uri = app.uri;
+        //             let sdk = new KidaptiveSdk(appInfo, appSecret);
+        //             sdk.modelManager.loadStoredModels();
+        //             return Promise.resolve(sdk);
+        //         } else {
+        //             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.GENERIC_ERROR, error));
+        //         }
+        //     }
+        // }).then(function(sdk:KidaptiveSdk) {
+        //     //load stored user, if there is one
+        //     sdk.eventManager.loadStoredEventQueue();
+        //     sdk.eventManager.loadStoredPayloadQueue();
+        //     sdk.userManager.loadStoredUser();
+        //     if (sdk.getCurrentUser()) {
+        //         //load available learner and ability information, update from network if available.
+        //         sdk.learnerManager.loadStoredLearners();
+        //         sdk.modelManager.loadStoredLocalAbilities();
+        //         sdk.modelManager.loadStoredLatentAbilities();
+        //         sdk.modelManager.loadStoredInsights();
+        //
+        //         sdk.refreshUser();
+        //     }
+        //
+        //     return sdk.updateNetworkQueue(function(sdk) {
+        //         return Promise.resolve(sdk);
+        //     });
+        // }) as Promise<KidaptiveSdk>;
 
         return new AppApi(KidaptiveConstants.ALP_BASE_URL).appMeGet(appSecret).then(function(data:{response:any, body:App}) {
             if (data.body.minVersion > version) {

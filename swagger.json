@@ -1,0 +1,1774 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "ALP API",
+    "version": "3.0"
+  },
+  "basePath": "/v3",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/app/me": {
+      "get": {
+        "tags": [
+          "app"
+        ],
+        "description": "Get the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current app.",
+            "schema": {
+              "$ref": "#/definitions/app"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/appisode": {
+      "get": {
+        "tags": [
+          "app"
+        ],
+        "description": "Get all appisodes for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of appisode objects.",
+            "schema": {
+              "title": "AppisodeList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/appisode"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/game": {
+      "get": {
+        "tags": [
+          "app"
+        ],
+        "description": "Get all games for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of game objects.",
+            "schema": {
+              "title": "GameList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/game"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/prompt": {
+      "get": {
+        "tags": [
+          "app"
+        ],
+        "description": "Get all prompts for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of prompt objects.",
+            "schema": {
+              "title": "PromptList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/prompt"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/category": {
+      "get": {
+        "tags": [
+          "category"
+        ],
+        "description": "Get all categories for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of category objects.",
+            "schema": {
+              "title": "CategoryList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/category"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/sub-category": {
+      "get": {
+        "tags": [
+          "category"
+        ],
+        "description": "Get all sub categories for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sub category objects.",
+            "schema": {
+              "title": "SubCategoryList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/sub-category"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/instance": {
+      "get": {
+        "tags": [
+          "category"
+        ],
+        "description": "Get all instances for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of instance objects.",
+            "schema": {
+              "title": "InstanceList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/instance"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/prompt-category": {
+      "get": {
+        "tags": [
+          "category"
+        ],
+        "description": "Get all prompt categories for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of prompt category objects.",
+            "schema": {
+              "title": "PromptCategoryList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/prompt-category"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/skills-framework": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all skills frameworks for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of skills framework objects.",
+            "schema": {
+              "title": "SkillsFrameworkList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/skills-framework"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/skills-cluster": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all skills clusters for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of skills cluster objects.",
+            "schema": {
+              "title": "SkillsClusterList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/skills-cluster"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/skills-domain": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all skills domains for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of skills domain objects.",
+            "schema": {
+              "title": "SkillsDomainList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/skills-domain"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/dimension": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all dimensions for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of dimension objects.",
+            "schema": {
+              "title": "DimensionList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/dimension"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/local-dimension": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all local dimensions for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of local dimension objects.",
+            "schema": {
+              "title": "LocalDimensionList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/local-dimension"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/item": {
+      "get": {
+        "tags": [
+          "skills-framework"
+        ],
+        "description": "Get all items for the current app.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of item objects.",
+            "schema": {
+              "title": "ItemList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/item"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/learner": {
+      "get": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Get all learners for the current user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of learner objects.",
+            "schema": {
+              "title": "LearnerList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/learner"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Create a new learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "Learner",
+            "in": "body",
+            "description": "* `name` is required.\n* `birthday` is optional. It contains the birthday as the number of milliseconds since epoch.\n* `gender` is optional. It will default to `decline` if omitted.\n* `icon` is optional.\n* The other fields are ignored.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/learner"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new learner object.",
+            "schema": {
+              "$ref": "#/definitions/learner"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/400"
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/learner/{learnerId}": {
+      "delete": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Delete a learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "path",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "This is returned on success."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          },
+          "404": {
+            "description": "This is returned if the learner does not exist."
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Get a learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "path",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The learner object.",
+            "schema": {
+              "$ref": "#/definitions/learner"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          },
+          "404": {
+            "description": "This is returned if the learner does not exist."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Update a learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "path",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "Learner",
+            "in": "body",
+            "description": "* `name` is required.\n* `birthday` is optional. It contains the birthday as the number of milliseconds since epoch. The birthday will be set to `null` if omitted.\n* `gender` is optional. It will default to `decline` if omitted.\n* `icon` is optional. It will be set to `null` if omitted.\n* The other fields are ignored.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/learner"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated learner.",
+            "schema": {
+              "$ref": "#/definitions/learner"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/400"
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/ability": {
+      "get": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Get the latent ability estimates for this learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "query",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of latent ability estimates.",
+            "schema": {
+              "title": "LatentAbilityEstimateList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/latent-ability"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/local-ability": {
+      "get": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Get the local ability estimates for this learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "query",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of local ability estimates.",
+            "schema": {
+              "title": "LocalAbilityEstimateList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/local-ability"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/ingestion": {
+      "post": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Submit learner events",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "AgentRequest",
+            "in": "body",
+            "description": "Event list with metadata.\n* Use `3.0` for `Event.version`.\n* Each key in the `Event.promptAnswers` dictionary is a category URI.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/agentRequest"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "This is returned on success."
+          },
+          "400": {
+            "$ref": "#/responses/400"
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/insight": {
+      "get": {
+        "tags": [
+          "learner"
+        ],
+        "description": "Get the insights for this learner.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "learnerId",
+            "in": "query",
+            "description": "Unique id for the learner.",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "minDateCreated",
+            "in": "query",
+            "description": "Get insights created on or after this timestamp.",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          },
+          {
+            "name": "latest",
+            "in": "query",
+            "description": "Get only the latest insights. Overrides minDateCreated.",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of insights.",
+            "schema": {
+              "title": "LearnerInsightList",
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/learner-insight"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/user": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "description": "Create a new user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          },
+          {
+            "name": "User",
+            "in": "body",
+            "description": "* `email` is required. It is validated against a regular expression.\n* `password` is required. It must contain at least 8 characters.\n* `nickname` is optional.\n* `deviceId` is optional.\n* The other fields are ignored.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new user object.\n* `password` is never returned.\n* `apiKey` will contain the user's api key.",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/400"
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/user/forgot-password": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "description": "Ask the server to send a reset-password email. The email will contain instructions for assigning a new password.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          },
+          {
+            "name": "User",
+            "in": "body",
+            "description": "Only `email` is used.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "This is returned if the server parsed the request. It does not indicate whether an email was sent."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/user/login": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "description": "Log in as a user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          },
+          {
+            "name": "UserLogin",
+            "in": "body",
+            "description": "Use `v2` for `mode` when logging in with a v2 password.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/userLogin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current user object.\n* `password` is never returned.\n* `apiKey` will contain the user's api key.",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          },
+          "400": {
+            "description": "This is returned if the request contains missing or invalid data."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/user/logout": {
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "description": "Deletes the session and cookie for a web user. Otherwise it does nothing.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "This is returned on success."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/user/me": {
+      "delete": {
+        "tags": [
+          "user"
+        ],
+        "description": "Delete the current user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "This is returned on success."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "description": "Get the current user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The current user object.\n* `password` is never returned.\n* `apiKey` is never returned.",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "user"
+        ],
+        "description": "Update the current user.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/userApiKeyHeader"
+          },
+          {
+            "name": "User",
+            "in": "body",
+            "description": "* Only provide `password` if you want to change the user's password. It must contain at least 8 characters.\n* `nickname` can contain any value. It will be set to `null` if omitted.\n* `deviceId` can contain any value. It will be set to `null` if omitted.\n* The other fields are ignored.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The updated user object.\n* `password` is never returned.\n* `apiKey` is only returned if `password` was provided. All user api keys for a user are invalidated when the password changes so you need to use the new value going forward.",
+            "schema": {
+              "$ref": "#/definitions/user"
+            }
+          },
+          "400": {
+            "$ref": "#/responses/400"
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/openid/user/ajax": {
+      "get": {
+        "tags": [
+          "openid"
+        ],
+        "description": "Start the OpenID Connect login flow. Make sure the provider has `/v3/openid/user/ajax-cb` listed as a valid redirect uri.",
+        "parameters": [
+          {
+            "$ref": "#/parameters/appApiKeyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Parameters for communicating with the OpenID Connect provider.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "redirect": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "object"
+                },
+                "url": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "This is returned if OpenID Connect is not configured for your app."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    },
+    "/openid/user/web": {
+      "get": {
+        "tags": [
+          "openid"
+        ],
+        "description": "Start the OpenID Connect login flow. Make sure the provider has `/v3/openid/user/web-cb` listed as a valid redirect uri.",
+        "parameters": [
+          {
+            "name": "api_key",
+            "in": "query",
+            "description": "app's api key",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "description": "redirect to this url at the end of the login flow",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "passed to the redirect uri as a query parameter",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to the provider's login page."
+          },
+          "400": {
+            "description": "This is returned if OpenID Connect is not configured for your app."
+          },
+          "401": {
+            "$ref": "#/responses/401"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "validationError": {
+      "title": "ValidationError",
+      "type": "object",
+      "required": [
+        "reason"
+      ],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "missingData",
+            "invalidData"
+          ]
+        },
+        "field": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "validationErrorList": {
+      "title": "ValidationErrorList",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/validationError"
+      }
+    },
+    "app": {
+      "title": "App",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "sourceId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "minVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "appisode": {
+      "title": "Appisode",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "appId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "thumbnailUrl": {
+          "type": "string"
+        },
+        "detailImageUrl": {
+          "type": "string"
+        },
+        "videoPreviewUrl": {
+          "type": "string"
+        },
+        "needToDownloadImages": {
+          "type": "boolean"
+        },
+        "appStoreId": {
+          "type": "string"
+        },
+        "appleBundleId": {
+          "type": "string"
+        },
+        "appleStoreUrl": {
+          "type": "string"
+        }
+      }
+    },
+    "game": {
+      "title": "Game",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "appisodeId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "prompt": {
+      "title": "Prompt",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "gameId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "category": {
+      "title": "Category",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "sub-category": {
+      "title": "SubCategory",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "categoryId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "instance": {
+      "title": "Instance",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "subCategoryId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "prompt-category": {
+      "title": "PromptCategory",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "promptId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "categoryId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "instanceId": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "skills-framework": {
+      "title": "SkillsFramework",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        }
+      }
+    },
+    "skills-cluster": {
+      "title": "SkillsCluster",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "skillsFrameworkId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "skills-domain": {
+      "title": "SkillsCluster",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "skillsClusterId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "dimension": {
+      "title": "Dimension",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "skillsDomainId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "local-dimension": {
+      "title": "LocalDimension",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "dimensionId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "gameId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "item": {
+      "title": "Item",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "localDimensionId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "promptId": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "standardDeviation": {
+          "type": "number",
+          "format": "double"
+        }
+      }
+    },
+    "learner": {
+      "title": "Learner",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string"
+        },
+        "birthday": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "gender": {
+          "type": "string",
+          "enum": [
+            "decline",
+            "female",
+            "male"
+          ]
+        },
+        "icon": {
+          "type": "string"
+        }
+      }
+    },
+    "latent-ability": {
+      "title": "LatentAbilityEstimate",
+      "type": "object",
+      "properties": {
+        "dimensionId": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "standardDeviation": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "local-ability": {
+      "title": "LocalAbilityEstimate",
+      "type": "object",
+      "properties": {
+        "localDimensionId": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "mean": {
+          "type": "number",
+          "format": "double"
+        },
+        "standardDeviation": {
+          "type": "number",
+          "format": "double"
+        },
+        "timestamp": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "learner-insight": {
+      "title": "LearnerInsight",
+      "type": "object",
+      "properties": {
+        "dateCreated": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "uri": {
+          "type": "string"
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "agentRequest": {
+      "title": "AgentRequest",
+      "type": "object",
+      "required": [
+        "appInfo",
+        "deviceInfo",
+        "events"
+      ],
+      "properties": {
+        "appInfo": {
+          "title": "AppInfo",
+          "type": "object",
+          "required": [
+            "uri",
+            "version"
+          ],
+          "properties": {
+            "uri": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "build": {
+              "type": "string"
+            }
+          }
+        },
+        "deviceInfo": {
+          "title": "DeviceInfo",
+          "type": "object",
+          "properties": {
+            "deviceId": {
+              "type": "string"
+            },
+            "deviceType": {
+              "type": "string"
+            },
+            "osVersion": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            },
+            "carrier": {
+              "type": "string"
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "title": "Event",
+            "type": "object",
+            "required": [
+              "version",
+              "type",
+              "name",
+              "userId",
+              "learnerId",
+              "trialTime",
+              "trialSalt",
+              "eventTime",
+              "eventSequence",
+              "duration"
+            ],
+            "properties": {
+              "version": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Result",
+                  "Stats",
+                  "Behavior",
+                  "KidaptiveInternal"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "userId": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "learnerId": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "gameURI": {
+                "type": "string"
+              },
+              "promptURI": {
+                "type": "string"
+              },
+              "trialTime": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "trialSalt": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "eventTime": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "eventSequence": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "receiptTime": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "duration": {
+                "type": "number",
+                "format": "double"
+              },
+              "attempts": {
+                "type": "array",
+                "items": {
+                  "title": "Attempt",
+                  "type": "object",
+                  "required": [
+                    "level",
+                    "outcome"
+                  ],
+                  "properties": {
+                    "itemURI": {
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "type": "number",
+                      "format": "double"
+                    }
+                  }
+                }
+              },
+              "promptAnswers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "additionalFields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "user": {
+      "title": "User",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64",
+          "readOnly": true
+        },
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "format": "password"
+        },
+        "nickname": {
+          "type": "string"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "apiKey": {
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
+    "userLogin": {
+      "title": "UserLogin",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string",
+          "format": "password"
+        },
+        "mode": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "appApiKeyHeader": {
+      "name": "Api-Key",
+      "in": "header",
+      "description": "This can contain either the app's api key or a user's api key.\n* The app's api key is issued by Kidaptive during app setup.\n* The user's api key is issued on user login or when you change the user's password.",
+      "required": true,
+      "type": "string"
+    },
+    "userApiKeyHeader": {
+      "name": "Api-Key",
+      "in": "header",
+      "description": "This contains the user's api key. The user's api key is issued on user login or when you change the user's password.",
+      "required": true,
+      "type": "string"
+    }
+  },
+  "responses": {
+    "400": {
+      "description": "This is returned if the request contains missing or invalid data.",
+      "schema": {
+        "$ref": "#/definitions/validationErrorList"
+      }
+    },
+    "401": {
+      "description": "This is returned if the `Api-Key` header is missing or invalid."
+    }
+  },
+  "tags": [
+    {
+      "name": "app",
+      "description": "app data"
+    },
+    {
+      "name": "category",
+      "description": "category data"
+    },
+    {
+      "name": "skills-framework",
+      "description": "skills framework data"
+    },
+    {
+      "name": "learner",
+      "description": "learner management"
+    },
+    {
+      "name": "user",
+      "description": "user management"
+    },
+    {
+      "name": "openid",
+      "description": "openid connect"
+    }
+  ]
+}
