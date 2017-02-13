@@ -18,7 +18,6 @@ import {
     LearnerInsight,
     LatentAbility,
     AgentRequestAppInfo,
-    AppApi,
     App,
     Item,
     LocalAbility,

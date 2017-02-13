@@ -30,7 +30,9 @@ class UserManager {
     logoutUser():Promise<void> {
         this.currentUser = null;
         UserManager.deleteStoredUser();
-        return this.userApi.userLogoutPost(this.delegate.getAppApiKey()).then(function() {
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.user.post_user_logout({"Api-Key": this.delegate.getAppApiKey()});
+        }.bind(this)).then(function() {
             return;
         }).catch(function(error) {
             if (error.response) {

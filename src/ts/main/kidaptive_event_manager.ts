@@ -56,7 +56,6 @@ class EventManager {
     private eventQueue: AgentRequestEvents[] = [];
     private payloadQueue: AgentRequest[] = []; //holding area for payloads to be sent
 
-    private learnerApi = new LearnerApi(KidaptiveConstants.ALP_BASE_URL);
     private flushTimeoutId = null;
 
     constructor(private delegate: EventManagerDelegate, private flushInterval:number) {

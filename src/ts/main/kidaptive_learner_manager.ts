@@ -17,7 +17,6 @@ interface LearnerManagerDelegate {
 
 class LearnerManager {
     private learnerMap: {[key: number]: Learner} = {};
-    private learnerApi: LearnerApi = new LearnerApi(KidaptiveConstants.ALP_BASE_URL);
 
     constructor(private delegate: LearnerManagerDelegate){
         if (!delegate) {
