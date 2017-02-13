@@ -7,9 +7,11 @@ import Promise = require("bluebird");
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
 import {User, UserApi} from "../../../swagger-client/api";
 import {KidaptiveConstants} from "./kidaptive_constants";
+import SwaggerClient = require("swagger-client");
 
 interface UserManagerDelegate {
     getAppApiKey: () => string;
+    getSwaggerClient: () => SwaggerClient;
 }
 
 class UserManager {
@@ -44,11 +46,15 @@ class UserManager {
     }
 
     refreshUser(): Promise<User> {
-        return this.userApi.userMeGet(this.delegate.getAppApiKey()).then(function(data) {
-            this.currentUser = data.body;
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.user.get_user_me({"Api-Key": this.delegate.getAppApiKey()})
+        }).then(function(data) {
+            this.currentUser = data.obj;
             this.storeUser();
             return this.currentUser;
-        }.bind(this)).catch(function(error) {
+        }.bind(this), function(error) {
+            return error.errorObj;
+        }).catch(function(error) {
             if (error.response) {
                 if (error.response.statusCode == 401) {
                     return Promise.reject(new KidaptiveError(KidaptiveErrorCode.API_KEY_ERROR, error.response.statusMessage));

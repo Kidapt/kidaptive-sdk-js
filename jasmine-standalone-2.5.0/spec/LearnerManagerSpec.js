@@ -236,7 +236,7 @@ describe("Learner Management", function() {
         });
     });
 
-    it("Logout", function(done) {
+    xit("Logout", function(done) {
         sdkPromise = sdkPromise.then(function (sdk) {
             learnerId = sdk.getLearnerList()[0].id;
             sdk.logoutUser();
@@ -251,7 +251,7 @@ describe("Learner Management", function() {
         });
     });
 
-    it("create learner without login", function(done) {
+    xit("create learner without login", function(done) {
         sdkPromise = sdkPromise.then(function (sdk) {
             return sdk.createLearner(expLearner.name, new Date(expLearner.birthday), expLearner.gender);
         }).then(function () {
@@ -264,7 +264,7 @@ describe("Learner Management", function() {
         });
     });
 
-    it("update learner without login", function(done) {
+    xit("update learner without login", function(done) {
         sdkPromise = sdkPromise.then(function (sdk) {
             return sdk.updateLearner(learnerId, {name:"L2", birthday: new Date(147700000), gender:"male"});
         }).then(function() {
@@ -277,7 +277,7 @@ describe("Learner Management", function() {
         });
     });
 
-    it("delete learner without login", function(done) {
+    xit("delete learner without login", function(done) {
         sdkPromise = sdkPromise.then(function (sdk) {
             return sdk.deleteLearner(learnerId);
         }).then(function() {
@@ -285,40 +285,6 @@ describe("Learner Management", function() {
         }).catch(function(error) {
             expect(error.code).toBe("NOT_LOGGED_IN");
         }).then(function () {
-            done();
-            return sdk;
-        });
-    });
-
-    it("learner info persistence", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
-            return sdk.loginUser(user.email, user.password);
-        }).then(function() {
-            expect(sdk.getLearnerList().length).toBe(1);
-            expect(sdk.getLearner(learnerId)).toBeTruthy();
-        }).catch(function(error) {
-            expect(true).toBeFalsy();
-            console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
-    });
-
-    it("Learner persists with setUser", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
-            var user = sdk.getCurrentUser();
-            sdk.logoutUser();
-            expect(sdk.getCurrentUser()).toBeNull();
-            return sdk.setUser(JSON.stringify(user));
-        }).then(function() {
-            expect(sdk.getLearnerList().length).toBe(1);
-            expect(sdk.getLearner(learnerId)).toBeTruthy();
-        }).catch(function(error) {
-            expect(true).toBeFalsy();
-            console.log(error);
-        }).then(function () {
-            sdk.stopAutoFlush();
             done();
             return sdk;
         });
