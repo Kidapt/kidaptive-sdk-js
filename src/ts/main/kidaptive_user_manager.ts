@@ -48,7 +48,7 @@ class UserManager {
     refreshUser(): Promise<User> {
         return this.delegate.getSwaggerClient().then(function(swagger) {
             return swagger.user.get_user_me({"Api-Key": this.delegate.getAppApiKey()})
-        }).then(function(data) {
+        }.bind(this)).then(function(data) {
             this.currentUser = data.obj;
             this.storeUser();
             return this.currentUser;

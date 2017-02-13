@@ -206,8 +206,9 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         let learnerListPromise = this.updateNetworkQueue(function(sdk) {
             return sdk.learnerManager.syncLearnerList();
         });
-        this.syncAbilities(); //TODO: fails silently, may want to log
-        this.syncInsights(); //TODO: fails silently, may want to log
+        //TODO: ability/insight sync is broken
+        // this.syncAbilities(); //TODO: fails silently, may want to log
+        // this.syncInsights(); //TODO: fails silently, may want to log
         return this.updateNetworkQueue(function() {
             return learnerListPromise;
         });

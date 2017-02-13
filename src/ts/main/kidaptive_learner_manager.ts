@@ -3,6 +3,7 @@ import Promise = require("bluebird");
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
 import {User, LearnerApi, Learner} from "../../../swagger-client/api";
 import {KidaptiveConstants} from "./kidaptive_constants";
+import SwaggerClient = require("swagger-client");
 
 /**
  * Created by solomonliu on 7/11/16.
@@ -11,6 +12,7 @@ import {KidaptiveConstants} from "./kidaptive_constants";
 interface LearnerManagerDelegate {
     getCurrentUser: () => User;
     getAppApiKey: () => string;
+    getSwaggerClient: () => SwaggerClient;
 }
 
 class LearnerManager {
@@ -47,7 +49,13 @@ class LearnerManager {
         learner.gender = gender;
         learner.birthday = birthdayNumber;
 
-        return this.learnerApi.learnerPost(this.delegate.getAppApiKey(), learner).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.learner.post_learner({"Api-Key": this.delegate.getAppApiKey(), Learner: learner})
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(error) {
+            return Promise.reject(error.errorObj);
+        }).then(function(data) {
             this.learnerMap[data.body.id] = data.body;
             this.storeLearners();
             return data.body;
@@ -72,7 +80,13 @@ class LearnerManager {
             throw new KidaptiveError(KidaptiveErrorCode.NOT_LOGGED_IN, "not logged in");
         }
 
-        return this.learnerApi.learnerGet(this.delegate.getAppApiKey()).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger){
+            return swagger.learner.get_learner({"Api-Key": this.delegate.getAppApiKey()});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function(data) {
             let learners: {[key: number]: Learner} = {};
             for (let l of data.body) {
                 learners[l.id] = l;
@@ -149,7 +163,13 @@ class LearnerManager {
             updateData.gender = data.gender;
         }
 
-        return this.learnerApi.learnerLearnerIdPost(this.delegate.getAppApiKey(),learnerId,updateData).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger){
+            return swagger.learner.post_learner_learnerId({"Api-Key": this.delegate.getAppApiKey(), learnerId: learnerId, Learner:updateData});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function(data) {
             this.learnerMap[data.body.id] = data.body;
             this.storeLearners();
             return data.body;
@@ -183,7 +203,13 @@ class LearnerManager {
             throw new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found");
         }
 
-        return this.learnerApi.learnerLearnerIdDelete(this.delegate.getAppApiKey(),learnerId).then(function() {
+        return this.delegate.getSwaggerClient().then(function(swagger){
+            return swagger.learner.delete_learner_learnerId({"Api-Key": this.delegate.getAppApiKey(), learnerId: learnerId});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function() {
             learner = this.learnerMap[learnerId];
             delete this.learnerMap[learnerId];
             this.storeLearners();

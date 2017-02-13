@@ -10,7 +10,27 @@ describe("Trial Management", function() {
         localStorage.clear();
         sdkPromise = KidaptiveSdk.init(appKey, {version:"1.0", build:expAppInfo.build}).then(function(data) {
             sdk = data;
-            return sdk;
+            return sdk.refreshUser();
+        }).then(function() {
+            var learners = sdk.getLearnerList();
+            var delPromise;
+            for (var index in learners) {
+                var delFunction = function (index, learnerId) {
+                    if (index == 0) {
+                        delPromise = sdk.deleteLearner(learnerId);
+                    } else {
+                        delPromise = delPromise.then(function() {
+                            return sdk.deleteLearner(learnerId);
+                        });
+                    }
+                };
+                delFunction(index, learners[index].id);
+            }
+            return delPromise.then(function() {
+                return sdk;
+            });
+        }).catch(function (error) {
+            console.log(error);
         });
     });
 
@@ -39,9 +59,7 @@ describe("Trial Management", function() {
     it("normal start and end trial", function(done) {
         var learnerId1;
         var learnerId2;
-        sdkPromise = sdkPromise.then(function(sdk) {
-            return sdk.createUser(user.email, user.password);
-        }).then(function() {
+        sdkPromise = sdkPromise.then(function() {
             return sdk.createLearner("learner");
         }).then(function(learner) {
             learnerId1 = learner.id;

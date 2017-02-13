@@ -14,7 +14,19 @@ describe("Learner Management", function() {
             sdk = data;
             return sdk.refreshUser();
         }).then(function() {
-            return sdk;
+            var learners = sdk.getLearnerList();
+            var delPromise = Promise.resolve(sdk);
+            for (var index in learners) {
+                var delFunction = function (learnerId) {
+                    delPromise = delPromise.then(function() {
+                        return sdk.deleteLearner(learnerId);
+                    });
+                };
+                delFunction(learners[index].id);
+            }
+            return delPromise.then(function() {
+                return sdk;
+            });
         }).catch(function (error) {
             console.log(error);
         });

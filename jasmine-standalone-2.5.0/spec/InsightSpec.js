@@ -23,14 +23,34 @@ describe("Insight Management", function() {
             build: expAppInfo.build
         }).then(function (data) {
             sdk = data;
-            return sdk.createUser(user.email, user.password);
+            return sdk.refreshUser();
+        }).then(function() {
+            var learners = sdk.getLearnerList();
+            var delPromise;
+            for (var index in learners) {
+                var delFunction = function (index, learnerId) {
+                    if (index == 0) {
+                        delPromise = sdk.deleteLearner(learnerId);
+                    } else {
+                        delPromise = delPromise.then(function() {
+                            return sdk.deleteLearner(learnerId);
+                        });
+                    }
+                };
+                delFunction(index, learners[index].id);
+            }
+            return delPromise.then(function() {
+                return sdk;
+            });
         }).then(function (user) {
             curUser = user;
             return sdk.createLearner("L");
         }).then(function (learner) {
             curLearner = learner;
             return sdk;
-        });
+        }).catch(function (error) {
+            console.log(error);
+        })
 
     });
 
