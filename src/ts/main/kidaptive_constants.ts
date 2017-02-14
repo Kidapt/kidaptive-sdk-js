@@ -3,7 +3,7 @@
  */
 
 class KidaptiveConstants {
-    static SWAGGER_URL = "https://github.com/Kidapt/kidaptive-sdk-js/raw/cookies/dist/swagger.json";
+    static SWAGGER_URL = "http://localhost:63342/kidaptive-sdk-js/dist/swagger.json";
     static SWAGGER_HOST = "develop.kidaptive.com";
     static SWAGGER_SCHEMES = ["https"];
 
