@@ -15,7 +15,7 @@ describe("Event Management", function() {
 
     beforeAll(function() {
         localStorage.clear();
-        sdkPromise = KidaptiveSdk.init(appKey, {version:expAppInfo.version, build: expAppInfo.build}).then(function(data) {
+        sdkPromise = KidaptiveSdk.init(appKey, {version:expAppInfo.version, build: expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
             var items = Object.keys(sdk.modelManager.idToEntity.item);
             i = sdk.getEntityById("item", items[Math.floor(Math.random() * items.length)]);

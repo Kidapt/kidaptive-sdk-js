@@ -53,16 +53,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
 
     private deviceInfo = null;
 
-    private static swaggerPromise:SwaggerClient = new SwaggerClient(KidaptiveConstants.SWAGGER_URL,{
-        usePromise: true,
-        enableCookies: true
-    }).then(function (swagger) {
-        swagger.setHost(KidaptiveConstants.SWAGGER_HOST);
-        swagger.setSchemes(KidaptiveConstants.SWAGGER_SCHEMES);
-        return swagger;
-    });
-
-    constructor(private appInfo:AgentRequestAppInfo, private appSecret:string) {
+    constructor(private appInfo:AgentRequestAppInfo, private appSecret:string, private swaggerPromise:SwaggerClient) {
         this.attemptProcessor = new AttemptProcessor(this);
         this.eventManager = new EventManager(this, 60000);
         this.learnerManager = new LearnerManager(this);
@@ -74,10 +65,23 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         this.networkQueue = Promise.resolve(this);
     }
 
-    static init(appSecret:string, appVersion:{version:string, build:string} = null) : Promise<KidaptiveSdk> {
+    static init(appSecret:string, appVersion:{version:string, build:string} = null, apiJsonUrl:string) : Promise<KidaptiveSdk> {
         if (!appSecret) {
             throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "App Secret is required");
         }
+
+        if (!apiJsonUrl) {
+            throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "API JSON URL is required");
+        }
+
+        let swaggerClient = new SwaggerClient(apiJsonUrl,{
+            usePromise: true,
+            enableCookies: true
+        }).then(function (swagger) {
+            swagger.setHost(KidaptiveConstants.SWAGGER_HOST);
+            swagger.setSchemes(KidaptiveConstants.SWAGGER_SCHEMES);
+            return swagger;
+        });
 
         //start building app info from available information
         let version = '';
@@ -91,7 +95,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
             }
         }
 
-        return KidaptiveSdk.swaggerPromise.then(function(swagger) {
+        return swaggerClient.then(function(swagger) {
             return swagger.app.get_app_me({"Api-Key": appSecret});
         }).then(function(success) {
             return success.obj;
@@ -105,7 +109,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
             appInfo.build = build;
             appInfo.version = version;
             appInfo.uri = app.uri;
-            let sdk = new KidaptiveSdk(appInfo, appSecret);
+            let sdk = new KidaptiveSdk(appInfo, appSecret, swaggerClient);
             return sdk.syncModels().then(function() {
                 //app metadata successfully loaded, save to localStorage
                 localStorage.setItem("kidaptive.alp.app", JSON.stringify(app));
@@ -131,7 +135,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
                     appInfo.build = build;
                     appInfo.version = version;
                     appInfo.uri = app.uri;
-                    let sdk = new KidaptiveSdk(appInfo, appSecret);
+                    let sdk = new KidaptiveSdk(appInfo, appSecret, swaggerClient);
                     sdk.modelManager.loadStoredModels();
                     return Promise.resolve(sdk);
                 } else {
@@ -360,7 +364,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
 
     /* Delegate Methods */
     getSwaggerClient() {
-        return KidaptiveSdk.swaggerPromise;
+        return this.swaggerPromise;
     }
 
     getEntityById(type:EntityType, id:number) {

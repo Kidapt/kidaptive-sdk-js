@@ -21,7 +21,7 @@ describe("Insight Management", function() {
         sdkPromise = KidaptiveSdk.init(appKey, {
             version: expAppInfo.version,
             build: expAppInfo.build
-        }).then(function (data) {
+        }, swaggerUrl).then(function (data) {
             sdk = data;
             return sdk.refreshUser();
         }).then(function() {

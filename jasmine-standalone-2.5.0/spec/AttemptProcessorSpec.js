@@ -11,7 +11,7 @@ describe("Attempt Processor", function() {
 
     beforeAll(function() {
         localStorage.clear();
-        sdkPromise = KidaptiveSdk.init(appKey, {version:expAppInfo.version, build: expAppInfo.build}).then(function(data) {
+        sdkPromise = KidaptiveSdk.init(appKey, {version:expAppInfo.version, build: expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
             sdk.modelManager.idToEntity.item[1] = {id:1, uri:'item1', promptId:1, localDimensionId:1, mean:0};
             sdk.modelManager.uriToId.item['item1'] = 1;

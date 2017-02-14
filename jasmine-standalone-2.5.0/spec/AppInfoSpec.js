@@ -1,4 +1,5 @@
 var appKey = "gCQ1NS3T394CU";
+var swaggerUrl = "http://localhost:63342/kidaptive-sdk-js/dist/swagger.json";
 expAppInfo = {
     uri: '/kidaptive/showcase',
     version: "1.0",
@@ -12,7 +13,7 @@ describe("SDK init", function() {
 
     it("correct init", function(done) {
         var sdk;
-        KidaptiveSdk.init(appKey, {version:expAppInfo.version, build:expAppInfo.build}).then(function(data) {
+        KidaptiveSdk.init(appKey, {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
             var appInfo = sdk.getAppInfo();
             expect(appInfo.uri).toBe(expAppInfo.uri);
@@ -32,7 +33,7 @@ describe("SDK init", function() {
 
     it("invalid key", function(done) {
         var sdk;
-        KidaptiveSdk.init("g_invalid_key", {version:expAppInfo.version, build:expAppInfo.build}).then(function(data){
+        KidaptiveSdk.init("g_invalid_key", {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data){
             sdk = data;
             expect(true).toBeFalsy();
             sdk.stopAutoFlush();
@@ -48,7 +49,7 @@ describe("SDK init", function() {
 
     it("invalid version", function(done) {
         var sdk;
-        KidaptiveSdk.init(appKey, {version:"0.9", build:expAppInfo.build}).then(function(data) {
+        KidaptiveSdk.init(appKey, {version:"0.9", build:expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
             expect(true).toBeFalsy();
             sdk.stopAutoFlush();
