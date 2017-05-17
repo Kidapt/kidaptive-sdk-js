@@ -7,10 +7,6 @@ import {
     PromptCategory,
     Dimension,
     LearnerInsight,
-    AppApi,
-    CategoryApi,
-    SkillsframeworkApi,
-    LearnerApi,
     LatentAbility,
     Item,
     Prompt,
@@ -21,7 +17,7 @@ import {
     Instance,
     SubCategory
 } from "../../../swagger-client/api";
-import {KidaptiveConstants} from "./kidaptive_constants";
+import SwaggerClient = require("swagger-client");
 
 /**
  * Created by solomonliu on 8/9/16.
@@ -32,6 +28,7 @@ interface ModelManagerDelegate {
     getLearner:(learnerId:number) => Learner;
     getLearnerList:() => Learner[];
     getAppApiKey: () => string;
+    getSwaggerClient: () => SwaggerClient;
 }
 
 enum EntityType {
@@ -73,11 +70,6 @@ class ModelManager{
     private promptCategories: {
         [key:number]: PromptCategory[]
     } = {};
-
-    private appApi = new AppApi(KidaptiveConstants.ALP_BASE_URL);
-    private categoryApi = new CategoryApi(KidaptiveConstants.ALP_BASE_URL);
-    private frameworkApi = new SkillsframeworkApi(KidaptiveConstants.ALP_BASE_URL);
-    private learnerApi = new LearnerApi(KidaptiveConstants.ALP_BASE_URL);
 
     constructor(private delegate: ModelManagerDelegate) {
         if (!delegate) {
@@ -204,24 +196,31 @@ class ModelManager{
     }
 
     syncModels(): Promise<any> {
+        let swaggerClient = this.delegate.getSwaggerClient();
         let entities = [
-            {entityType: EntityType.game, api: this.appApi.gameGet.bind(this.appApi)},
-            {entityType: EntityType.prompt, api: this.appApi.promptGet.bind(this.appApi)},
-            {entityType: EntityType.category, api: this.categoryApi.categoryGet.bind(this.categoryApi)},
-            {entityType: EntityType.subCategory, api: this.categoryApi.subCategoryGet.bind(this.categoryApi)},
-            {entityType: EntityType.instance, api: this.categoryApi.instanceGet.bind(this.categoryApi)},
-            {entityType: EntityType.skillsFramework, api: this.frameworkApi.skillsFrameworkGet.bind(this.frameworkApi)},
-            {entityType: EntityType.skillsCluster, api: this.frameworkApi.skillsClusterGet.bind(this.frameworkApi)},
-            {entityType: EntityType.skillsDomain, api: this.frameworkApi.skillsDomainGet.bind(this.frameworkApi)},
-            {entityType: EntityType.dimension, api: this.frameworkApi.dimensionGet.bind(this.frameworkApi)},
-            {entityType: EntityType.localDimension, api: this.frameworkApi.localDimensionGet.bind(this.frameworkApi)},
-            {entityType: EntityType.item, api: this.frameworkApi.itemGet.bind(this.frameworkApi)},
+            {entityType: EntityType.game, api: 'app', method: 'get_game'},
+            {entityType: EntityType.prompt, api: 'app', method: 'get_prompt'},
+            {entityType: EntityType.category, api: 'category', method: 'get_category'},
+            {entityType: EntityType.subCategory, api: 'category', method: 'get_sub_category'},
+            {entityType: EntityType.instance, api: 'category', method: 'get_instance'},
+            {entityType: EntityType.skillsFramework, api: 'skills-framework', method: 'get_skills_framework'},
+            {entityType: EntityType.skillsCluster, api: 'skills-framework', method: 'get_skills_cluster'},
+            {entityType: EntityType.skillsDomain, api: 'skills-framework', method: 'get_skills_domain'},
+            {entityType: EntityType.dimension, api: 'skills-framework', method: 'get_dimension'},
+            {entityType: EntityType.localDimension, api: 'skills-framework', method: 'get_local_dimension'},
+            {entityType: EntityType.item, api: 'skills-framework', method: 'get_item'},
         ];
 
         return Promise.all(
             [Promise.all(
                 entities.map(function(entity) {
-                    return entity.api(this.delegate.getAppApiKey()).then(function(data) {
+                    return swaggerClient.then(function(swagger) {
+                        return swagger[entity.api][entity.method]({"Api-Key": this.delegate.getAppApiKey()});
+                    }.bind(this)).then(function(success:any) {
+                        return {body: success.obj};
+                    }, function(fail) {
+                        return Promise.reject(fail.errorObj);
+                    }).then(function(data:any) {
                         let entityResult = {entityType: entity.entityType, uriToId: {}, idToEntity: {}};
                         for (let d of data.body) {
                             entityResult.uriToId[d.uri] = d.id;
@@ -231,7 +230,13 @@ class ModelManager{
                     });
                 }.bind(this))
             ),
-            this.categoryApi.promptCategoryGet(this.delegate.getAppApiKey()).then(function(data) { //promptCategory is handled differently
+            swaggerClient.then(function(swagger) {
+                return swagger.category.get_prompt_category({"Api-Key": this.delegate.getAppApiKey()});
+            }.bind(this)).then(function(success:any) {
+                return {body: success.obj};
+            }, function(fail) {
+                return Promise.reject(fail.errorObj);
+            }).then(function(data) { //promptCategory is handled differently
                 let promptCategories = {};
 
                 for (let d of data.body) {
@@ -243,7 +248,7 @@ class ModelManager{
                     prompt.push(d);
                 }
                 return promptCategories;
-            })]
+            }.bind(this))]
         ).then(function(data) { //we don't update data until all of the metadata has been retrieved without error
             this.uriToId = {};  //this prevents inconsistent states from partial fetches
             this.idToEntity = {};
@@ -571,7 +576,13 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.localAbilityGet(this.delegate.getAppApiKey(), learnerId).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function(data:any) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {
@@ -596,7 +607,13 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.abilityGet(this.delegate.getAppApiKey(), learnerId).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.learner.get_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function(data:any) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {
@@ -621,7 +638,13 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.learnerApi.insightGet(this.delegate.getAppApiKey(), learnerId, after).then(function(data) {
+        return this.delegate.getSwaggerClient().then(function(swagger) {
+            return swagger.learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId, minDateCreated:after});
+        }.bind(this)).then(function(success:any) {
+            return {body: success.obj};
+        }, function(fail) {
+            return Promise.reject(fail.errorObj);
+        }).then(function(data:any) {
             return data.body;
         }).catch(function(error) {
             if (error.response) {

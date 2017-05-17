@@ -5,8 +5,7 @@
 import Promise = require("bluebird");
 
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
-import {User, UserApi} from "../../../swagger-client/api";
-import {KidaptiveConstants} from "./kidaptive_constants";
+import {User} from "../../../swagger-client/api";
 import SwaggerClient = require("swagger-client");
 
 interface UserManagerDelegate {
@@ -16,7 +15,6 @@ interface UserManagerDelegate {
 
 class UserManager {
     currentUser: User;
-    private userApi: UserApi = new UserApi(KidaptiveConstants.ALP_BASE_URL);
 
     constructor(private delegate: UserManagerDelegate) {
         if (!this.delegate) {
@@ -57,31 +55,6 @@ class UserManager {
         }.bind(this), function(error) {
             return error.errorObj;
         }).catch(function(error) {
-            if (error.response) {
-                if (error.response.statusCode == 401) {
-                    return Promise.reject(new KidaptiveError(KidaptiveErrorCode.API_KEY_ERROR, error.response.statusMessage));
-                } else {
-                    return Promise.reject(new KidaptiveError(KidaptiveErrorCode.WEB_API_ERROR, error.response.statusMessage));
-                }
-            } else {
-                return Promise.reject(new KidaptiveError(KidaptiveErrorCode.GENERIC_ERROR, error));
-            }
-        }) as Promise<User>;
-    }
-
-    /*
-     * Delete current user. Returns promise containing user just deleted.
-     */
-    deleteUser(): Promise<User> {
-        if (!this.currentUser) {
-            return Promise.reject(new KidaptiveError(KidaptiveErrorCode.NOT_LOGGED_IN, "User is not logged in"));
-        }
-
-        return this.userApi.userMeDelete(this.delegate.getAppApiKey()).then(function() {
-            let user = this.currentUser;
-            this.logoutUser();
-            return user;
-        }.bind(this)).catch(function(error) {
             if (error.response) {
                 if (error.response.statusCode == 401) {
                     return Promise.reject(new KidaptiveError(KidaptiveErrorCode.API_KEY_ERROR, error.response.statusMessage));

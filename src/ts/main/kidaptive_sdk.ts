@@ -188,22 +188,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         this.userManager.logoutUser();
     }
 
-    deleteUser(): Promise<User> {
-        return this.updateNetworkQueue(function(sdk) {
-            sdk.flushEvents();
-            return sdk.userManager.deleteUser().then(function(user) {
-                sdk.logoutUser();
-                return user;
-            });
-        });
-    }
-
     /* Learner Management */
-    createLearner(name: string, birthday?: Date, gender?: Learner.GenderEnum): Promise<Learner> {
-        return this.updateNetworkQueue(function(sdk) {
-            return sdk.learnerManager.createLearner(name, birthday, gender);
-        });
-    }
 
     syncLearnerList(): Promise<Learner[]> {
         let learnerListPromise = this.updateNetworkQueue(function(sdk) {
@@ -232,18 +217,6 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
     }): Promise<Learner> {
         return this.updateNetworkQueue(function(sdk) {
             return sdk.learnerManager.updateLearner(learnerId, data);
-        });
-    }
-
-    deleteLearner(learnerId: number): Promise<Learner> {
-        return this.updateNetworkQueue(function(sdk) {
-            sdk.flushEvents();
-            return sdk.learnerManager.deleteLearner(learnerId).then(function (learner) {
-                sdk.closeTrial(learnerId);
-                sdk.modelManager.clearLearnerAbility([learnerId]);
-                sdk.modelManager.clearInsights([learnerId]);
-                return learner;
-            });
         });
     }
 

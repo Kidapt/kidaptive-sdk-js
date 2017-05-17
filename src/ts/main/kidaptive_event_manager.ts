@@ -12,13 +12,11 @@ import {
     AgentRequestDeviceInfo,
     AgentRequestEvents,
     AgentRequestAttempts,
-    LearnerApi,
     Category,
     PromptCategory,
     Instance,
     SubCategory
 } from "../../../swagger-client/api";
-import {KidaptiveConstants} from "./kidaptive_constants";
 import {EntityType} from "./kidaptive_model_manager";
 import SwaggerClient = require("swagger-client");
 
