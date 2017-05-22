@@ -5,61 +5,48 @@ expAppInfo = {
     version: "1.0",
     build: "1000"
 };
+var sdk;
 
 describe("SDK init", function() {
-    beforeAll(function() {
+    beforeEach(function() {
         localStorage.clear();
+        sdk = null;
     });
 
     it("correct init", function(done) {
-        var sdk;
-        KidaptiveSdk.init(appKey, {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data) {
+        sdkPromise = KidaptiveSdk.init(appKey, {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
             var appInfo = sdk.getAppInfo();
             expect(appInfo.uri).toBe(expAppInfo.uri);
             expect(appInfo.version).toBe(expAppInfo.version);
             expect(appInfo.build).toBe(expAppInfo.build);
-            sdk.stopAutoFlush();
-            done();
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-            if (sdk) {
-                sdk.stopAutoFlush();
-            }
-            done();
-        })
+        }).then(done);
     });
 
     it("invalid key", function(done) {
-        var sdk;
-        KidaptiveSdk.init("g_invalid_key", {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data){
+        sdkPromise = KidaptiveSdk.init("g_invalid_key", {version:expAppInfo.version, build:expAppInfo.build}, swaggerUrl).then(function(data){
             sdk = data;
-            expect(true).toBeFalsy();
-            sdk.stopAutoFlush();
-            done();
+            fail("should have thrown error");
         }).catch(function(error) {
             expect(error.code).toBe("API_KEY_ERROR");
-            if (sdk) {
-                sdk.stopAutoFlush();
-            }
-            done();
-        });
+        }).then(done);
     });
 
     it("invalid version", function(done) {
-        var sdk;
-        KidaptiveSdk.init(appKey, {version:"0.9", build:expAppInfo.build}, swaggerUrl).then(function(data) {
+        sdkPromise = KidaptiveSdk.init(appKey, {version:"0.9", build:expAppInfo.build}, swaggerUrl).then(function(data) {
             sdk = data;
-            expect(true).toBeFalsy();
-            sdk.stopAutoFlush();
-            done();
+            fail("should have thrown error");
         }).catch(function(error) {
             expect(error.code).toBe("INVALID_PARAMETER");
-            if (sdk) {
-                sdk.stopAutoFlush();
-            }
-            done();
-        });
+        }).then(done);
+    });
+
+    afterEach(function() {
+        if (sdk) {
+            sdk.stopAutoFlush();
+        }
     });
 });

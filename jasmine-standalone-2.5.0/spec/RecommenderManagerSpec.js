@@ -27,7 +27,7 @@ describe("Recommender Manager", function() {
     });
 
     it("Recommender registration", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             spyOn(mockRec1, 'provideRecommendation');
             spyOn(mockRec2, 'provideRecommendation');
             var keys = sdk.getRecommenderKeys();
@@ -52,16 +52,13 @@ describe("Recommender Manager", function() {
             expect(mockRec2.provideRecommendation).toHaveBeenCalledTimes(1);
             return sdk;
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("null recommender registration", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             try {
                 sdk.registerRecommender(null, 'mock3');
             } catch (error) {
@@ -69,32 +66,26 @@ describe("Recommender Manager", function() {
                 expect(sdk.getRecommenderKeys().indexOf('mock3')).toBe(-1);
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("null recommender key", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             try {
                 sdk.registerRecommender(mockRec1, null);
             } catch (error) {
                 expect(error.code).toBe('INVALID_PARAMETER');
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Recommender unregistration", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             spyOn(mockRec1, 'provideRecommendation');
             spyOn(mockRec2, 'provideRecommendation');
 
@@ -120,16 +111,13 @@ describe("Recommender Manager", function() {
                 expect(error.code).toBe("INVALID_PARAMETER");
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Recommender unregistration", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             spyOn(mockRec1, 'provideRecommendation');
             spyOn(mockRec2, 'provideRecommendation');
             try {
@@ -142,16 +130,13 @@ describe("Recommender Manager", function() {
                 expect(mockRec2.provideRecommendation).toHaveBeenCalledTimes(1);
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Bad recommender key", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             try {
                 sdk.provideRecommendation("bad key", params);
                 expect(true).toBeFalsy();
@@ -159,31 +144,25 @@ describe("Recommender Manager", function() {
                 expect(error.code).toBe("INVALID_PARAMETER");
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender game only", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             var gameUri = "/game/kidaptive/demo_fireworks";
             var recs = sdk.recommendRandomPrompts(gameUri);
             expect(recs.type).toBe('prompt');
             expect(recs.recommendations.length).toBe(10);
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender game and local dim", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             var gameUri = "/game/kidaptive/demo_fireworks";
             var recs = sdk.recommendRandomPrompts(gameUri, '/local_dimension/kidaptive/demo_fireworks/attention_control');
             expect(recs.type).toBe('prompt');
@@ -200,16 +179,13 @@ describe("Recommender Manager", function() {
                 expect(expectedPrompts.indexOf(sdk.getEntityByUri('prompt', promptUri).id)).not.toBe(-1);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender game, local dim, and numResults", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             var gameUri = "/game/kidaptive/demo_fireworks";
             var recs = sdk.recommendRandomPrompts(gameUri, '/local_dimension/kidaptive/demo_fireworks/cognitive_flexibility', 20);
             expect(recs.type).toBe('prompt');
@@ -226,16 +202,13 @@ describe("Recommender Manager", function() {
                 expect(expectedPrompts.indexOf(sdk.getEntityByUri('prompt', promptUri).id)).not.toBe(-1);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender no gameUri", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             try {
                 sdk.recommendRandomPrompts();
                 expect(true).toBeFalsy();
@@ -243,50 +216,41 @@ describe("Recommender Manager", function() {
                 expect(error.code).toBe("RECOMMENDER_ERROR")
             }
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender bad gameUri", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             try {
                 sdk.recommendRandomPrompts('bad gameUri');
                 expect(true).toBeFalsy();
             } catch (error) {
                 expect(error.code).toBe("RECOMMENDER_ERROR")
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender bad localDimensionUri", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             var gameUri = "/game/kidaptive/demo_fireworks";
             try {
                 sdk.recommendRandomPrompts(gameUri, 'bad localDimensionUri');expect(true).toBeFalsy();
             } catch (error) {
                 expect(error.code).toBe("RECOMMENDER_ERROR")
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Random recommender numResults infinity", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             var gameUri = "/game/kidaptive/demo_fireworks";
             var recs = sdk.recommendRandomPrompts(gameUri, null, Infinity);
             var expectedPrompts = Object.keys(sdk.modelManager.idToEntity['item']).map(function(itemId) {
@@ -297,13 +261,10 @@ describe("Recommender Manager", function() {
                 return item.promptId;
             });
             expect(recs.recommendations.length).toBe(expectedPrompts.length);
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     var odRecMocks = function() {
@@ -409,7 +370,7 @@ describe("Recommender Manager", function() {
     };
 
     it("Optimal difficulty recommender easiest to hardest", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, null, 1);
@@ -417,17 +378,14 @@ describe("Recommender Manager", function() {
             for (var i = 1; i < 10; i++) {
                 expect(recs.recommendations[i - 1]).toBe('prompt' + i);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender hardest to easiest", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, null, 0);
@@ -436,17 +394,14 @@ describe("Recommender Manager", function() {
             for (var i = 1; i < 10; i++) {
                 expect(recs.recommendations[i - 1]).toBe('prompt' + (10 - i));
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender default diff", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1');
@@ -456,17 +411,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender probSuc = .3", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, null, .3);
@@ -476,17 +428,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender local dimension filtered", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', 'localDimension1');
@@ -496,17 +445,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender max result", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
 
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, 5);
@@ -516,17 +462,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender bad learner", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             try {
                 sdk.recommendOptimalDifficultyPrompts(2, 'game1');
@@ -534,17 +477,14 @@ describe("Recommender Manager", function() {
             } catch (error) {
                 expect(error.code).toBe("RECOMMENDER_ERROR");
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender bad game", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             try {
                 sdk.recommendOptimalDifficultyPrompts(1, 'bad game');
@@ -552,17 +492,14 @@ describe("Recommender Manager", function() {
             } catch (error) {
                 expect(error.code).toBe("RECOMMENDER_ERROR");
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender bad localDimension", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             try {
                 sdk.recommendOptimalDifficultyPrompts(1, 'game1', 'bad LD');
@@ -570,32 +507,26 @@ describe("Recommender Manager", function() {
             } catch (error) {
                 expect(error.code).toBe("RECOMMENDER_ERROR");
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender maxResult < 0", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, -Infinity);
             expect(recs.type).toBe('prompt');
             expect(recs.recommendations.length).toBe(0);
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender maxResult infinity", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, Infinity);
             var expected = [4,3,5,2,1,6,7,8,9].map(function(x) {return "prompt" + x;});
@@ -604,17 +535,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender probSuccess < 0", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, null, -Infinity);
             var expected = [9,8,7,6,5,4,3,2,1].map(function(x) {return "prompt" + x;});
@@ -623,17 +551,14 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("Optimal difficulty recommender probSuccess > 1", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             odRecMocks();
             var recs = sdk.recommendOptimalDifficultyPrompts(1, 'game1', null, null, Infinity);
             var expected = [1,2,3,4,5,6,7,8,9].map(function(x) {return "prompt" + x;});
@@ -642,13 +567,15 @@ describe("Recommender Manager", function() {
             for (var i = 0; i < 9; i++) {
                 expect(recs.recommendations[i]).toBe(expected[i]);
             }
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function () {
+        }).then(done);
+    });
+
+    afterAll(function() {
+        if (sdk) {
             sdk.stopAutoFlush();
-            done();
-            return sdk;
-        });
+        }
     });
 });

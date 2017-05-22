@@ -14,7 +14,7 @@ describe("Model Management", function() {
     });
 
     it("check game data", function(done) {
-        sdkPromise = sdkPromise.then(function() {
+        sdkPromise.then(function() {
             var games = sdk.getGames();
             expect(games).toBeTruthy();
             expect(games.length).toBeTruthy();
@@ -23,16 +23,13 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("game", game.id)).toBe(game);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check prompt data", function(done) {
-        sdkPromise = sdkPromise.then(function() {
+        sdkPromise.then(function() {
             var prompts = sdk.getPrompts();
             expect(prompts).toBeTruthy();
             expect(prompts.length).toBeTruthy();
@@ -41,16 +38,13 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("prompt", prompt.id)).toBe(prompt);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check item data", function(done) {
-        sdkPromise = sdkPromise.then(function() {
+        sdkPromise.then(function() {
             var items = sdk.getItems();
             expect(items).toBeTruthy();
             expect(items.length).toBeTruthy();
@@ -59,12 +53,9 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("item", item.id)).toBe(item);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check dimension data", function(done) {
@@ -77,12 +68,9 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("dimension", dimension.id)).toBe(dimension);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check localDimension data", function(done) {
@@ -95,13 +83,9 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("localDimension", localDimension.id)).toBe(localDimension);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            sdk.stopAutoFlush();
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check category data", function(done) {
@@ -114,12 +98,9 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("category", category.id)).toBe(category);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check instance data", function(done) {
@@ -132,12 +113,9 @@ describe("Model Management", function() {
                 expect(sdk.getEntityById("instance", instance.id)).toBe(instance);
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
-            done();
-            return sdk;
-        });
+        }).then(done);
     });
 
     it("check promptCategory data", function(done) {
@@ -156,12 +134,14 @@ describe("Model Management", function() {
                 });
             });
         }).catch(function(error) {
-            expect(true).toBeFalsy();
+            fail("should not have thrown error");
             console.log(error);
-        }).then(function() {
+        }).then(done);
+    });
+
+    afterAll(function() {
+        if (sdk) {
             sdk.stopAutoFlush();
-            done();
-            return sdk;
-        });
-    })
+        }
+    });
 });

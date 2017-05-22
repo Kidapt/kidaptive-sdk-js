@@ -78,7 +78,7 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
             usePromise: true,
             enableCookies: true
         }).then(function (swagger) {
-            swagger.setHost(KidaptiveConstants.SWAGGER_HOST);
+            swagger.setHost(KidaptiveConstants.SWAGGER_HOST);//TODO: specify dev or prod
             swagger.setSchemes(KidaptiveConstants.SWAGGER_SCHEMES);
             return swagger;
         });
