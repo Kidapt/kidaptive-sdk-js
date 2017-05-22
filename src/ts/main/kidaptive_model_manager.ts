@@ -17,7 +17,6 @@ import {
     Instance,
     SubCategory
 } from "../../../swagger-client/api";
-import SwaggerClient = require("swagger-client");
 
 /**
  * Created by solomonliu on 8/9/16.
@@ -28,7 +27,7 @@ interface ModelManagerDelegate {
     getLearner:(learnerId:number) => Learner;
     getLearnerList:() => Learner[];
     getAppApiKey: () => string;
-    getSwaggerClient: () => SwaggerClient;
+    getSwagger: () => any;
 }
 
 enum EntityType {
@@ -196,7 +195,7 @@ class ModelManager{
     }
 
     syncModels(): Promise<any> {
-        let swaggerClient = this.delegate.getSwaggerClient();
+        let swagger = this.delegate.getSwagger();
         let entities = [
             {entityType: EntityType.game, api: 'app', method: 'get_game'},
             {entityType: EntityType.prompt, api: 'app', method: 'get_prompt'},
@@ -214,9 +213,7 @@ class ModelManager{
         return Promise.all(
             [Promise.all(
                 entities.map(function(entity) {
-                    return swaggerClient.then(function(swagger) {
-                        return swagger[entity.api][entity.method]({"Api-Key": this.delegate.getAppApiKey()});
-                    }.bind(this)).then(function(success:any) {
+                    return swagger[entity.api][entity.method]({"Api-Key": this.delegate.getAppApiKey()}).then(function(success:any) {
                         return {body: success.obj};
                     }, function(fail) {
                         return Promise.reject(fail.errorObj);
@@ -230,9 +227,7 @@ class ModelManager{
                     });
                 }.bind(this))
             ),
-            swaggerClient.then(function(swagger) {
-                return swagger.category.get_prompt_category({"Api-Key": this.delegate.getAppApiKey()});
-            }.bind(this)).then(function(success:any) {
+            swagger.category.get_prompt_category({"Api-Key": this.delegate.getAppApiKey()}).then(function(success:any) {
                 return {body: success.obj};
             }, function(fail) {
                 return Promise.reject(fail.errorObj);
@@ -576,9 +571,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.delegate.getSwaggerClient().then(function(swagger) {
-            return swagger.learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId});
-        }.bind(this)).then(function(success:any) {
+        return this.delegate.getSwagger().learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId}).then(function(success:any) {
             return {body: success.obj};
         }, function(fail) {
             return Promise.reject(fail.errorObj);
@@ -607,9 +600,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.delegate.getSwaggerClient().then(function(swagger) {
-            return swagger.learner.get_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId});
-        }.bind(this)).then(function(success:any) {
+        return this.delegate.getSwagger().learner.get_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId}).then(function(success:any) {
             return {body: success.obj};
         }, function(fail) {
             return Promise.reject(fail.errorObj);
@@ -638,9 +629,7 @@ class ModelManager{
             return Promise.reject(new KidaptiveError(KidaptiveErrorCode.LEARNER_NOT_FOUND, "Learner " + learnerId + " not found"));
         }
 
-        return this.delegate.getSwaggerClient().then(function(swagger) {
-            return swagger.learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId, minDateCreated:after});
-        }.bind(this)).then(function(success:any) {
+        return this.delegate.getSwagger().learner.get_local_ability({"Api-Key": this.delegate.getAppApiKey(), learnerId:learnerId, minDateCreated:after}).then(function(success:any) {
             return {body: success.obj};
         }, function(fail) {
             return Promise.reject(fail.errorObj);

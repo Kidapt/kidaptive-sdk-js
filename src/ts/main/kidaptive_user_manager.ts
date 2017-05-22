@@ -6,11 +6,10 @@ import Promise = require("bluebird");
 
 import {KidaptiveErrorCode, KidaptiveError} from "./kidaptive_error";
 import {User} from "../../../swagger-client/api";
-import SwaggerClient = require("swagger-client");
 
 interface UserManagerDelegate {
     getAppApiKey: () => string;
-    getSwaggerClient: () => SwaggerClient;
+    getSwagger: () => any;
 }
 
 class UserManager {
@@ -28,9 +27,7 @@ class UserManager {
     logoutUser():Promise<void> {
         this.currentUser = null;
         UserManager.deleteStoredUser();
-        return this.delegate.getSwaggerClient().then(function(swagger) {
-            return swagger.user.post_user_logout({"Api-Key": this.delegate.getAppApiKey()});
-        }.bind(this)).then(function() {
+        return this.delegate.getSwagger().user.post_user_logout({"Api-Key": this.delegate.getAppApiKey()}).then(function() {
             return;
         }).catch(function(error) {
             if (error.response) {
@@ -46,9 +43,7 @@ class UserManager {
     }
 
     refreshUser(): Promise<User> {
-        return this.delegate.getSwaggerClient().then(function(swagger) {
-            return swagger.user.get_user_me({"Api-Key": this.delegate.getAppApiKey()})
-        }.bind(this)).then(function(data) {
+        return this.delegate.getSwagger().user.get_user_me({"Api-Key": this.delegate.getAppApiKey()}).then(function(data) {
             this.currentUser = data.obj;
             this.storeUser();
             return this.currentUser;

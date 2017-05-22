@@ -18,7 +18,6 @@ import {
     SubCategory
 } from "../../../swagger-client/api";
 import {EntityType} from "./kidaptive_model_manager";
-import SwaggerClient = require("swagger-client");
 
 /**
  * Created by solomonliu on 7/13/16.
@@ -28,7 +27,7 @@ interface EventManagerDelegate {
     //not sure if this is useful. currently 1.9.1 for hodoo
     getEventVersion: () => string;
 
-    getSwaggerClient:() => SwaggerClient;
+    getSwagger:() => any;
     getAppApiKey: () => string;
 
     getCurrentUser: () => User;
@@ -269,9 +268,7 @@ class EventManager {
         }
 
         for (let payload of this.payloadQueue) {
-            let p: Promise<AgentRequest> = this.delegate.getSwaggerClient().then(function(swagger) {
-                return swagger.learner.post_ingestion({'Api-Key': this.delegate.getAppApiKey(), "AgentRequest": payload})
-            }.bind(this)).then(function(success:any) {
+            let p: Promise<AgentRequest> = this.delegate.getSwagger().learner.post_ingestion({'Api-Key': this.delegate.getAppApiKey(), "AgentRequest": payload}).then(function(success:any) {
                 return success.obj;
             }, function(fail) {
                 return Promise.reject(fail.errorObj)
