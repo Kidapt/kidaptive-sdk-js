@@ -1,6 +1,10 @@
 describe("User Management", function() {
     var sdkPromise;
     var sdk;
+    var expUser = {
+        id: 1,
+        nickname: 'abc'
+    };
 
     beforeAll(function() {
         localStorage.clear();
@@ -10,16 +14,36 @@ describe("User Management", function() {
         });
     });
 
+    it("Refresh User", function(done) {
+        sdkPromise.then(function(sdk) {
+            spyOn(sdk.learnerManager, 'syncLearnerList').and.callFake(function() {});
+            return sdk.swaggerPromise.then(function(swagger) {
+                spyOn(swagger.user, 'user_get_me').and.returnValue(Promise.resolve(expUser));
+                return sdk;
+            });
+        }).then(function(sdk) {
+            return sdk.refreshUser();
+        }).then(function(user) {
+
+        }).catch(function(error) {
+            fail("should not throw error");
+            console.log(error);
+        }).then(done);
+    });
+
     it("Logout", function(done) {
-        sdkPromise = sdkPromise.then(function (sdk) {
+        sdkPromise.then(function (sdk) {
             sdk.logoutUser();
             expect(sdk.getCurrentUser()).toBeFalsy();
-        }).catch(function (error) {
-            expect(true).toBeFalsy();
+        }).catch(function(error) {
+            fail("should not throw error");
             console.log(error);
-        }).then(function () {
-            done();
-            return sdk;
-        });
+        }).then(done);
+    });
+
+    afterAll(function() {
+        if (sdk) {
+            sdk.stopAutoFlush();
+        }
     });
 });

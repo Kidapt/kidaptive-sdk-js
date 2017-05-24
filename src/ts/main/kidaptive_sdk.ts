@@ -1,7 +1,6 @@
 /// <reference path="../../../typings/index.d.ts" />
 
-import Promise = require("bluebird");
-import SwaggerClient = require("swagger-client");
+import {KidaptiveHttpClient} from "./kidaptive_http_client";
 import {AttemptProcessor, AttemptProcessorDelegate} from "./kidaptive_attempt_processor";
 import {EventManager, EventManagerDelegate} from "./kidaptive_event_manager";
 import {LearnerManager, LearnerManagerDelegate} from "./kidaptive_learner_manager";
@@ -49,11 +48,11 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
     private userManager:UserManager;
     private recommenderManager: RecommenderManager;
 
-    private networkQueue: Promise<KidaptiveSdk>;
+    private networkQueue: JQueryPromise<KidaptiveSdk>;
 
     private deviceInfo = null;
 
-    constructor(private appInfo:AgentRequestAppInfo, private appSecret:string, private swagger:any) {
+    constructor(private appInfo:AgentRequestAppInfo, private appSecret:string, private httpClient:KidaptiveHttpClient) {
         this.attemptProcessor = new AttemptProcessor(this);
         this.eventManager = new EventManager(this, 60000);
         this.learnerManager = new LearnerManager(this);
@@ -62,17 +61,15 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
         this.userManager = new UserManager(this);
         this.recommenderManager = new RecommenderManager(this);
 
-        this.networkQueue = Promise.resolve(this);
+        this.networkQueue = $.Deferred().resolve(this);
     }
 
-    static init(appSecret:string, appVersion:{version:string, build:string} = null, apiJsonUrl:string) : Promise<KidaptiveSdk> {
+    static init(appSecret:string, appVersion:{version:string, build:string} = null, options: any) {
         if (!appSecret) {
             throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "App Secret is required");
         }
 
-        if (!apiJsonUrl) {
-            throw new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "API JSON URL is required");
-        }
+        options = options ? options : {};
 
         //start building app info from available information
         let version = '';
@@ -86,54 +83,42 @@ class KidaptiveSdk implements AttemptProcessorDelegate,EventManagerDelegate,Lear
             }
         }
 
-        let swaggerInstance;
-        return new SwaggerClient(apiJsonUrl,{
-            usePromise: true,
-            enableCookies: true
-        }).then(function (swagger) {
-            swaggerInstance = swagger;
-            swagger.setHost(KidaptiveConstants.SWAGGER_HOST);//TODO: specify dev or prod
-            swagger.setSchemes(KidaptiveConstants.SWAGGER_SCHEMES);
-            return swagger.app.get_app_me({"Api-Key": appSecret});
-        }).then(function(success) {
-            return success.obj;
-        }, function(fail) {
-            return Promise.reject(fail.errObj);
-        }).then(function(app:App) {
+        let httpClient = new KidaptiveHttpClient(options.dev, appSecret);
+        let sdk;
+        return httpClient.ajax("GET", KidaptiveConstants.APP, null).then(function(app:App) {
             if (app.minVersion > version) {
-                return Promise.reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
+                return $..reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
             }
             let appInfo = new AgentRequestAppInfo();
             appInfo.build = build;
             appInfo.version = version;
             appInfo.uri = app.uri;
-            let sdk = new KidaptiveSdk(appInfo, appSecret, swaggerInstance);
+            sdk = new KidaptiveSdk(appInfo, appSecret, httpClient);
             return sdk.syncModels().then(function() {
                 //app metadata successfully loaded, save to localStorage
                 localStorage.setItem("kidaptive.alp.app", JSON.stringify(app));
                 return sdk;
             });
         }).catch(function(error) {
-            if (error instanceof KidaptiveError) {
-                return Promise.reject(error);
-            } else if (error.response) {
-                if (error.response.statusCode == 401) {
-                    return Promise.reject(new KidaptiveError(KidaptiveErrorCode.API_KEY_ERROR, error.response.statusMessage));
-                } else {
-                    return Promise.reject(new KidaptiveError(KidaptiveErrorCode.WEB_API_ERROR, error.response.statusMessage));
-                }
-            } else { //possibly a network error. load from localStorage
-                let appString = localStorage.getItem("kidaptive.alp.app");
-                if (appString) {
-                    let app = JSON.parse(appString);
-                    if (app.minVersion > version) {
-                        return Promise.reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
+            if (error instanceof KidaptiveError && error.code == KidaptiveErrorCode.API_KEY_ERROR) {
+                //TODO: unauthorized; clear all data
+                throw error;
+            } else { //possibly recoverable error. load from localStorage
+                if (!sdk) {
+                    let appString = localStorage.getItem("kidaptive.alp.app");
+                    if (appString) {
+                        let app = JSON.parse(appString);
+                        if (app.minVersion > version) {
+                            return Promise.reject(new KidaptiveError(KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + version));
+                        }
+                        let appInfo = new AgentRequestAppInfo();
+                        appInfo.build = build;
+                        appInfo.version = version;
+                        appInfo.uri = app.uri;
+                        sdk = new KidaptiveSdk(appInfo, appSecret, httpClient);
                     }
-                    let appInfo = new AgentRequestAppInfo();
-                    appInfo.build = build;
-                    appInfo.version = version;
-                    appInfo.uri = app.uri;
-                    let sdk = new KidaptiveSdk(appInfo, appSecret, swaggerInstance);
+                }
+
                     sdk.modelManager.loadStoredModels();
                     return Promise.resolve(sdk);
                 } else {

@@ -22,11 +22,9 @@ enum KidaptiveErrorCode {
 
 class KidaptiveError extends Error {
     public name = "KidaptiveError";
-    public stack;
 
-    constructor(public code: KidaptiveErrorCode, public message: string) {
-        super();
-        this.stack = new Error().stack;
+    constructor(public code: KidaptiveErrorCode, message: string) {
+        super(message);
     }
 }
 

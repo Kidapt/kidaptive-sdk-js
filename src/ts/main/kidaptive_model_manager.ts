@@ -282,6 +282,12 @@ class ModelManager{
         this.promptCategories = promptCategories;
     }
 
+    static clearStoredModels() {
+        localStorage.removeItem("kidaptive.alp.models.uriToId");
+        localStorage.removeItem("kidaptive.alp.models.idToEntity");
+        localStorage.removeItem("kidaptive.alp.models.promptCategories");
+    }
+
     //sync ability estimates for a list of learners. Returns a promise that is always resolved. Value will be list of
     //{learnerId:number; abilities:LocalAbility[]|LatentAbility[]} or {learnerId:number; error:KidaptiveError} for each learner
     syncAbilities(learners:number[] = null):Promise<any> {
@@ -656,7 +662,7 @@ class ModelManager{
         this.localAbilities = JSON.parse(localStorage.getItem('kidaptive.alp.models.localAbilities')) || {};
     }
 
-    private static deleteStoredLocalAbilities() {
+    static deleteStoredLocalAbilities() {
         localStorage.removeItem('kidaptive.alp.models.localAbilities');
     }
 
@@ -668,7 +674,7 @@ class ModelManager{
         this.latentAbilities = JSON.parse(localStorage.getItem('kidaptive.alp.models.latentAbilities')) || {};
     }
 
-    private static deleteStoredLatentAbilities() {
+    static deleteStoredLatentAbilities() {
         localStorage.removeItem('kidaptive.alp.models.latentAbilities');
     }
 

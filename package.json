@@ -3,28 +3,14 @@
   "version": "0.1.9",
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
-  "dependencies": {
-    "bluebird": "^3.4.6",
-    "browserify": "^13.1.1",
-    "jquery": "^3.1.1",
-    "request": "^2.79.0",
-    "swagger-client": "^2.1.32",
-    "tsify": "^2.0.3",
-    "typescript": "~2.0.10",
-    "typings": "^2.1.0",
-    "uglifyjs": "^2.4.10",
-    "watchify": "^3.9.0"
-  },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "install": "typings install",
-    "watch": "watchify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js -v",
-    "build:swagger": "rm -rf swager-client; swagger-codegen generate -i dist/swagger.json -l typescript-node -o swagger-client",
+    "watch": "watchify src/js/main/kidaptive_sdk.js -s KidaptiveSdk -o dist/kidaptive_sdk.js -v",
     "build:irt": "cd src/js/main/irt && (make clean; make)",
-    "build:debug": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify -d -o dist/kidaptive_sdk.js",
-    "build:prod": "browserify src/ts/main/kidaptive_sdk.ts --s KidaptiveSdk -p tsify | uglifyjs > dist/kidaptive_sdk.min.js",
-    "build": "npm run build:swagger && npm run build:irt && (npm run build:debug; npm run build:prod)",
+    "build:debug": "browserify src/js/main/kidaptive_sdk.js -s KidaptiveSdk -d -o dist/kidaptive_sdk.js",
+    "build:prod": "browserify src/js/main/kidaptive_sdk.js -s KidaptiveSdk | uglifyjs > dist/kidaptive_sdk.min.js",
+    "build": "npm run build:irt && (npm run build:debug; npm run build:prod)",
     "version": "npm run build && git add -A dist",
     "postversion": "git push && git push --tags"
   },
@@ -43,5 +29,10 @@
   "bugs": {
     "url": "https://github.com/Kidapt/kidaptive-sdk-js/issues"
   },
-  "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme"
+  "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
+  "devDependencies": {
+    "browserify": "^14.3.0",
+    "uglify-js": "^3.0.11",
+    "watchify": "^3.9.0"
+  }
 }
