@@ -3,12 +3,19 @@
  */
 "use strict";
 var KidaptiveError = function(type, message) {
-    Error.call(this, message);
+    var e = new Error(message);
+    Object.getOwnPropertyNames(e).map(function(k) {
+        Object.defineProperty(this, k, Object.getOwnPropertyDescriptor(e, k));
+    }.bind(this));
     this.type = type;
 };
 
 KidaptiveError.prototype = Object.create(Error.prototype);
 KidaptiveError.prototype.constructor = KidaptiveError;
+KidaptiveError.prototype.name = 'KidaptiveError';
+KidaptiveError.prototype.toString = function() {
+    return this.name + ' (' + this.type + '): ' + this.message;
+};
 
 KidaptiveError.KidaptiveErrorCode = {};
 [

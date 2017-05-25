@@ -15,7 +15,6 @@
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js",
   "ignore": [
     "**/.*",
-    "/node_modules",
     "/jasmine-standalone-2.5.0",
     "/src",
     "/*.json"
