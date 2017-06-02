@@ -4,14 +4,13 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "install": "typings install",
+    "test": "mocha src/js/test/*.js",
     "watch": "watchify src/js/main/kidaptive_sdk.js -s KidaptiveSdk -o dist/kidaptive_sdk.js -v",
     "build:irt": "cd src/js/main/irt && (make clean; make)",
     "build:debug": "browserify src/js/main/kidaptive_sdk.js -s KidaptiveSdk -d -o dist/kidaptive_sdk.js",
     "build:prod": "browserify src/js/main/kidaptive_sdk.js -s KidaptiveSdk | uglifyjs > dist/kidaptive_sdk.min.js",
     "build": "npm run build:irt && (npm run build:debug; npm run build:prod)",
-    "version": "npm run build && git add -A dist",
+    "version": "npm run build && git add -A",
     "postversion": "git push && git push --tags"
   },
   "repository": {
@@ -32,7 +31,14 @@
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
   "devDependencies": {
     "browserify": "^14.3.0",
+    "mocha": "^3.4.2",
+    "should": "^11.2.1",
+    "sinon": "^2.3.2",
     "uglify-js": "^3.0.11",
     "watchify": "^3.9.0"
+  },
+  "dependencies": {
+    "jquery": "^3.2.1",
+    "sjcl": "^1.0.6"
   }
 }

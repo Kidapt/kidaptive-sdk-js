@@ -1,5 +1,4 @@
-typings/
 node_modules/
-swagger-client/
+bower_components/
 .idea/
 src/js/main/irt/irt.js

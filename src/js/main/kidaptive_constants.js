@@ -2,7 +2,7 @@
  * Created by solomonliu on 2017-05-23.
  */
 "use strict";
-module.exports = {
+var KidaptiveConstants = {
     HOST_PROD:"https://service.kidaptive.com/v3",
     HOST_DEV:"https://develop.kidaptive.com/v3",
 
@@ -24,6 +24,7 @@ module.exports = {
         LEARNER:"/learner",
         ABILITY:"/ability",
         LOCAL_ABILITY:"/local-ability",
+        INSIGHT:"/insight",
         INGESTION:"/ingestion",
 
         USER:"/user/me",
@@ -32,8 +33,5 @@ module.exports = {
 
     ALP_EVENT_VERSION:"3.0",
 
-    LOCAL_STORAGE: {
-        API_KEY: "kidaptive.api_key",
-        APP: "kidaptive.app"
-    }
+    HTTP_CACHE_PREFIX:'kidaptive.sdk.http.cache'
 };

@@ -20,6 +20,12 @@
     "/*.json"
   ],
   "dependencies": {
-    "jquery": "^3.2.1"
+    "jquery": "^3.2.1",
+    "sjcl": "^1.0.6"
+  },
+  "devDependencies": {
+    "mocha": "^3.4.2",
+    "should": "^11.2.0",
+    "sinon-2.3.2": "http://sinonjs.org/releases/sinon-2.3.2.js"
   }
 }
