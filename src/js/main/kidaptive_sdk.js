@@ -45,6 +45,7 @@
 
                 //initialize managers
                 this.userManager = new KidaptiveUserManager(this);
+                this.learnerManager = new KidaptiveLearnerManager(this);
 
                 //TODO: sync models
             }.bind(this)).then(function() {
@@ -56,7 +57,7 @@
         sdkPromise.then(function() {
             this.userManager.refreshUser();
         }).then(function() {
-            //TODO: Load learner info
+            this.learnerManager.refreshLearnerList();
         });
 
         return sdkPromise;
@@ -90,6 +91,7 @@
         return copy(sdk.appInfo);
     };
 
+    //User Manager
     KidaptiveSdk.prototype.getCurrentUser = function() {
         return copy(sdk.userManager.currentUser);
     };
@@ -103,12 +105,26 @@
         //TODO: flush events
         //TODO: clear learner abilities
         //TODO: clear insights
-        //TODO: clear learner list
+        sdk.learnerManager.clearLearnerList();
         return sdk.userManager.logoutUser().always(function() {
             KidaptiveHttpClient.deleteUserData();
         });
     };
 
+    //Learner Manager
+    KidaptiveSdk.prototype.refreshLearnerList = function() {
+        return sdk.learnerManager.refreshLearnerList().then(copy, handleAuthError.bind(this));
+    };
+
+    KidaptiveSdk.prototype.getLearnerById = function(id) {
+        return copy(sdk.learnerManager.getLearnerById(id));
+    };
+
+    KidaptiveSdk.prototype.getLearnerByProviderId = function(providerId) {
+        return copy(sdk.learnerManager.getLearnerByProviderId(providerId));
+    };
+
+    //Module
     exports.KidaptiveError = KidaptiveError;
     exports.KidaptiveConstants = KidaptiveConstants;
 
