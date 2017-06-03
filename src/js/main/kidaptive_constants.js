@@ -31,7 +31,5 @@ var KidaptiveConstants = {
         LOGOUT:"/user/logout"
     },
 
-    ALP_EVENT_VERSION:"3.0",
-
-    HTTP_CACHE_PREFIX:'kidaptive.sdk.http.cache'
+    ALP_EVENT_VERSION:"3.0"
 };

@@ -1,0 +1,5 @@
+src/js/main/kidaptive_constants.js
+src/js/main/kidaptive_error.js
+src/js/main/kidaptive_http_client.js
+src/js/main/kidaptive_user_manager.js
+src/js/main/kidaptive_sdk.js

@@ -212,7 +212,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
             def = def.then(function() {
                 var endpoint = KidaptiveConstants.ENDPOINTS[e];
                 var ajaxResult = client.ajax('GET', endpoint, PARAMS);
-                if (userEndpoints.indexOf(endpoint) >= 0)
+                if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0)
                     return ajaxResult.should.rejected();
                 else {
                     return ajaxResult.should.fulfilled();
@@ -242,7 +242,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
             def = def.then(function() {
                 var endpoint = KidaptiveConstants.ENDPOINTS[e];
                 var ajaxResult = client.ajax('GET', endpoint, PARAMS);
-                if (userEndpoints.indexOf(endpoint) >= 0 && cacheExcludeEndpoints.indexOf(endpoint) < 0)
+                if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0 && KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS.indexOf(endpoint) < 0)
                     return ajaxResult.should.fulfilled();
                 else {
                     return ajaxResult.should.rejected();
@@ -268,7 +268,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         });
 
         return def.then(function() {
-            return client.ajax('GET', userEndpoints[0], {});
+            return client.ajax('GET', KidaptiveHttpClient.USER_ENDPOINTS[0], {});
         }).should.rejected().then(function() {
             appDelSpy.called.should.false();
             userDelSpy.called.should.true();

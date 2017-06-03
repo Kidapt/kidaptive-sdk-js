@@ -2,7 +2,6 @@
  * Created by solomonliu on 2017-05-24.
  */
 "use strict";
-var KidaptiveConstants = require('./kidaptive_constants');
 
 var KidaptiveUserManager = function(sdk) {
     this.sdk = sdk;
@@ -20,5 +19,3 @@ KidaptiveUserManager.prototype.logoutUser = function() {
         this.currentUser = undefined;
     }.bind(this));
 };
-
-module.exports = KidaptiveUserManager;

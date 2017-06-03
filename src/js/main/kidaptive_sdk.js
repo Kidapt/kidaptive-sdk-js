@@ -3,7 +3,6 @@
  */
 "use strict";
 
-var KidaptiveSdk;
 (function(){
     var operationQueue = $.Deferred().resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
@@ -18,7 +17,7 @@ var KidaptiveSdk;
         return o === undefined ? o : JSON.parse(JSON.stringify(o));
     };
 
-    KidaptiveSdk = function(apiKey, appVersion, options) {
+    var _KidaptiveSdk = function(apiKey, appVersion, options) {
 
         var sdkPromise = $.Deferred().resolve().then(function () {
             if (!apiKey) {
@@ -43,6 +42,10 @@ var KidaptiveSdk;
                 app.version = appVersion.version;
                 app.build = appVersion.build;
                 this.appInfo = app;
+
+                //initialize managers
+                this.userManager = new KidaptiveUserManager(this);
+
                 //TODO: sync models
             }.bind(this)).then(function() {
                 return this;
@@ -51,57 +54,65 @@ var KidaptiveSdk;
 
         //get user info if login is successful, but don't reject SDK promise if not successful
         sdkPromise.then(function() {
-            //TODO: Load user info
+            this.userManager.refreshUser();
         }).then(function() {
             //TODO: Load learner info
         });
 
         return sdkPromise;
     };
-})();
 
-//public interface for SDK
-var KidaptiveSdkInterface = function(apiKey, appVersion, options) {
-    return addToQueue(function() {
-        if(!sdk) {
-            return new KidaptiveSdk(apiKey, appVersion, options).then(function(newSdk) {
-                sdk = newSdk;
-                return this;
-            }.bind(this));
-        } else if (apiKey || appVersion || options) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
-        }
-        return this;
-    }.bind(this));
-};
+    //public interface for SDK
+    var KidaptiveSdk = function(apiKey, appVersion, options) {
+        return addToQueue(function() {
+            if(!sdk) {
+                return new _KidaptiveSdk(apiKey, appVersion, options).then(function(newSdk) {
+                    sdk = newSdk;
+                    return this;
+                }.bind(this));
+            } else if (apiKey || appVersion || options) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
+            }
+            return this;
+        }.bind(this));
+    };
 
-KidaptiveSdkInterface.prototype.getAppInfo = function() {
-    return copy(sdk.appInfo);
-};
-
-KidaptiveSdkInterface.prototype.getCurrentUser = function() {
-    return copy(sdk.userManager.currentUser);
-};
-
-KidaptiveSdkInterface.prototype.refreshUser = function() {
-    return sdk.userManager.refreshUser().then(copy, function(error) {
-        if (error.type == KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-            this.logoutUser();
+    var handleAuthError = function(error) {
+        if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
+            return this.logoutUser().then(function(){
+                throw error;
+            });
         }
         throw error;
-    }.bind(this));
-};
+    };
 
-KidaptiveSdkInterface.prototype.logoutUser = function() {
-    //TODO: close all trials
-    //TODO: flush events
-    //TODO: clear learner abilities
-    //TODO: clear insights
-    //TODO: clear learner list
-    return sdk.userManager.logoutUser();
-};
+    KidaptiveSdk.prototype.getAppInfo = function() {
+        return copy(sdk.appInfo);
+    };
 
-KidaptiveSdkInterface.KidaptiveError = KidaptiveError;
-KidaptiveSdkInterface.KidaptiveConstants = KidaptiveConstants;
+    KidaptiveSdk.prototype.getCurrentUser = function() {
+        return copy(sdk.userManager.currentUser);
+    };
 
-module.exports = KidaptiveSdkInterface;
+    KidaptiveSdk.prototype.refreshUser = function() {
+        return sdk.userManager.refreshUser().then(copy, handleAuthError.bind(this));
+    };
+
+    KidaptiveSdk.prototype.logoutUser = function() {
+        //TODO: close all trials
+        //TODO: flush events
+        //TODO: clear learner abilities
+        //TODO: clear insights
+        //TODO: clear learner list
+        return sdk.userManager.logoutUser().always(function() {
+            KidaptiveHttpClient.deleteUserData();
+        });
+    };
+
+    exports.KidaptiveError = KidaptiveError;
+    exports.KidaptiveConstants = KidaptiveConstants;
+
+    exports.init = function(apiKey, appVersion, options) {
+        return new KidaptiveSdk(apiKey, appVersion, options);
+    };
+})();
