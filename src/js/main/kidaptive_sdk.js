@@ -17,7 +17,7 @@
         return o === undefined ? o : JSON.parse(JSON.stringify(o));
     };
 
-    var _KidaptiveSdk = function(apiKey, appVersion, options) {
+    var KidaptiveSdk = function(apiKey, appVersion, options) {
 
         var sdkPromise = $.Deferred().resolve().then(function () {
             if (!apiKey) {
@@ -49,58 +49,68 @@
 
                 //TODO: sync models
             }.bind(this)).then(function() {
+                sdk = this;
+                return this.userManager.refreshUser().then(function() {
+                    //TODO: load stored insights
+                    return this.learnerManager.refreshLearnerList();
+                }.bind(this)).catch(handleAuthError).catch(function() {});
+            }.bind(this)).then(function() {
                 return this;
             }.bind(this));
         }.bind(this));
 
         //get user info if login is successful, but don't reject SDK promise if not successful
-        sdkPromise.then(function() {
-            this.userManager.refreshUser();
-        }).then(function() {
-            this.learnerManager.refreshLearnerList();
-        });
 
         return sdkPromise;
     };
 
-    //public interface for SDK
-    var KidaptiveSdk = function(apiKey, appVersion, options) {
-        return addToQueue(function() {
-            if(!sdk) {
-                return new _KidaptiveSdk(apiKey, appVersion, options).then(function(newSdk) {
-                    sdk = newSdk;
-                    return this;
-                }.bind(this));
-            } else if (apiKey || appVersion || options) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
-            }
-            return this;
-        }.bind(this));
-    };
-
     var handleAuthError = function(error) {
         if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-            return this.logoutUser().then(function(){
+            return exports.logoutUser().then(function(){
                 throw error;
             });
         }
         throw error;
     };
 
-    KidaptiveSdk.prototype.getAppInfo = function() {
+    var sdkInitFilter = function() {
+        if (!sdk) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK not initialized");
+        }
+    };
+
+    //public interface for SDK
+    exports.init = function(apiKey, appVersion, options) {
+        return addToQueue(function() {
+            if(!sdk) {
+                return new KidaptiveSdk(apiKey, appVersion, options).then(function() {
+                    return exports;
+                });
+            } else if (apiKey || appVersion || options) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
+            }
+            return exports;
+        });
+    };
+
+    exports.getAppInfo = function() {
+        sdkInitFilter();
         return copy(sdk.appInfo);
     };
 
     //User Manager
-    KidaptiveSdk.prototype.getCurrentUser = function() {
+    exports.getCurrentUser = function() {
+        sdkInitFilter();
         return copy(sdk.userManager.currentUser);
     };
 
-    KidaptiveSdk.prototype.refreshUser = function() {
-        return sdk.userManager.refreshUser().then(copy, handleAuthError.bind(this));
+    exports.refreshUser = function() {
+        sdkInitFilter();
+        return sdk.userManager.refreshUser().then(copy, handleAuthError);
     };
 
-    KidaptiveSdk.prototype.logoutUser = function() {
+    exports.logoutUser = function() {
+        sdkInitFilter();
         //TODO: close all trials
         //TODO: flush events
         //TODO: clear learner abilities
@@ -112,23 +122,22 @@
     };
 
     //Learner Manager
-    KidaptiveSdk.prototype.refreshLearnerList = function() {
-        return sdk.learnerManager.refreshLearnerList().then(copy, handleAuthError.bind(this));
+    exports.refreshLearnerList = function() {
+        sdkInitFilter();
+        return sdk.learnerManager.refreshLearnerList().then(copy, handleAuthError);
     };
 
-    KidaptiveSdk.prototype.getLearnerById = function(id) {
+    exports.getLearnerById = function(id) {
+        sdkInitFilter();
         return copy(sdk.learnerManager.getLearnerById(id));
     };
 
-    KidaptiveSdk.prototype.getLearnerByProviderId = function(providerId) {
+    exports.getLearnerByProviderId = function(providerId) {
+        sdkInitFilter();
         return copy(sdk.learnerManager.getLearnerByProviderId(providerId));
     };
 
     //Module
     exports.KidaptiveError = KidaptiveError;
     exports.KidaptiveConstants = KidaptiveConstants;
-
-    exports.init = function(apiKey, appVersion, options) {
-        return new KidaptiveSdk(apiKey, appVersion, options);
-    };
 })();
