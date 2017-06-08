@@ -190,7 +190,9 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         }).should.rejected().then(function() {
             appDelSpy.called.should.false();
             userDelSpy.called.should.false();
-        });
+            ajaxStub.rejects({});
+            return client.ajax('GET', ENDPOINT, PARAMS);
+        }).should.rejected();
     });
 
     it('user data removal', function() {

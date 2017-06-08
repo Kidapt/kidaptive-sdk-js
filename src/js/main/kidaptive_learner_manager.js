@@ -14,21 +14,21 @@ KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
         learners.forEach(function(l){
             if (l.id) {
                 idToLearner[l.id] = l;
+
+                if (l.providerId) {
+                    providerIdToLearner[l.providerId] = l;
+                }
             }
-            if (l.providerId) {
-                providerIdToLearner[l.providerId] = l;
-            }
-        });
+        }.bind(this));
         this.idToLearner = idToLearner;
         this.providerIdToLearner = providerIdToLearner;
         return learners;
-    });
+    }.bind(this));
 };
 
 KidaptiveLearnerManager.prototype.getLearnerById = function(id) {
     return this.idToLearner[id];
-}
-;
+};
 
 KidaptiveLearnerManager.prototype.getLearnerByProviderId = function(providerId) {
     return this.providerIdToLearner[providerId];

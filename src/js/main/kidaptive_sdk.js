@@ -7,6 +7,12 @@
     var operationQueue = $.Deferred().resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
 
+    var sdkInitFilter = function() {
+        if (!sdk) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK not initialized");
+        }
+    };
+
     var addToQueue = function(f) {
         var returnQueue = operationQueue.then(f);
         operationQueue = returnQueue.then(function(){}, function(){});
@@ -15,6 +21,15 @@
 
     var copy = function(o) {
         return o === undefined ? o : JSON.parse(JSON.stringify(o));
+    };
+
+    var handleAuthError = function(error) {
+        if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
+            return sdk.userManager.logoutUser().then(function(){
+                throw error;
+            });
+        }
+        throw error;
     };
 
     var KidaptiveSdk = function(apiKey, appVersion, options) {
@@ -50,9 +65,9 @@
                 //TODO: sync models
             }.bind(this)).then(function() {
                 sdk = this;
-                return this.userManager.refreshUser().then(function() {
+                return this.refreshUser().then(function() {
                     //TODO: load stored insights
-                    return this.learnerManager.refreshLearnerList();
+                    return this.refreshLearnerList();
                 }.bind(this)).catch(handleAuthError).catch(function() {});
             }.bind(this)).then(function() {
                 return this;
@@ -64,19 +79,23 @@
         return sdkPromise;
     };
 
-    var handleAuthError = function(error) {
-        if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-            return exports.logoutUser().then(function(){
-                throw error;
-            });
-        }
-        throw error;
+    KidaptiveSdk.prototype.refreshUser = function() {
+        return this.userManager.refreshUser().then(copy,handleAuthError);
     };
 
-    var sdkInitFilter = function() {
-        if (!sdk) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK not initialized");
-        }
+    KidaptiveSdk.prototype.logoutUser = function() {
+        //TODO: close all trials
+        //TODO: flush events
+        //TODO: clear learner abilities
+        //TODO: clear insights
+        this.learnerManager.clearLearnerList();
+        return this.userManager.logoutUser().always(function() {
+            KidaptiveHttpClient.deleteUserData();
+        });
+    };
+
+    KidaptiveSdk.prototype.refreshLearnerList = function() {
+        return this.learnerManager.refreshLearnerList().then(copy, handleAuthError);
     };
 
     //public interface for SDK
@@ -105,26 +124,25 @@
     };
 
     exports.refreshUser = function() {
-        sdkInitFilter();
-        return sdk.userManager.refreshUser().then(copy, handleAuthError);
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.refreshUser();
+        });
     };
 
     exports.logoutUser = function() {
-        sdkInitFilter();
-        //TODO: close all trials
-        //TODO: flush events
-        //TODO: clear learner abilities
-        //TODO: clear insights
-        sdk.learnerManager.clearLearnerList();
-        return sdk.userManager.logoutUser().always(function() {
-            KidaptiveHttpClient.deleteUserData();
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.logoutUser();
         });
     };
 
     //Learner Manager
     exports.refreshLearnerList = function() {
-        sdkInitFilter();
-        return sdk.learnerManager.refreshLearnerList().then(copy, handleAuthError);
+        return addToQueue(function() {
+            sdkInitFilter();
+            refreshLearnerList();
+        });
     };
 
     exports.getLearnerById = function(id) {
@@ -140,4 +158,11 @@
     //Module
     exports.KidaptiveError = KidaptiveError;
     exports.KidaptiveConstants = KidaptiveConstants;
+    exports.destroy = function() {
+        sdk.httpClient.deleteUserData();
+        sdk.httpClient.deleteAppData();
+        //TODO: stop event flush
+        //TODO: clear local storage
+        sdk = undefined;
+    };
 })();
