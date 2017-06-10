@@ -4,7 +4,7 @@
 "use strict";
 
 (function(){
-    var operationQueue = $.Deferred().resolve(); //enforces order of async operations
+    var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
 
     var sdkInitFilter = function() {
@@ -33,8 +33,7 @@
     };
 
     var KidaptiveSdk = function(apiKey, appVersion, options) {
-
-        var sdkPromise = $.Deferred().resolve().then(function () {
+        return KidaptiveUtils.Promise(function(resolve, reject) {
             if (!apiKey) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Api key is required");
             }
@@ -48,7 +47,8 @@
             options = options || {};
 
             this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
-            return this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
+
+            this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
                 if (appVersion.version < app.minVersion) {
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER,
                         "Version >= " + app.minVersion + " required. Provided " + appVersion.version);
@@ -68,15 +68,13 @@
                 return this.refreshUser().then(function() {
                     //TODO: load stored insights
                     return this.refreshLearnerList();
-                }.bind(this)).catch(handleAuthError).catch(function() {});
+                }.bind(this)).catch(handleAuthError);
             }.bind(this)).then(function() {
-                return this;
-            }.bind(this));
+                resolve(this);
+            }.bind(this), function(error) {
+                reject(error);
+            });
         }.bind(this));
-
-        //get user info if login is successful, but don't reject SDK promise if not successful
-
-        return sdkPromise;
     };
 
     KidaptiveSdk.prototype.refreshUser = function() {
@@ -126,14 +124,14 @@
     exports.refreshUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            sdk.refreshUser();
+            return sdk.refreshUser();
         });
     };
 
     exports.logoutUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            sdk.logoutUser();
+            return sdk.logoutUser();
         });
     };
 
@@ -141,7 +139,7 @@
     exports.refreshLearnerList = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            refreshLearnerList();
+            return sdk.refreshLearnerList();
         });
     };
 

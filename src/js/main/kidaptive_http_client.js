@@ -38,7 +38,7 @@ KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS = [KidaptiveConstants.ENDPOINTS.INSI
             settings.contentType = "application/json";
             settings.data = JSON.stringify(params);
         } else {
-            return $.Deferred().reject(new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'"));
+            return KidaptiveUtils.Promise.reject(new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'"));
         }
 
         //calculate cache key: sha256 of the json representation of ajax settings

@@ -4,7 +4,122 @@
 "use strict";
 var KidaptiveUtils = {};
 
-(function() {
+//construct a promise
+//input is a function that accepts two functions: resolve and reject
+//if resolve is called with a thenable, the promise will resolve with the same value as the thenable
+//if resolve is called with a value, the promise will resolve that value
+//if reject is called, the promise is rejected with that error.
+KidaptiveUtils.Promise = function(func) {
+    var def = $.Deferred();
+
+    var resolve = function(value) {
+        def.resolve(value);
+    };
+    var reject = function(error) {
+        def.reject(error);
+    };
+
+    setTimeout(function() {
+        try {
+            func(resolve, reject)
+        } catch (e) {
+            def.reject(e);
+        }
+    });
+
+    return def.then(function(v) {
+        return v;
+    });
+};
+
+//wrap a value in a resolved promise
+KidaptiveUtils.Promise.resolve = function(value) {
+    return KidaptiveUtils.Promise(function(resolve) {
+        resolve(value);
+    });
+};
+
+//wrap an error in a rejected error
+KidaptiveUtils.Promise.reject = function(err) {
+    return KidaptiveUtils.Promise(function(_, reject) {
+        reject(err);
+    });
+};
+
+//returns a promise
+//if obj is a function and returns a thenable, resolves to the value of thenable
+//if obj is a function and does not return a thenable, resolves to the return value
+//if obj is a function and throws an error, rejects with the error
+//if obj is not a function, resolves to obj
+KidaptiveUtils.Promise.wrap = function(obj) {
+    if (typeof obj === 'function') {
+        return KidaptiveUtils.Promise(function(resolve, reject) {
+            try {
+                resolve(obj());
+            } catch (e) {
+                reject(e);
+            }
+        });
+    } else {
+        return KidaptiveUtils.Promise.resolve(obj);
+    }
+
+};
+
+//wraps each function/value in a promise and executes them in parallel.
+//Always resolves to an array of object specifying the state and value/error of each promise.
+KidaptiveUtils.Promise.parallel = function(objArray) {
+    return KidaptiveUtils.Promise(function(resolve) {
+        var results = [];
+        objArray.forEach(function(o, i) {
+            KidaptiveUtils.Promise.wrap(o).then(function(v){
+                return {resolved: true, value: v};
+            }, function(e){
+                return {resolved: false, error: e};
+            }).then(function(r) {
+                results[i] = r;
+                if (Object.keys(results).length === objArray.length) {
+                    resolve(results);
+                }
+            });
+        });
+        if (objArray.length === 0) {
+            resolve(results);
+        }
+    });
+};
+
+
+//warps each function as a Promise and executes them in series, optionally specifying error type(s) to stop on
+//if errors is a string, stop on that error type
+//if errors is an array, stop on all error types in that array
+//else stop on all errors
+//if all functions complete without throwing a specified error, resolves to undefined
+//otherwise resolve to
+KidaptiveUtils.Promise.serial = function(funcArray, errors) {
+    if (typeof errors === 'string') {
+        errors = [errors];
+    } else if (!(errors instanceof Array)) {
+        errors = undefined;
+    } else {
+        errors = errors.map(function(e){return e}); //make a copy so it doesn't change before the promise resolves
+    }
+
+    var promise = KidaptiveUtils.Promise.resolve();
+
+    funcArray.forEach(function(f) {
+        promise = promise.then(KidaptiveUtils.Promise.wrap.bind(undefined, f)).catch(errors ? function(e) {
+            if (errors.indexOf(e.type) !== -1) {
+                throw e;
+            }
+        } : undefined);
+    });
+
+    return promise.then(function(){});
+};
+
+
+KidaptiveUtils.toJson = function(o) {
     var jsonHelper = function(o, inArray) {
         switch (typeof o) {
             case 'object':
@@ -31,7 +146,5 @@ var KidaptiveUtils = {};
         }
     };
 
-    KidaptiveUtils.toJson = function(o) {
-        return jsonHelper(o);
-    };
-})();
+    return jsonHelper(o);
+};
