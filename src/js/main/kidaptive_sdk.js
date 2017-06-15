@@ -62,18 +62,18 @@
                 this.userManager = new KidaptiveUserManager(this);
                 this.learnerManager = new KidaptiveLearnerManager(this);
 
-                //TODO: sync models
+                //TODO: sync app models
             }.bind(this)).then(function() {
                 sdk = this;
-                return this.refreshUser().then(function() {
-                    //TODO: load stored insights
-                    return this.refreshLearnerList();
-                }.bind(this)).catch(handleAuthError);
+                return this.userManager.refreshUser()
+                    .then(this.learnerManager.refreshLearnerList.bind(this.learnerManager))
+                    .then(function() {
+                        //TODO: load learner abilities and insights
+                        //TODO: refresh learner ability and insights
+                    }).catch(handleAuthError);
             }.bind(this)).then(function() {
                 resolve(this);
-            }.bind(this), function(error) {
-                reject(error);
-            });
+            }.bind(this), reject);
         }.bind(this));
     };
 
@@ -87,9 +87,7 @@
         //TODO: clear learner abilities
         //TODO: clear insights
         this.learnerManager.clearLearnerList();
-        return this.userManager.logoutUser().always(function() {
-            KidaptiveHttpClient.deleteUserData();
-        });
+        return this.userManager.logoutUser().always(KidaptiveHttpClient.deleteUserData);
     };
 
     KidaptiveSdk.prototype.refreshLearnerList = function() {
@@ -153,14 +151,19 @@
         return copy(sdk.learnerManager.getLearnerByProviderId(providerId));
     };
 
+    exports.getLearnerList = function() {
+        sdkInitFilter();
+        return copy(sdk.learnerManager.getLearnerList());
+    };
+
+    //Model Manager
+
     //Module
     exports.KidaptiveError = KidaptiveError;
     exports.KidaptiveConstants = KidaptiveConstants;
+    exports.KidaptiveUtils = KidaptiveUtils;
     exports.destroy = function() {
-        sdk.httpClient.deleteUserData();
-        sdk.httpClient.deleteAppData();
         //TODO: stop event flush
-        //TODO: clear local storage
         sdk = undefined;
     };
 })();

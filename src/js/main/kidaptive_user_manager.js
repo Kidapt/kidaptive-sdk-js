@@ -19,3 +19,5 @@ KidaptiveUserManager.prototype.logoutUser = function() {
         this.currentUser = undefined;
     }.bind(this));
 };
+
+//TODO: preferences

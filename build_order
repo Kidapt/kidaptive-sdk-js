@@ -4,4 +4,5 @@ src/js/main/kidaptive_utils.js
 src/js/main/kidaptive_http_client.js
 src/js/main/kidaptive_user_manager.js
 src/js/main/kidaptive_learner_manager.js
+src/js/main/kidaptive_model_manager.js
 src/js/main/kidaptive_sdk.js

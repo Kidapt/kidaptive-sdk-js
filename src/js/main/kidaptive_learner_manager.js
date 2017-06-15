@@ -34,7 +34,15 @@ KidaptiveLearnerManager.prototype.getLearnerByProviderId = function(providerId) 
     return this.providerIdToLearner[providerId];
 };
 
+KidaptiveLearnerManager.prototype.getLearnerList = function() {
+    return Object.keys(this.idToLearner).map(function(id) {
+        return this.getLearner(id);
+    }.bind(this));
+};
+
 KidaptiveLearnerManager.prototype.clearLearnerList = function() {
     this.idToLearner = {};
     this.providerIdToLearner = {};
 };
+
+//TODO:preferences

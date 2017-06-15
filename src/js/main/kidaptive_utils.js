@@ -95,7 +95,6 @@ KidaptiveUtils.Promise.parallel = function(objArray) {
 //if errors is an array, stop on all error types in that array
 //else stop on all errors
 //if all functions complete without throwing a specified error, resolves to undefined
-//otherwise resolve to
 KidaptiveUtils.Promise.serial = function(funcArray, errors) {
     if (typeof errors === 'string') {
         errors = [errors];
@@ -118,33 +117,78 @@ KidaptiveUtils.Promise.serial = function(funcArray, errors) {
     return promise.then(function(){});
 };
 
+var jsonHelper = function(o, inArray) {
+    switch (typeof o) {
+        case 'object':
+            if (o !== null && !(o instanceof Boolean) && !(o instanceof Number) && !(o instanceof String)) {
+                if (o instanceof Array) {
+                    return '[' + o.map(function(i) {
+                            return jsonHelper(i, true);
+                        }).join(',') + ']';
+                } else {
+                    return '{' + Object.keys(o).sort().map(function(i){
+                            var value = jsonHelper(o[i]);
+                            return value === undefined ? value : [JSON.stringify(i), value].join(':');
+                        }).filter(function(i){
+                            return i !== undefined;
+                        }).join(',') + '}';
+                }
+            }
+        case 'boolean':
+        case 'number':
+        case 'string':
+            return JSON.stringify(o);
+        default:
+            return inArray ? 'null' : undefined;
+    }
+};
 
 KidaptiveUtils.toJson = function(o) {
-    var jsonHelper = function(o, inArray) {
-        switch (typeof o) {
-            case 'object':
-                if (o !== null && !(o instanceof Boolean) && !(o instanceof Number) && !(o instanceof String)) {
-                    if (o instanceof Array) {
-                        return '[' + o.map(function(i) {
-                                return jsonHelper(i, true);
-                            }).join(',') + ']';
-                    } else {
-                        return '{' + Object.keys(o).sort().map(function(i){
-                                var value = jsonHelper(o[i]);
-                                return value === undefined ? value : [JSON.stringify(i), value].join(':');
-                            }).filter(function(i){
-                                return i !== undefined;
-                            }).join(',') + '}';
-                    }
-                }
-            case 'boolean':
-            case 'number':
-            case 'string':
-                return JSON.stringify(o);
-            default:
-                return inArray ? 'null' : undefined;
-        }
-    };
-
     return jsonHelper(o);
+};
+
+KidaptiveUtils.getObject = function(object, key) {
+    if (key === undefined) {
+        return object;
+    } else if (key instanceof Array) {
+        key.forEach(function(i) {
+            object = (object || {})[i]
+        });
+        return object;
+    }
+    return (object || {})[key];
+};
+
+KidaptiveUtils.putObject = function(object, key, value) {
+    var o = object;
+    if (key instanceof Array) {
+        if (key.length === 0) {
+            return object;
+        }
+        key.forEach(function(k,i) {
+            if (i === key.length - 1) {
+                key = k;
+            } else {
+                o = o[k] || (o[k] = {});
+            }
+        });
+    }
+    if (value === undefined) {
+        delete o[key];
+    } else {
+        o[key] = value;
+    }
+    return object;
+};
+
+KidaptiveUtils.toCamelCase = function(str, delimiters) {
+    return str.split(delimiters).filter(function(s) {
+        return s.length > 0;
+    }).map(function(s, i) {
+        s = s.toLowerCase();
+        if (i) {
+            return s[0].toUpperCase() + s.substr(1);
+        }
+        return s;
+    }).join('');
 };
