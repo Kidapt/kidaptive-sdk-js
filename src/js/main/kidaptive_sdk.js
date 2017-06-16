@@ -23,6 +23,12 @@
         return o === undefined ? o : JSON.parse(JSON.stringify(o));
     };
 
+    var filterAuthError = function(error) {
+        if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
+            throw error;
+        }
+    };
+
     var handleAuthError = function(error) {
         if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
             return sdk.userManager.logoutUser().then(function(){
@@ -30,6 +36,27 @@
             });
         }
         throw error;
+    };
+
+    var refreshUserData = function() {
+        return KidaptiveUtils.Promise.serial([
+            sdk.userManager.refreshUser.bind(sdk.userManager),
+            sdk.learnerManager.refreshLearnerList.bind(sdk.learnerManager),
+            function() {
+                return sdk.modelManager.refreshLatentAbilities().then(function(results) {
+                    results.forEach(function(r) {
+                        filterAuthError(r.error);
+                    });
+                });
+            }, function() {
+                return sdk.modelManager.refreshLocalAbilities().then(function(results) {
+                    results.forEach(function(r) {
+                        filterAuthError(r.error);
+                    });
+                });
+            }
+            //TODO: decide whether insights refresh should be included
+        ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
     };
 
     var KidaptiveSdk = function(apiKey, appVersion, options) {
@@ -66,33 +93,11 @@
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
                 sdk = this;
-                return this.userManager.refreshUser()
-                    .then(this.learnerManager.refreshLearnerList.bind(this.learnerManager))
-                    .then(function() {
-                        //TODO: load learner abilities and insights
-                        //TODO: refresh learner ability and insights
-                    }).catch(handleAuthError);
+                return refreshUserData();
             }.bind(this)).then(function() {
                 resolve(this);
             }.bind(this), reject);
         }.bind(this));
-    };
-
-    KidaptiveSdk.prototype.refreshUser = function() {
-        return this.userManager.refreshUser().then(copy,handleAuthError);
-    };
-
-    KidaptiveSdk.prototype.logoutUser = function() {
-        //TODO: close all trials
-        //TODO: flush events
-        //TODO: clear learner abilities
-        //TODO: clear insights
-        this.learnerManager.clearLearnerList();
-        return this.userManager.logoutUser().always(KidaptiveHttpClient.deleteUserData);
-    };
-
-    KidaptiveSdk.prototype.refreshLearnerList = function() {
-        return this.learnerManager.refreshLearnerList().then(copy, handleAuthError);
     };
 
     //public interface for SDK
@@ -114,34 +119,31 @@
         return copy(sdk.appInfo);
     };
 
+    exports.refresh = function() {
+        return addToQueue(function() {
+            sdkInitFilter();
+            return refreshUserData();
+        });
+    };
+
     //User Manager
     exports.getCurrentUser = function() {
         sdkInitFilter();
         return copy(sdk.userManager.currentUser);
     };
 
-    exports.refreshUser = function() {
-        return addToQueue(function() {
-            sdkInitFilter();
-            return sdk.refreshUser();
-        });
-    };
-
     exports.logoutUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            return sdk.logoutUser();
+            //TODO: close all trials
+            //TODO: flush events
+            sdk.modelManager.clearLearnerModels();
+            sdk.learnerManager.clearLearnerList();
+            return sdk.userManager.logoutUser().always(KidaptiveHttpClient.deleteUserData);
         });
     };
 
     //Learner Manager
-    exports.refreshLearnerList = function() {
-        return addToQueue(function() {
-            sdkInitFilter();
-            return sdk.refreshLearnerList();
-        });
-    };
-
     exports.getLearnerById = function(id) {
         sdkInitFilter();
         return copy(sdk.learnerManager.idToLearner[id]);
@@ -161,7 +163,7 @@
     exports.getModels = function(type, conditions) {
         sdkInitFilter();
         return copy(sdk.modelManager.getModels(type, conditions));
-    }
+    };
 
     //Module
     exports.KidaptiveError = KidaptiveError;
