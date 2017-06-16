@@ -26,34 +26,40 @@ KidaptiveModelManager.modelParents = { //maps models to the parents of that mode
 };
 
 //App Models
-KidaptiveModelManager.prototype.getModelIndexKeys = function(type, id, idToModel) {
-    if (!idToModel) {
-        idToModel = this.idToModel;
-    }
-
-    var o = KidaptiveUtils.getObject(idToModel, [type, id]);
-    if (!o) {
-        return [];
-    }
-    var keyLeaf = [type, id];
-    var keys = [];
+KidaptiveModelManager.getModelParents = function(type) {
+    var allParents = {};
     var parents = KidaptiveModelManager.modelParents[type];
-    if (parents.length) {
+    if (parents) {
+        allParents[type] = true;
         parents.forEach(function(p) {
-            keys.push.apply(keys,this.getModelIndexKeys(p, KidaptiveUtils.getObject(o, KidaptiveUtils.toCamelCase(p, '-') + 'Id'), idToModel)
-                .filter(function(k){
-                    return k !== undefined;
-                }).map(function(k) {
-                    k.push.apply(k, keyLeaf);
-                    return k;
-                })
-            );
-        }.bind(this));
-    } else {
-        keys.push(keyLeaf);
+            KidaptiveModelManager.getModelParents(p).forEach(function(p) {
+                allParents[p] = true;
+            });
+        });
+    }
+    return Object.keys(allParents);
+};
+
+KidaptiveModelManager.buildModelIndex = function(type, id, idToModel) {
+    var o = KidaptiveUtils.getObject(idToModel, [type, id]);
+    var index = {};
+
+    if (o) {
+        KidaptiveUtils.putObject(index, [type, id], true);
+        KidaptiveModelManager.modelParents[type].forEach(function (p) {
+            var parentIndex = KidaptiveModelManager.buildModelIndex(p, o[KidaptiveUtils.toCamelCase(p, '-') + 'Id'], idToModel);
+            Object.keys(parentIndex).forEach(function (type) {
+                parentIndex[type].forEach(function (id) {
+                    KidaptiveUtils.putObject(index, [type, id], true);
+                });
+            });
+        });
     }
 
-    return keys;
+    Object.keys(index).forEach(function(type) {
+        index[type] = Object.keys(index[type]);
+    });
+    return index;
 };
 
 KidaptiveModelManager.prototype.refreshAppModels = function() {
@@ -83,15 +89,9 @@ KidaptiveModelManager.prototype.refreshAppModels = function() {
         //build index
         Object.keys(idToModel).forEach(function(model) {
             Object.keys(idToModel[model]).forEach(function(id) {
-                var keys = this.getModelIndexKeys(model, id, idToModel);
-                keys.forEach(function(k) {
-                    var o = KidaptiveUtils.getObject(modelIndex, k);
-                    if (!o) {
-                        KidaptiveUtils.putObject(modelIndex, k, {});
-                    }
-                });
-            }.bind(this));
-        }.bind(this));
+                KidaptiveUtils.putObject(modelIndex, [model, id], KidaptiveModelManager.buildModelIndex(model, id, idToModel));
+            });
+        });
 
         this.uriToModel = uriToModel;
         this.idToModel = idToModel;
@@ -100,6 +100,43 @@ KidaptiveModelManager.prototype.refreshAppModels = function() {
 };
 
 KidaptiveModelManager.prototype.getModels = function(type, conditions) {
+    var index = this.modelIndex[type];
+    if (!index) {
+        return [];
+    }
+    var modelParents = KidaptiveModelManager.getModelParents(type);
+    conditions = conditions || {};
+    return Object.keys(index).filter(function(id) {
+        var shouldReturn = true;
+        modelParents.forEach(function(parent) {
+            if (!shouldReturn) {
+                return;
+            }
+            var con = conditions[parent];
+            if (con) {
+                var prop = index[id][parent];
+                if (!prop || !prop.length) {
+                    shouldReturn = false
+                } else {
+                    if (!(con instanceof Array)) {
+                        con = [con];
+                    }
+                    con = con.map(function(uri) {
+                        var id = KidaptiveUtils.getObject(this.uriToModel, [parent, uri, 'id']);
+                        return id ? id.toString() : id;
+                    }.bind(this));
+                    prop.forEach(function(id) {
+                        shouldReturn = shouldReturn && (con.indexOf(id) !== -1);
+                    });
+                }
+            }
+        }.bind(this));
+        return shouldReturn;
+    }.bind(this)).map(function(id) {
+        return KidaptiveUtils.getObject(this.idToModel, [type, id]);
+    }.bind(this)).filter(function(o) {
+        return o !== undefined;
+    });
 };
 
 

@@ -61,8 +61,9 @@
                 //initialize managers
                 this.userManager = new KidaptiveUserManager(this);
                 this.learnerManager = new KidaptiveLearnerManager(this);
+                this.modelManager = new KidaptiveModelManager(this);
 
-                //TODO: sync app models
+                return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
                 sdk = this;
                 return this.userManager.refreshUser()
@@ -143,12 +144,12 @@
 
     exports.getLearnerById = function(id) {
         sdkInitFilter();
-        return copy(sdk.learnerManager.getLearnerById(id));
+        return copy(sdk.learnerManager.idToLearner[id]);
     };
 
     exports.getLearnerByProviderId = function(providerId) {
         sdkInitFilter();
-        return copy(sdk.learnerManager.getLearnerByProviderId(providerId));
+        return copy(sdk.learnerManager.providerIdToLearner[providerId]);
     };
 
     exports.getLearnerList = function() {
@@ -157,6 +158,10 @@
     };
 
     //Model Manager
+    exports.getModels = function(type, conditions) {
+        sdkInitFilter();
+        return copy(sdk.modelManager.getModels(type, conditions));
+    }
 
     //Module
     exports.KidaptiveError = KidaptiveError;

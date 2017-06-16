@@ -19,19 +19,11 @@ KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
                     providerIdToLearner[l.providerId] = l;
                 }
             }
-        }.bind(this));
+        });
         this.idToLearner = idToLearner;
         this.providerIdToLearner = providerIdToLearner;
         return learners;
     }.bind(this));
-};
-
-KidaptiveLearnerManager.prototype.getLearnerById = function(id) {
-    return this.idToLearner[id];
-};
-
-KidaptiveLearnerManager.prototype.getLearnerByProviderId = function(providerId) {
-    return this.providerIdToLearner[providerId];
 };
 
 KidaptiveLearnerManager.prototype.getLearnerList = function() {
