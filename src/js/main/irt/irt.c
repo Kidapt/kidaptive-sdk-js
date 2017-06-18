@@ -34,6 +34,11 @@ double inv_logis(double p) {
 //post_mean: posterior ability estimate mean, can be used as theta for next response
 //post_sd: posterior ability estimate sd, can be used as sigma for next response
 void estimate (bool y, double beta, double theta, double sigma, double *post_mean, double *post_sd) {
+	if (sigma == 0) {
+		*post_mean = theta;
+		*post_sd = sigma;
+		return;
+	}
     double x = theta; //posterior mean, current estimate
     double s1 = 0.0; //posterior SD left, current estimate
     double s2 = 0.0; //posterior SD right, current estimate
