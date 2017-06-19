@@ -13,7 +13,9 @@ KidaptiveHttpClient.USER_ENDPOINTS = [
     KidaptiveConstants.ENDPOINTS.LEARNER,
     KidaptiveConstants.ENDPOINTS.ABILITY,
     KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY,
-    KidaptiveConstants.ENDPOINTS.INSIGHT
+    KidaptiveConstants.ENDPOINTS.INSIGHT,
+    KidaptiveConstants.ENDPOINTS.INGESTION,
+    KidaptiveConstants.ENDPOINTS.LOGOUT
 ];
 
 KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {

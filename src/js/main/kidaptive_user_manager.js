@@ -15,7 +15,7 @@ KidaptiveUserManager.prototype.refreshUser = function() {
 };
 
 KidaptiveUserManager.prototype.logoutUser = function() {
-    return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT).always(function() {
+    return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {noCache:true}).always(function() {
         this.currentUser = undefined;
     }.bind(this));
 };

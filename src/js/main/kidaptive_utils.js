@@ -200,3 +200,7 @@ KidaptiveUtils.localStorageSetItem = function(key, value) {
         console.log('Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date');
     }
 };
+
+KidaptiveUtils.copyObject = function(o) {
+    return o === undefined ? o : JSON.parse(JSON.stringify(o));
+};

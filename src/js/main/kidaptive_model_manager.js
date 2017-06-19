@@ -5,7 +5,6 @@ var KidaptiveModelManager = function(sdk) {
     this.sdk = sdk;
     this.uriToModel = {};
     this.idToModel = {};
-    this.loadLearnerModels();
 };
 
 KidaptiveModelManager.LATENT_ABILITY_KEY = "kidaptive.alp.latentAbility";
@@ -151,7 +150,7 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             })
         );
     } else {
-        return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId).then(function(abilities) {
+        return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId, undefined, {noCache:true}).then(function(abilities) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.latentAbilities[learnerId]) {
@@ -178,7 +177,7 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             })
         );
     } else {
-        return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId).then(function(abilities) {
+        return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId, undefined, {noCache:true}).then(function(abilities) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.localAbilities[learnerId]) {

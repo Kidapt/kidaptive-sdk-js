@@ -19,10 +19,6 @@
         return returnQueue;
     };
 
-    var copy = function(o) {
-        return o === undefined ? o : JSON.parse(JSON.stringify(o));
-    };
-
     var filterAuthError = function(error) {
         if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
             throw error;
@@ -116,7 +112,7 @@
 
     exports.getAppInfo = function() {
         sdkInitFilter();
-        return copy(sdk.appInfo);
+        return KidaptiveUtils.copyObject(sdk.appInfo);
     };
 
     exports.refresh = function() {
@@ -129,7 +125,7 @@
     //User Manager
     exports.getCurrentUser = function() {
         sdkInitFilter();
-        return copy(sdk.userManager.currentUser);
+        return KidaptiveUtils.copyObject(sdk.userManager.currentUser);
     };
 
     exports.logoutUser = function() {
@@ -146,23 +142,23 @@
     //Learner Manager
     exports.getLearnerById = function(id) {
         sdkInitFilter();
-        return copy(sdk.learnerManager.idToLearner[id]);
+        return KidaptiveUtils.copyObject(sdk.learnerManager.idToLearner[id]);
     };
 
     exports.getLearnerByProviderId = function(providerId) {
         sdkInitFilter();
-        return copy(sdk.learnerManager.providerIdToLearner[providerId]);
+        return KidaptiveUtils.copyObject(sdk.learnerManager.providerIdToLearner[providerId]);
     };
 
     exports.getLearnerList = function() {
         sdkInitFilter();
-        return copy(sdk.learnerManager.getLearnerList());
+        return KidaptiveUtils.copyObject(sdk.learnerManager.getLearnerList());
     };
 
     //Model Manager
     exports.getModels = function(type, conditions) {
         sdkInitFilter();
-        return copy(sdk.modelManager.getModels(type, conditions));
+        return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
     };
 
     //Module
