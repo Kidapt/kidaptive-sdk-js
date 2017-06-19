@@ -19,34 +19,11 @@ KidaptiveHttpClient.USER_ENDPOINTS = [
 KidaptiveHttpClient.CACHE_EXCLUDE_METHODS = ['POST'];
 KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS = [KidaptiveConstants.ENDPOINTS.INSIGHT];
 
-(function() {
-    KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params) {
-        var settings = {
-            headers: {
-                "api-key": this.apiKey
-            },
-            xhrFields: {
-                withCredentials: true
-            }
-        };
-        settings.method = method;
-        settings.url = this.host + endpoint;
+KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params) {
+    return KidaptiveUtils.Promise.wrap(function() {
+        var settings = {};
 
-        if (settings.method === 'GET') {
-            settings.data = params;
-        } else if (settings.method === 'POST') {
-            settings.contentType = "application/json";
-            settings.data = JSON.stringify(params);
-        } else {
-            return KidaptiveUtils.Promise.reject(new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'"));
-        }
-
-        //calculate cache key: sha256 of the json representation of ajax settings
-        //mark user data for deletion of logout
-        var cacheKey = (KidaptiveHttpClient.CACHE_EXCLUDE_METHODS.indexOf(method) < 0 && KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS.indexOf(endpoint) < 0) ? (sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).map(function(n){
-            var s = (n+Math.pow(2,31)).toString(16);
-            return '0'.repeat(8 - s.length) + s;
-        }).join('') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData')) : undefined;
+        var cacheKey = this.getCacheKey(method, endpoint, params, settings);
 
         return $.ajax(settings).then(function(data) {
             if (cacheKey) {
@@ -81,21 +58,61 @@ KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS = [KidaptiveConstants.ENDPOINTS.INSI
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
             }
         });
+    }.bind(this));
+};
+
+KidaptiveHttpClient.deleteUserData = function() {
+    Object.keys(localStorage).forEach(function(k) {
+        if (k.endsWith('.alpUserData')) {
+            localStorage.removeItem(k);
+        }
+    });
+};
+
+KidaptiveHttpClient.deleteAppData = function() {
+    Object.keys(localStorage).forEach(function(k) {
+        if (k.endsWith('.alpAppData')) {
+            localStorage.removeItem(k);
+        }
+    });
+};
+
+//util method for getting the cache key for a particular request. Useful for when
+//other managers need to overwrite the stored values, e.g. ability estimates
+//The settings parameter is optional empty object to be used by the http client to get the request settings object.
+//Yay, code reuse.
+KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, settings) {
+    settings = settings || {};
+
+    //make settings an empty object; wouldn't want any stray settings screwing stuff up.
+    Object.keys(settings).forEach(function(p) {
+        delete settings[p];
+    });
+
+    settings.headers = {
+        "api-key": this.apiKey
     };
 
-    KidaptiveHttpClient.deleteUserData = function() {
-        Object.keys(localStorage).forEach(function(k) {
-            if (k.endsWith('.alpUserData')) {
-                localStorage.removeItem(k);
-            }
-        });
+    settings.xhrFields = {
+        withCredentials: true
     };
 
-    KidaptiveHttpClient.deleteAppData = function() {
-        Object.keys(localStorage).forEach(function(k) {
-            if (k.endsWith('.alpAppData')) {
-                localStorage.removeItem(k);
-            }
-        });
-    };
-})();
+    settings.method = method;
+    settings.url = this.host + endpoint;
+
+    if (settings.method === 'GET') {
+        settings.data = params;
+    } else if (settings.method === 'POST') {
+        settings.contentType = "application/json";
+        settings.data = JSON.stringify(params);
+    } else {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'");
+    }
+
+    //calculate cache key: sha256 of the json representation of ajax settings
+    //mark user data for deletion of logout
+    return (KidaptiveHttpClient.CACHE_EXCLUDE_METHODS.indexOf(method) < 0 && KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS.indexOf(endpoint) < 0) ? (sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).map(function(n){
+        var s = (n+Math.pow(2,31)).toString(16);
+        return '0'.repeat(8 - s.length) + s;
+    }).join('') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData')) : undefined;
+};

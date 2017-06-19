@@ -38,44 +38,44 @@ describe('KidaptiveHttpClient Unit Tests', function() {
 
     it('dev parameters', function() {
         var client = new KidaptiveHttpClient(API_KEY, true);
-        client.ajax('GET', ENDPOINT, PARAMS);
-
-        $.ajax.calledOnce.should.true();
-        var args = $.ajax.lastCall.args[0];
-        should.exist(args);
-        args.should.property('url').startWith(KidaptiveConstants.HOST_DEV).endWith(ENDPOINT);
-        args.should.property('headers').property('api-key').equal(API_KEY);
-        args.should.property('xhrFields').property('withCredentials').true();
-        args.should.property('method').equal('GET');
-        args.should.property('data').properties(PARAMS);
+        client.ajax('GET', ENDPOINT, PARAMS).then(function(){
+            $.ajax.calledOnce.should.true();
+            var args = $.ajax.lastCall.args[0];
+            should.exist(args);
+            args.should.property('url').startWith(KidaptiveConstants.HOST_DEV).endWith(ENDPOINT);
+            args.should.property('headers').property('api-key').equal(API_KEY);
+            args.should.property('xhrFields').property('withCredentials').true();
+            args.should.property('method').equal('GET');
+            args.should.property('data').properties(PARAMS);
+        });
     });
 
     it('prod parameters', function() {
         var client = new KidaptiveHttpClient(API_KEY);
-        client.ajax('GET', ENDPOINT, PARAMS);
-
-        $.ajax.calledOnce.should.true();
-        var args = $.ajax.lastCall.args[0];
-        should.exist(args);
-        args.should.property('url').startWith(KidaptiveConstants.HOST_PROD).endWith(ENDPOINT);
-        args.should.property('headers').property('api-key').equal(API_KEY);
-        args.should.property('xhrFields').property('withCredentials').true();
-        args.should.property('method').equal('GET');
-        args.should.property('data').properties(PARAMS);
+        client.ajax('GET', ENDPOINT, PARAMS).then(function(){
+            $.ajax.calledOnce.should.true();
+            var args = $.ajax.lastCall.args[0];
+            should.exist(args);
+            args.should.property('url').startWith(KidaptiveConstants.HOST_PROD).endWith(ENDPOINT);
+            args.should.property('headers').property('api-key').equal(API_KEY);
+            args.should.property('xhrFields').property('withCredentials').true();
+            args.should.property('method').equal('GET');
+            args.should.property('data').properties(PARAMS);
+        });
     });
 
     it('post', function() {
         var client = new KidaptiveHttpClient(API_KEY, true);
-        client.ajax('POST', ENDPOINT, PARAMS);
-
-        $.ajax.calledOnce.should.true();
-        var args = $.ajax.lastCall.args[0];
-        should.exist(args);
-        args.should.property('url').startWith(KidaptiveConstants.HOST_DEV).endWith(ENDPOINT);
-        args.should.property('headers').property('api-key').equal(API_KEY);
-        args.should.property('xhrFields').property('withCredentials').true();
-        args.should.property('method').equal('POST');
-        args.should.property('data').equal(JSON.stringify(PARAMS));
+        client.ajax('POST', ENDPOINT, PARAMS).then(function(){
+            $.ajax.calledOnce.should.true();
+            var args = $.ajax.lastCall.args[0];
+            should.exist(args);
+            args.should.property('url').startWith(KidaptiveConstants.HOST_DEV).endWith(ENDPOINT);
+            args.should.property('headers').property('api-key').equal(API_KEY);
+            args.should.property('xhrFields').property('withCredentials').true();
+            args.should.property('method').equal('POST');
+            args.should.property('data').equal(JSON.stringify(PARAMS));
+        });
     });
 
     it('bad method', function() {
