@@ -192,3 +192,11 @@ KidaptiveUtils.toCamelCase = function(str, delimiters) {
         return s;
     }).join('');
 };
+
+KidaptiveUtils.localStorageSetItem = function(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        console.log('Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date');
+    }
+};

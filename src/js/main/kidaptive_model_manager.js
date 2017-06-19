@@ -152,12 +152,18 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
         );
     } else {
         return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId).then(function(abilities) {
+            //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
+            //abilities from overwriting more recent locally stored abilities.
+            if (!this.latentAbilities[learnerId]) {
+                var stored = localStorage.getItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
+                if (stored) {
+                    this.latentAbilities[learnerId] = JSON.parse(stored);
+                }
+            }
+
             abilities.forEach(function(ability) {
                 var dim  = ability.dimensionId;
-                var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [learnerId, dim]);
-                if (curAbil && curAbil.timestamp <= ability.timestamp) {
-                    this.setLatentAbility(learnerId, dim, ability);
-                }
+                this.setLatentAbility(learnerId, dim, ability);
             }.bind(this));
             return this.latentAbilities;
         }.bind(this));
@@ -173,6 +179,15 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
         );
     } else {
         return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId).then(function(abilities) {
+            //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
+            //abilities from overwriting more recent locally stored abilities.
+            if (!this.localAbilities[learnerId]) {
+                var stored = localStorage.getItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId));
+                if (stored) {
+                    this.localAbilities[learnerId] = JSON.parse(stored);
+                }
+            }
+
             abilities.forEach(function(ability) {
                 var dim  = ability.localDimensionId;
                 var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, dim]);
@@ -186,30 +201,27 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
 };
 
 KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, dimensionId, ability) {
-    KidaptiveUtils.putObject(this.latentAbilities, [learnerId, dimensionId], ability);
-    localStorage.setItem(KidaptiveModelManager.LATENT_ABILITY_KEY, JSON.stringify(this.latentAbilities));
+    var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [learnerId, dimensionId]);
+    if (curAbil && curAbil.timestamp <= ability.timestamp) {
+        KidaptiveUtils.putObject(this.latentAbilities, [learnerId, dimensionId], ability);
+    }
+    //this has to happen because the httpClient automatically caches the result of the request.
+    KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId),
+        KidaptiveUtils.getObject(this.latentAbilities, [learnerId]));
 };
 
 KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, localDimensionId, ability) {
     KidaptiveUtils.putObject(this.localAbilities, [learnerId, localDimensionId], ability);
-    localStorage.setItem(KidaptiveModelManager.LOCAL_ABILITY_KEY, JSON.stringify(this.localAbilities));
+    localStorage.setItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId),
+        JSON.stringify(KidaptiveUtils.getObject(this.localAbilities, [learnerId])));
 };
 
 KidaptiveModelManager.prototype.fetchInsights = function(learnerId, minDateCreated, latest) {
     //TODO: think about reasonable defaults and storage method
 };
 
-KidaptiveModelManager.prototype.loadLearnerModels = function() {
-    this.latentAbilities = JSON.parse(localStorage.getItem(KidaptiveModelManager.LOCAL_ABILITY_KEY)) || {};
-    this.localAbilities = JSON.parse(localStorage.getItem(KidaptiveModelManager.LATENT_ABILITY_KEY)) || {};
-    this.insights = JSON.parse(localStorage.getItem(KidaptiveModelManager.INSIGHTS_KEY)) || {};
-};
-
 KidaptiveModelManager.prototype.clearLearnerModels = function() {
     this.latentAbilities = {};
     this.localAbilities = {};
     this.insights = {};
-    localStorage.removeItem(KidaptiveModelManager.LOCAL_ABILITY_KEY);
-    localStorage.removeItem(KidaptiveModelManager.LATENT_ABILITY_KEY);
-    localStorage.removeItem(KidaptiveModelManager.INSIGHTS_KEY);
 };

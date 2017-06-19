@@ -38,7 +38,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
 
     it('dev parameters', function() {
         var client = new KidaptiveHttpClient(API_KEY, true);
-        client.ajax('GET', ENDPOINT, PARAMS).then(function(){
+        return client.ajax('GET', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
             should.exist(args);
@@ -52,7 +52,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
 
     it('prod parameters', function() {
         var client = new KidaptiveHttpClient(API_KEY);
-        client.ajax('GET', ENDPOINT, PARAMS).then(function(){
+        return client.ajax('GET', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
             should.exist(args);
@@ -66,7 +66,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
 
     it('post', function() {
         var client = new KidaptiveHttpClient(API_KEY, true);
-        client.ajax('POST', ENDPOINT, PARAMS).then(function(){
+        return client.ajax('POST', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
             should.exist(args);
@@ -109,10 +109,10 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         });
     });
 
-    it('no caching for post', function() {
+    it('no cache option', function() {
         var client = new KidaptiveHttpClient(API_KEY);
 
-        return client.ajax('POST', ENDPOINT, PARAMS).then(function() {
+        return client.ajax('POST', ENDPOINT, PARAMS, {noCache:true}).then(function() {
             ajaxStub.rejects({});
             return client.ajax('POST', ENDPOINT, PARAMS);
         }).should.rejected().then(function() {
@@ -244,7 +244,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
             def = def.then(function() {
                 var endpoint = KidaptiveConstants.ENDPOINTS[e];
                 var ajaxResult = client.ajax('GET', endpoint, PARAMS);
-                if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0 && KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS.indexOf(endpoint) < 0)
+                if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0)
                     return ajaxResult.should.fulfilled();
                 else {
                     return ajaxResult.should.rejected();

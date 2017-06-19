@@ -16,22 +16,16 @@ KidaptiveHttpClient.USER_ENDPOINTS = [
     KidaptiveConstants.ENDPOINTS.INSIGHT
 ];
 
-KidaptiveHttpClient.CACHE_EXCLUDE_METHODS = ['POST'];
-KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS = [KidaptiveConstants.ENDPOINTS.INSIGHT];
-
-KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params) {
+KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
+    options = options || {};
     return KidaptiveUtils.Promise.wrap(function() {
         var settings = {};
 
         var cacheKey = this.getCacheKey(method, endpoint, params, settings);
 
         return $.ajax(settings).then(function(data) {
-            if (cacheKey) {
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify(data));
-                } catch (e) {
-                    console.log('Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date');
-                }
+            if (!options.noCache) {
+                KidaptiveUtils.localStorageSetItem(cacheKey, data);
             }
             return data;
         }, function(xhr) {
@@ -111,8 +105,8 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
 
     //calculate cache key: sha256 of the json representation of ajax settings
     //mark user data for deletion of logout
-    return (KidaptiveHttpClient.CACHE_EXCLUDE_METHODS.indexOf(method) < 0 && KidaptiveHttpClient.CACHE_EXCLUDE_ENDPOINTS.indexOf(endpoint) < 0) ? (sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).map(function(n){
+    return sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).map(function(n){
         var s = (n+Math.pow(2,31)).toString(16);
         return '0'.repeat(8 - s.length) + s;
-    }).join('') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData')) : undefined;
+    }).join('') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData');
 };
