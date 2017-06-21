@@ -189,12 +189,9 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
 
             abilities.forEach(function(ability) {
                 var dim  = ability.localDimensionId;
-                var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, dim]);
-                if (curAbil && curAbil.timestamp <= ability.timestamp) {
-                    this.setLocalAbility(learnerId, dim, ability);
-                }
-                return this.localAbilities;
+                this.setLocalAbility(learnerId, dim, ability);
             }.bind(this));
+            return this.localAbilities;
         }.bind(this));
     }
 };
@@ -203,16 +200,18 @@ KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, dimension
     var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [learnerId, dimensionId]);
     if (curAbil && curAbil.timestamp <= ability.timestamp) {
         KidaptiveUtils.putObject(this.latentAbilities, [learnerId, dimensionId], ability);
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId),
+            KidaptiveUtils.getObject(this.latentAbilities, [learnerId]));
     }
-    //this has to happen because the httpClient automatically caches the result of the request.
-    KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId),
-        KidaptiveUtils.getObject(this.latentAbilities, [learnerId]));
 };
 
 KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, localDimensionId, ability) {
-    KidaptiveUtils.putObject(this.localAbilities, [learnerId, localDimensionId], ability);
-    localStorage.setItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId),
-        JSON.stringify(KidaptiveUtils.getObject(this.localAbilities, [learnerId])));
+    var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, localDimensionId]);
+    if (curAbil && curAbil.timestamp <= ability.timestamp) {
+        KidaptiveUtils.putObject(this.localAbilities, [learnerId, localDimensionId], ability);
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId),
+            KidaptiveUtils.getObject(this.localAbilities, [learnerId]));
+    }
 };
 
 KidaptiveModelManager.prototype.fetchInsights = function(learnerId, minDateCreated, latest) {
