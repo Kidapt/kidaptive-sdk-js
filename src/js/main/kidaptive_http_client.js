@@ -105,10 +105,13 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'");
     }
 
-    //calculate cache key: sha256 of the json representation of ajax settings
-    //mark user data for deletion of logout
-    return sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).map(function(n){
-        var s = (n+Math.pow(2,31)).toString(16);
-        return '0'.repeat(8 - s.length) + s;
-    }).join('') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData');
+    //calculate cache key: sha256 of the stable json representation of ajax settings then convert to b64 for compactness
+    //mark user data for deletion on logout or auth error
+    var d = new DataView(new ArrayBuffer(32));
+    sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n,i){
+        d.setInt32(4*i,n);
+    });
+    return btoa(String.fromCharCode.apply(undefined, new Array(32).fill(0).map(function(_,i) {
+        return d.getUint8(i);
+    }))).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+/,'') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData');
 };
