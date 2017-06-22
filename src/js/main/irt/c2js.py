@@ -70,7 +70,7 @@ for match in re.finditer(r'([;{}]|^)\s*(void|double)\s+(\w+)\s*\(([\w\s,*]*)\)',
 #input = re.sub(r'(var\s+\w+)\s*\(([\w\s,*]*)\)', startFunction, input)
 #input = re.sub(r'([^\w\s()]|^)\s*\*\s*(\w+)', r'\1 \2', input)
 
-print 'KidaptiveIrt = {};'
+print 'var KidaptiveIrt = {};'
 print '(function() {'
 
 print output

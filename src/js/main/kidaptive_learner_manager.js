@@ -28,7 +28,7 @@ KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
 
 KidaptiveLearnerManager.prototype.getLearnerList = function() {
     return Object.keys(this.idToLearner).map(function(id) {
-        return this.getLearner(id);
+        return this.idToLearner[id];
     }.bind(this));
 };
 

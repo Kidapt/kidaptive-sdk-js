@@ -85,6 +85,7 @@
                 this.userManager = new KidaptiveUserManager(this);
                 this.learnerManager = new KidaptiveLearnerManager(this);
                 this.modelManager = new KidaptiveModelManager(this);
+                this.eventManager = new KidaptiveEventManager(this);
 
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
@@ -159,6 +160,12 @@
     exports.getModels = function(type, conditions) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
+    };
+
+    //Event Manager
+    exports.reportBehavior = function(eventName, properties) {
+        sdkInitFilter();
+        KidaptiveUtils.copyObject(sdk.eventManager.reportBehavior(eventName, properties));
     };
 
     //Module

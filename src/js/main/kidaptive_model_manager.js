@@ -144,10 +144,10 @@ KidaptiveModelManager.prototype.getModels = function(type, conditions) {
 //Learner Models
 KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
     if (!learnerId) {
-        return KidaptiveUtils.parallel(
+        return KidaptiveUtils.Promise.parallel(
             Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
                 return this.refreshLatentAbilities.bind(this, learner);
-            })
+            }.bind(this))
         );
     } else {
         return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId, undefined, {noCache:true}).then(function(abilities) {
@@ -171,10 +171,10 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
 
 KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
     if (!learnerId) {
-        return KidaptiveUtils.parallel(
+        return KidaptiveUtils.Promise.parallel(
             Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
                 return this.refreshLocalAbilities.bind(this, learner);
-            })
+            }.bind(this))
         );
     } else {
         return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId, undefined, {noCache:true}).then(function(abilities) {
