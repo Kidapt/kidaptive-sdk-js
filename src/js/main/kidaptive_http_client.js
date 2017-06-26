@@ -32,7 +32,7 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
             return data;
         }, function(xhr) {
             if (xhr.status === 400) {
-                KidaptiveUtils.localStorageSetItem(cacheKey);
+                localStorage.removeItem(cacheKey);
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
             } else if (xhr.status === 401) {
                 //unauthorized. delete cached data
@@ -42,16 +42,14 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
                 }
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
             } else if (xhr.status) {
-                KidaptiveUtils.localStorageSetItem(cacheKey);
+                localStorage.removeItem(cacheKey);
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
             } else {
-                var cached = KidaptiveUtils.localStorageGetItem(cacheKey);
-
-                if (cached) {
-                    return cached;
+                try {
+                    return KidaptiveUtils.localStorageGetItem(cacheKey);
+                } catch (e) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
                 }
-
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
             }
         });
     }.bind(this));
@@ -60,7 +58,7 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
 KidaptiveHttpClient.deleteUserData = function() {
     Object.keys(localStorage).forEach(function(k) {
         if (k.endsWith('.alpUserData')) {
-            KidaptiveUtils.localStorageSetItem(k);
+            localStorage.removeItem(k);
         }
     });
 };
@@ -68,7 +66,7 @@ KidaptiveHttpClient.deleteUserData = function() {
 KidaptiveHttpClient.deleteAppData = function() {
     Object.keys(localStorage).forEach(function(k) {
         if (k.endsWith('.alpAppData')) {
-            KidaptiveUtils.localStorageSetItem(k);
+            localStorage.removeItem(k);
         }
     });
 };

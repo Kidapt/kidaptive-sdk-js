@@ -199,10 +199,6 @@ KidaptiveUtils.toCamelCase = function(str, delimiters) {
 };
 
 KidaptiveUtils.localStorageSetItem = function(key, value) {
-    if (value === undefined) {
-        localStorage.removeItem(key);
-    }
-
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
@@ -212,9 +208,10 @@ KidaptiveUtils.localStorageSetItem = function(key, value) {
 
 KidaptiveUtils.localStorageGetItem = function(key) {
     var cached = localStorage.getItem(key);
-    if (cached) {
-        return JSON.parse(cached);
+    if (cached === null) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "No item found for key " + key + " in localStorage");
     }
+    return cached === 'undefined' ? undefined : JSON.parse(cached);
 };
 
 //create a copy of an object
