@@ -106,7 +106,7 @@ KidaptiveModelManager.prototype.getModels = function(type, conditions) {
         return [];
     }
     var modelParents = KidaptiveModelManager.getModelParents(type);
-    conditions = conditions || {};
+    conditions = KidaptiveUtils.copyObject(conditions) || {};
     return Object.keys(index).filter(function(id) {
         var shouldReturn = true;
         modelParents.forEach(function(parent) {
@@ -154,9 +154,9 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.latentAbilities[learnerId]) {
-                var stored = localStorage.getItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
+                var stored = KidpativeUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
                 if (stored) {
-                    this.latentAbilities[learnerId] = JSON.parse(stored);
+                    this.latentAbilities[learnerId] = stored;
                 }
             }
 
@@ -181,9 +181,9 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.localAbilities[learnerId]) {
-                var stored = localStorage.getItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId));
+                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId));
                 if (stored) {
-                    this.localAbilities[learnerId] = JSON.parse(stored);
+                    this.localAbilities[learnerId] = stored;
                 }
             }
 

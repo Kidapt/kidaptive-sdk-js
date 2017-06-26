@@ -96,12 +96,12 @@ KidaptiveUtils.Promise.parallel = function(objArray) {
 //else stop on all errors
 //if all functions complete without throwing a specified error, resolves to undefined
 KidaptiveUtils.Promise.serial = function(funcArray, errors) {
+    errors = KidaptiveUtils.copyObject(errors);
+
     if (typeof errors === 'string') {
         errors = [errors];
     } else if (!(errors instanceof Array)) {
         errors = undefined;
-    } else {
-        errors = errors.map(function(e){return e}); //make a copy so it doesn't change before the promise resolves
     }
 
     var promise = KidaptiveUtils.Promise.resolve();
@@ -118,9 +118,11 @@ KidaptiveUtils.Promise.serial = function(funcArray, errors) {
 };
 
 var jsonHelper = function(o, inArray) {
+    //normalize o
+    o = KidaptiveUtils.copyObject(o);
     switch (typeof o) {
         case 'object':
-            if (o !== null && !(o instanceof Boolean) && !(o instanceof Number) && !(o instanceof String)) {
+            if (o !== null) {
                 if (o instanceof Array) {
                     return '[' + o.map(function(i) {
                             return jsonHelper(i, true);
@@ -134,6 +136,7 @@ var jsonHelper = function(o, inArray) {
                         }).join(',') + '}';
                 }
             }
+            //null falls through
         case 'boolean':
         case 'number':
         case 'string':
@@ -148,6 +151,7 @@ KidaptiveUtils.toJson = function(o) {
 };
 
 KidaptiveUtils.getObject = function(object, key) {
+    key = KidaptiveUtils.copyObject(key);
     if (key === undefined) {
         return object;
     } else if (key instanceof Array) {
@@ -160,6 +164,7 @@ KidaptiveUtils.getObject = function(object, key) {
 };
 
 KidaptiveUtils.putObject = function(object, key, value) {
+    key = KidaptiveUtils.copyObject(key);
     var o = object;
     if (key instanceof Array) {
         if (key.length === 0) {
@@ -194,6 +199,10 @@ KidaptiveUtils.toCamelCase = function(str, delimiters) {
 };
 
 KidaptiveUtils.localStorageSetItem = function(key, value) {
+    if (value === undefined) {
+        localStorage.removeItem(key);
+    }
+
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
@@ -201,6 +210,57 @@ KidaptiveUtils.localStorageSetItem = function(key, value) {
     }
 };
 
+KidaptiveUtils.localStorageGetItem = function(key) {
+    var cached = localStorage.getItem(key);
+    if (cached) {
+        return JSON.parse(cached);
+    }
+};
+
+//create a copy of an object
 KidaptiveUtils.copyObject = function(o) {
     return o === undefined ? o : JSON.parse(JSON.stringify(o));
+};
+
+//
+KidaptiveUtils.checkObjectFormat = function(object, format) {
+    //this normalizes objects, dropping undefined properties, converting primitive wrappers, converting subclasses of
+    //Object to objects, converting functions to undefined/null etc.
+    object = KidaptiveUtils.copyObject(object);
+    format = KidaptiveUtils.copyObject(format);
+
+    if (object === undefined || format === undefined) {
+        return;
+    }
+
+    if (format === null) {
+        if (object !== null) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected null");
+        }
+    } else if (format instanceof Array) {
+        if (!(object instanceof Array)) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected array");
+        }
+
+        object.forEach(function(v, i) {
+            try {
+                KidaptiveUtils.checkObjectFormat(v, format[Math.min(i, format.length - 1)]);
+            } catch (e) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at index " + i + ": " + e.message);
+            }
+        });
+    } else if (format instanceof Object) {
+        if (!(object instanceof Object) || object instanceof Array) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected object");
+        }
+        Object.keys(format).forEach(function(k) {
+            try {
+                KidaptiveUtils.checkObjectFormat(object[k], format[k]);
+            } catch (e) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at property " + k + ": " + e.message);
+            }
+        });
+    } else if (typeof object !== typeof format) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected " + typeof format);
+    }
 };

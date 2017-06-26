@@ -32,7 +32,7 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
             return data;
         }, function(xhr) {
             if (xhr.status === 400) {
-                localStorage.removeItem(cacheKey);
+                KidaptiveUtils.localStorageSetItem(cacheKey);
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
             } else if (xhr.status === 401) {
                 //unauthorized. delete cached data
@@ -42,13 +42,13 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
                 }
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
             } else if (xhr.status) {
-                localStorage.removeItem(cacheKey);
+                KidaptiveUtils.localStorageSetItem(cacheKey);
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
             } else {
-                var cached = localStorage.getItem(cacheKey);
+                var cached = KidaptiveUtils.localStorageGetItem(cacheKey);
 
                 if (cached) {
-                    return (cached === 'undefined') ? undefined : JSON.parse(cached);
+                    return cached;
                 }
 
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
@@ -60,7 +60,7 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
 KidaptiveHttpClient.deleteUserData = function() {
     Object.keys(localStorage).forEach(function(k) {
         if (k.endsWith('.alpUserData')) {
-            localStorage.removeItem(k);
+            KidaptiveUtils.localStorageSetItem(k);
         }
     });
 };
@@ -68,7 +68,7 @@ KidaptiveHttpClient.deleteUserData = function() {
 KidaptiveHttpClient.deleteAppData = function() {
     Object.keys(localStorage).forEach(function(k) {
         if (k.endsWith('.alpAppData')) {
-            localStorage.removeItem(k);
+            KidaptiveUtils.localStorageSetItem(k);
         }
     });
 };
