@@ -42,15 +42,15 @@
     };
 
     var logout = function(authError) {
-        //TODO: close all trials
-        sdk.modelManager.clearLearnerModels();
-        sdk.learnerManager.clearLearnerList();
-        KidaptiveHttpClient.deleteUserData();
         return KidaptiveUtils.Promise.wrap(function() {
             if (!authError) {
                 return sdk.eventManager.flushEvents();
             }
         }).then(function() {
+            sdk.trialManager.endAllTrials();
+            sdk.modelManager.clearLearnerModels();
+            sdk.learnerManager.clearLearnerList();
+            KidaptiveHttpClient.deleteUserData();
             return sdk.userManager.logoutUser();
         });
     };
@@ -126,6 +126,7 @@
                 this.userManager = new KidaptiveUserManager(this);
                 this.learnerManager = new KidaptiveLearnerManager(this);
                 this.modelManager = new KidaptiveModelManager(this);
+                this.trialManager = new KidaptiveTrialManager(this);
                 this.eventManager = new KidaptiveEventManager(this);
 
                 return this.modelManager.refreshAppModels();
@@ -201,6 +202,22 @@
         return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
     };
 
+    //Trial Manager
+    exports.startTrial = function(learnerId) {
+        sdkInitFilter();
+        sdk.trialManager.startTrial(learnerId);
+    };
+
+    exports.endTrial = function(learnerId) {
+        sdkInitFilter();
+        sdk.trialManager.endTrial(learnerId);
+    };
+
+    exports.endAllTrials = function() {
+        sdkInitFilter();
+        sdk.trialManager.endAllTrials();
+    };
+
     //Event Manager
     exports.reportBehavior = function(eventName, properties) {
         sdkInitFilter();
@@ -233,7 +250,6 @@
     };
 
     exports.stopAutoFlush = function() {
-        sdkInitFilter();
         exports.startAutoFlush(0);
     };
 
@@ -242,7 +258,10 @@
     exports.KidaptiveConstants = KidaptiveConstants;
     exports.KidaptiveUtils = KidaptiveUtils;
     exports.destroy = function() {
-        addToQueue(exports.stopAutoFlush);
+        addToQueue(function() {
+            sdk.trialManager.endAllTrials();
+            exports.stopAutoFlush();
+        });
         exports.flushEvents();
         return addToQueue(function() {
             sdk = undefined;
