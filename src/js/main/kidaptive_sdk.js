@@ -6,6 +6,11 @@
 (function(){
     var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
+    var defaultFlushInterval;
+
+    var flushInterval;
+    var flushTimeoutId;
+    var flushing;
 
     var sdkInitFilter = function() {
         if (!sdk) {
@@ -19,6 +24,7 @@
         return returnQueue;
     };
 
+    //ignore everything that's not a auth error
     var filterAuthError = function(error) {
         if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
             throw error;
@@ -27,17 +33,36 @@
 
     var handleAuthError = function(error) {
         if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-            return sdk.userManager.logoutUser().then(function(){
+            //TODO: attempt automatic reauthentication;
+            return logout(true).then(function(){
                 throw error;
             });
         }
         throw error;
     };
 
+    var logout = function(authError) {
+        //TODO: close all trials
+        sdk.modelManager.clearLearnerModels();
+        sdk.learnerManager.clearLearnerList();
+        KidaptiveHttpClient.deleteUserData();
+        return KidaptiveUtils.Promise.wrap(function() {
+            if (!authError) {
+                return sdk.eventManager.flushEvents();
+            }
+        }).then(function() {
+            return sdk.userManager.logoutUser();
+        });
+    };
+
     var refreshUserData = function() {
         return KidaptiveUtils.Promise.serial([
-            sdk.userManager.refreshUser.bind(sdk.userManager),
-            sdk.learnerManager.refreshLearnerList.bind(sdk.learnerManager),
+            function() {
+                return sdk.userManager.refreshUser();
+            },
+            function() {
+                return sdk.learnerManager.refreshLearnerList();
+            },
             function() {
                 return sdk.modelManager.refreshLatentAbilities().then(function(results) {
                     results.forEach(function(r) {
@@ -55,19 +80,35 @@
         ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
     };
 
+    var autoFlush = function() {
+        window.clearTimeout(flushTimeoutId);
+        if (!flushing && flushInterval > 0) {
+            flushTimeoutId = window.setTimeout(function () {
+                flushing = true;
+                exports.flushEvents().then(function () {
+                    flushing = false;
+                    autoFlush();
+                });
+            }, flushInterval);
+        }
+    };
+
+    var returnResults = function(results) {
+        return results;
+    };
+
     var KidaptiveSdk = function(apiKey, appVersion, options) {
         return KidaptiveUtils.Promise(function(resolve, reject) {
-            if (!apiKey) {
+            apiKey = KidaptiveUtils.copyObject(apiKey);
+            if (!apiKey || KidaptiveUtils.checkObjectFormat(apiKey, '')) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Api key is required");
             }
 
-            if (!appVersion) {
-                appVersion = {};
-            }
-            appVersion.version = appVersion.version || '';
-            appVersion.build = appVersion.build || '';
+            appVersion = KidaptiveUtils.copyObject(appVersion) || {};
+            KidaptiveUtils.checkObjectFormat(appVersion, {version:'', build:''});
 
-            options = options || {};
+            options = KidaptiveUtils.copyObject(options) || {};
+            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0});
 
             this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
 
@@ -90,7 +131,9 @@
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
                 sdk = this;
-                return refreshUserData();
+                defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
+                exports.startAutoFlush();
+                return refreshUserData().catch(function(){}); //user data update shouldn't have to complete to initialize sdk
             }.bind(this)).then(function() {
                 resolve(this);
             }.bind(this), reject);
@@ -132,11 +175,7 @@
     exports.logoutUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            //TODO: close all trials
-            //TODO: flush events
-            sdk.modelManager.clearLearnerModels();
-            sdk.learnerManager.clearLearnerList();
-            return sdk.userManager.logoutUser().always(KidaptiveHttpClient.deleteUserData);
+            logout();
         });
     };
 
@@ -165,7 +204,37 @@
     //Event Manager
     exports.reportBehavior = function(eventName, properties) {
         sdkInitFilter();
-        KidaptiveUtils.copyObject(sdk.eventManager.reportBehavior(eventName, properties));
+        sdk.eventManager.reportBehavior(eventName, properties);
+    };
+
+    exports.flushEvents = function() {
+        return addToQueue(function() {
+            sdkInitFilter();
+            var r;
+            return sdk.eventManager.flushEvents().then(function(results) {
+                r = returnResults.bind(undefined, results);
+                results.forEach(function(r) {
+                    if (!r.resolved) {
+                        filterAuthError(r.error);
+                    }
+                });
+            }).catch(handleAuthError).then(r, r);
+        });
+    };
+
+    exports.startAutoFlush = function(interval) {
+        sdkInitFilter();
+        KidaptiveUtils.checkObjectFormat(interval, 0);
+        if (interval === undefined) {
+            interval = defaultFlushInterval;
+        }
+        flushInterval = interval;
+        autoFlush();
+    };
+
+    exports.stopAutoFlush = function() {
+        sdkInitFilter();
+        exports.startAutoFlush(0);
     };
 
     //Module
@@ -173,7 +242,10 @@
     exports.KidaptiveConstants = KidaptiveConstants;
     exports.KidaptiveUtils = KidaptiveUtils;
     exports.destroy = function() {
-        //TODO: stop event flush
-        sdk = undefined;
+        addToQueue(exports.stopAutoFlush);
+        exports.flushEvents();
+        return addToQueue(function() {
+            sdk = undefined;
+        });
     };
 })();
