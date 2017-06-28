@@ -1,6 +1,7 @@
 /**
  * Created by solomonliu on 2017-06-14.
  */
+"use strict";
 var KidaptiveModelManager = function(sdk) {
     this.sdk = sdk;
     this.uriToModel = {};

@@ -1,7 +1,7 @@
 /**
  * Created by solomonliu on 2017-06-19.
  */
-
+"use strict";
 var KidaptiveEventManager = function(sdk) {
     this.sdk = sdk;
     this.eventSequence = 0;
@@ -14,99 +14,12 @@ var KidaptiveEventManager = function(sdk) {
 };
 
 KidaptiveEventManager.prototype.reportBehavior = function(eventName, properties) {
-    if (!eventName) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
-    }
-    KidaptiveUtils.checkObjectFormat(eventName, "");
-
-    properties = KidaptiveUtils.copyObject(properties) || {};
-    KidaptiveUtils.checkObjectFormat(properties, {
-        learnerId: 0,
-        gameURI: "",
-        promptURI: "",
-        duration: 0,
-        additionalFields: {},
-        tags: {}
-    });
-
-    var agentRequest = this.createBaseEvent();
-    var event = agentRequest.events[0];
-
-    event.name = eventName;
-    event.type = 'Behavior';
-
-    var learnerId = properties.learnerId;
-    if (learnerId) {
-        if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-        }
-        event.learnerId = learnerId;
-    }
-
-    var gameUri = properties.gameUri;
-    if (gameUri) {
-        if (!this.sdk.modelManager.uriToModel['game'][gameUri]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + gameUri + " not found");
-        }
-        event.gameURI = gameUri;
-    }
-
-    var promptUri = properties.promptUri;
-    if (promptUri) {
-        var prompt = this.sdk.modelManager.uriToModel['prompt'][promptUri];
-        if (!prompt) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " not found");
-        }
-
-        var promptGameUri = this.sdk.modelManager.idToModel['game'][prompt.gameId].uri;
-        if (gameUri && promptGameUri !== gameUri) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + promptUri + " has no prompt " + promptUri);
-        }
-
-        if (!gameUri) {
-            event.gameURI = promptGameUri;
-        }
-
-        event.promptURI = promptUri;
-    }
-
-    var duration = properties.duration;
-    if (duration) {
-        if (duration < 0) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Duration must not be negative");
-        }
-        event.duration = duration;
-    }
-
-    var additionalFields = properties.additionalFields;
-    if (additionalFields) {
-        Object.keys(additionalFields).forEach(function(key) {
-            if (typeof additionalFields[key] !== 'string') {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Additional fields must be strings");
-            }
-        });
-        event.additionalFields = additionalFields;
-    }
-
-    var tags = properties.tags;
-    if (tags) {
-        Object.keys(tags).forEach(function(key) {
-            if (typeof tags[key] !== 'string') {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Tags must be strings");
-            }
-        });
-        event.tags = tags;
-    }
-    this.queueEvent(agentRequest);
+    this.queueEvent(this.createAgentRequest(eventName, 'Behavior', properties));
 };
 
 KidaptiveEventManager.prototype.reportEvidence = function(eventName, properties) {
-    if (!eventName) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
-    }
-
-    properties = properties || {};
-
+    this.queueEvent(this.createAgentRequest(eventName, 'Result', properties));
+    //TODO: run IRT
 };
 
 KidaptiveEventManager.prototype.queueEvent = function(event) {
@@ -143,9 +56,144 @@ KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
     return this.sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.INGESTION).replace(/[.].*/,'.alpEventData');
 };
 
-KidaptiveEventManager.prototype.createBaseEvent = function() {
+KidaptiveEventManager.prototype.createAgentRequest = function(name, type, properties) {
     if (!this.sdk.userManager.currentUser) {
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User is not logged in");
+    }
+
+    if (!name) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
+    }
+    KidaptiveUtils.checkObjectFormat(name, "");
+
+    properties = KidaptiveUtils.copyObject(properties) || {};
+    if (type === 'Behavior') {
+        delete properties['attempts'];
+        delete properties['promptAnswers'];
+    }
+    KidaptiveUtils.checkObjectFormat(properties, {
+        learnerId: 0,
+        gameURI: "",
+        promptURI: "",
+        duration: 0,
+        attempts: [
+            {
+                itemURI:'',
+                outcome:0,
+                guessingParameter:0
+            }
+        ],
+        promptAnswers: {},
+        additionalFields: {},
+        tags: {}
+    });
+
+    var learnerId = properties.learnerId;
+    if (type === 'Result' && !learnerId) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
+    }
+    if (learnerId) {
+        if (!this.sdk.learnerManager.idToLearner[learnerId]) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
+        }
+    }
+
+    var trial = this.sdk.trialManager.openTrials[learnerId] || {};
+    if (type === 'Result' && (!trial.trialTime || !trial.trialSalt)) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "Must start a trial for learner " + learnerId + " before reporting evidence");
+    }
+
+    var gameUri = properties.gameURI;
+    if (gameUri) {
+        if (!this.sdk.modelManager.uriToModel['game'][gameUri]) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + gameUri + " not found");
+        }
+    }
+
+    var promptUri = properties.promptURI;
+    if (type === 'Result' && !promptUri) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "promptURI is required");
+    }
+    if (promptUri) {
+        var prompt = this.sdk.modelManager.uriToModel['prompt'][promptUri];
+        if (!prompt) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " not found");
+        }
+
+        var promptGameUri = this.sdk.modelManager.idToModel['game'][prompt.gameId].uri;
+        if (gameUri && promptGameUri !== gameUri) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + promptUri + " has no prompt " + promptUri);
+        }
+
+        if (!gameUri) {
+            gameUri = promptGameUri;
+        }
+    }
+
+    var duration = properties.duration;
+    if (duration) {
+        if (duration < 0) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Duration must not be negative");
+        }
+    }
+
+    var attempts = properties.attempts;
+    if (type === 'Result') {
+        attempts = properties.attempts || [];
+        var itemUris = this.sdk.modelManager.getModels('item', {prompt: promptUri}).map(function(item) {
+            return item.uri;
+        });
+        attempts.forEach(function(attempt, i) {
+            if (itemUris.indexOf(attempt.itemURI) < 0) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no item " + attempt.itemURI);
+            }
+            if (attempt.outcome === undefined || attempt.outcome < 0 || attempt.outcome > 1) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Outcome in attempt " + i + " must be between 0 and 1 (inclusive)");
+            }
+            if (attempt.guessingParameter < 0 || attempt.guessingParameter > 1) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Guessing parameter in attempt " + i + " must be between 0 and 1 (inclusive)");
+            }
+        });
+    }
+
+    var promptAnswers;
+    if (type === 'Result') {
+        promptAnswers = properties.promptAnswers || {};
+        var categoryUris = this.sdk.modelManager.getModels('prompt-category', {prompt: promptUri}).map(function(pc) {
+            return this.sdk.modelManager.idToModel['category'][pc.categoryId].uri;
+        }.bind(this));
+        Object.keys(promptAnswers).forEach(function(key) {
+            if (typeof promptAnswers[key] !== 'string') {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt answers must be strings");
+            }
+            var i = categoryUris.indexOf(key);
+            if (i < 0) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no category " + key);
+            } else {
+                categoryUris.splice(i,1);
+            }
+        });
+        if (categoryUris.length > 0) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Missing category " + categoryUris[0] + " for prompt " + promptUri);
+        }
+    }
+
+    var additionalFields = properties.additionalFields;
+    if (additionalFields) {
+        Object.keys(additionalFields).forEach(function(key) {
+            if (typeof additionalFields[key] !== 'string') {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Additional fields must be strings");
+            }
+        });
+    }
+
+    var tags = properties.tags;
+    if (tags) {
+        Object.keys(tags).forEach(function(key) {
+            if (typeof tags[key] !== 'string') {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Tags must be strings");
+            }
+        });
     }
 
     return {
@@ -160,27 +208,21 @@ KidaptiveEventManager.prototype.createBaseEvent = function() {
         },
         events: [{
             version: KidaptiveConstants.ALP_EVENT_VERSION,
-            // "type": "Result",
-            // "name": "string",
+            type: type,
+            name: name,
             userId: this.sdk.userManager.currentUser.id,
-            // "learnerId": 0,
-            // "gameURI": "string",
-            // "promptURI": "string",
-            // "trialTime": 0,
-            // "trialSalt": 0,
+            learnerId: learnerId,
+            gameURI: gameUri,
+            promptURI: promptUri,
+            trialTime: trial.trialTime,
+            trialSalt: trial.trialSalt,
             eventTime: Date.now(),
-            eventSequence: ++this.eventSequence
-            // "receiptTime": 0,
-            // "duration": 0,
-            // "attempts": [
-            //     {
-            //         "itemURI": "string",
-            //         "outcome": 0
-            //     }
-            // ],
-            // "promptAnswers": {},
-            // "additionalFields": {},
-            // "tags": {}
+            eventSequence: ++this.eventSequence,
+            duration: duration,
+            attempts: attempts,
+            promptAnswers: promptAnswers,
+            additionalFields: additionalFields,
+            tags: tags
         }]
     };
 };

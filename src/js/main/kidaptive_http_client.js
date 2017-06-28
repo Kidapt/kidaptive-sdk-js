@@ -78,11 +78,6 @@ KidaptiveHttpClient.deleteAppData = function() {
 KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, settings) {
     settings = settings || {};
 
-    //make settings an empty object; wouldn't want any stray settings screwing stuff up.
-    Object.keys(settings).forEach(function(p) {
-        delete settings[p];
-    });
-
     settings.headers = {
         "api-key": this.apiKey
     };

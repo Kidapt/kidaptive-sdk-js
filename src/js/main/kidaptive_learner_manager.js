@@ -1,7 +1,7 @@
 /**
  * Created by solomonliu on 2017-06-03.
  */
-
+"use strict";
 var KidaptiveLearnerManager = function(sdk) {
     this.sdk = sdk;
     this.clearLearnerList();

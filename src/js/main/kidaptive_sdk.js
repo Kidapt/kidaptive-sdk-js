@@ -202,6 +202,11 @@
         return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
     };
 
+    exports.getModelById = function(type, id) {
+        sdkInitFilter();
+        return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.idToModel, [type, id]));
+    };
+
     //Trial Manager
     exports.startTrial = function(learnerId) {
         sdkInitFilter();
@@ -222,6 +227,11 @@
     exports.reportBehavior = function(eventName, properties) {
         sdkInitFilter();
         sdk.eventManager.reportBehavior(eventName, properties);
+    };
+
+    exports.reportEvidence = function(eventName, properties) {
+        sdkInitFilter();
+        sdk.eventManager.reportEvidence(eventName, properties);
     };
 
     exports.flushEvents = function() {

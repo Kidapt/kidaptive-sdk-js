@@ -2,13 +2,14 @@
  * Created by solomonliu on 2017-06-27.
  */
 
+"use strict";
 KidaptiveTrialManager = function(sdk) {
     this.sdk = sdk;
     this.openTrials = {};
 };
 
 KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
-    if (!sdk.learnerManager.idToLearner[learnerId]) {
+    if (!this.sdk.learnerManager.idToLearner[learnerId]) {
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
     }
     this.openTrials[learnerId] = {
@@ -27,7 +28,7 @@ KidaptiveTrialManager.prototype.endAllTrials = function() {
 };
 
 KidaptiveTrialManager.prototype.resetDimension = function(learnerId, localDimensionId) {
-    if (!sdk.learnerManager.idToLearner[learnerId]) {
+    if (!this.sdk.learnerManager.idToLearner[learnerId]) {
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
     }
     if (!this.openTrials[learnerId]) {
