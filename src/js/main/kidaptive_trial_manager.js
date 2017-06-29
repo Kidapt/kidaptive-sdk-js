@@ -12,6 +12,9 @@ KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
     if (!this.sdk.learnerManager.idToLearner[learnerId]) {
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
     }
+    if (this.openTrials[learnerId]) {
+        this.endTrial(learnerId);
+    }
     this.openTrials[learnerId] = {
         trialTime: Date.now(),
         trialSalt: window.crypto.getRandomValues(new Int32Array(1))[0],
@@ -20,23 +23,26 @@ KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
 };
 
 KidaptiveTrialManager.prototype.endTrial = function(learnerId) {
-    delete this.openTrials[learnerId];
+    if (this.openTrials[learnerId]) {
+        Object.keys(this.openTrials[learnerId].dimensionsReset).forEach(function(localDimId) {
+            var latentAbil = KidaptiveUtils.copyObject(this.sdk.modelManager.getLatentAbilities(learnerId,
+                this.sdk.modelManager.idToModel['local-dimension'][localDimId].dimensionId));
+            var localAbil = this.sdk.modelManager.getLocalAbilities(learnerId, localDimId);
+            latentAbil.mean = localAbil.mean;
+            latentAbil.standardDeviation = localAbil.standardDeviation;
+            latentAbil.timestamp = localAbil.timestamp;
+            this.sdk.modelManager.setLatentAbility(learnerId, latentAbil);
+        }.bind(this));
+        delete this.openTrials[learnerId];
+    }
 };
 
 KidaptiveTrialManager.prototype.endAllTrials = function() {
-    this.openTrials = {};
+    Object.keys(this.openTrials).forEach(function(learnerId) {
+        this.endTrial(learnerId);
+    }.bind(this))
 };
 
 KidaptiveTrialManager.prototype.resetDimension = function(learnerId, localDimensionId) {
-    if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-    }
-    if (!this.openTrials[learnerId]) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "No trial open for learner " + learnerId);
-    }
-    if (!this.sdk.modelManager.idToModel[localDimensionId]) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Local dimension " + localDimensionId + " not found");
-    }
-
-    this.openTrials[learnerId][localDimensionId] = true;
+    this.openTrials[learnerId].dimensionsReset[localDimensionId] = true;
 };

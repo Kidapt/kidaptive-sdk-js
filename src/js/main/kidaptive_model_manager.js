@@ -6,11 +6,8 @@ var KidaptiveModelManager = function(sdk) {
     this.sdk = sdk;
     this.uriToModel = {};
     this.idToModel = {};
+    this.clearLearnerModels();
 };
-
-KidaptiveModelManager.LATENT_ABILITY_KEY = "kidaptive.alp.latentAbility";
-KidaptiveModelManager.LOCAL_ABILITY_KEY = "kidaptive.alp.localAbility";
-KidaptiveModelManager.INSIGHTS_KEY = "kidaptive.alp.insights";
 
 KidaptiveModelManager.modelParents = { //maps models to the parents of that model. Use for model query predicates
     'skills-framework': [],
@@ -155,15 +152,14 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.latentAbilities[learnerId]) {
-                var stored = KidpativeUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
+                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
                 if (stored) {
                     this.latentAbilities[learnerId] = stored;
                 }
             }
 
             abilities.forEach(function(ability) {
-                var dim  = ability.dimensionId;
-                this.setLatentAbility(learnerId, dim, ability);
+                this.setLatentAbility(learnerId, ability, true);
             }.bind(this));
             return this.latentAbilities;
         }.bind(this));
@@ -189,29 +185,71 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             }
 
             abilities.forEach(function(ability) {
-                var dim  = ability.localDimensionId;
-                this.setLocalAbility(learnerId, dim, ability);
+                this.setLocalAbility(learnerId, ability, true);
             }.bind(this));
             return this.localAbilities;
         }.bind(this));
     }
 };
 
-KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, dimensionId, ability) {
-    var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [learnerId, dimensionId]);
-    if (curAbil && curAbil.timestamp <= ability.timestamp) {
-        KidaptiveUtils.putObject(this.latentAbilities, [learnerId, dimensionId], ability);
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId),
-            KidaptiveUtils.getObject(this.latentAbilities, [learnerId]));
+KidaptiveModelManager.prototype.getLatentAbilities = function(learnerId, dimId) {
+    if (dimId) {
+        var dim = this.idToModel['dimension'][dimId];
+        if (dim) {
+            return KidaptiveUtils.getObject(this.latentAbilities, [learnerId, dimId]) ||
+                {
+                    dimensionId: dim.id,
+                    mean: 0,
+                    standardDeviation: 1,
+                    timestamp: 0
+                };
+        }
+    } else {
+        return Object.keys(this.idToModel['dimension']).map(function(id){
+            return this.getLatentAbilities(learnerId, id);
+        }.bind(this));
     }
 };
 
-KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, localDimensionId, ability) {
-    var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, localDimensionId]);
-    if (curAbil && curAbil.timestamp <= ability.timestamp) {
-        KidaptiveUtils.putObject(this.localAbilities, [learnerId, localDimensionId], ability);
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId),
-            KidaptiveUtils.getObject(this.localAbilities, [learnerId]));
+KidaptiveModelManager.prototype.getLocalAbilities = function(learnerId, dimId) {
+    if (dimId) {
+        var dim = this.idToModel['local-dimension'][dimId];
+        if (dim) {
+            return KidaptiveUtils.getObject(this.localAbilities, [learnerId, dimId]) ||
+                {
+                    localDimensionId: dim.id,
+                    mean: 0,
+                    standardDeviation: 1,
+                    timestamp: 0
+                };
+        }
+    } else {
+        return Object.keys(this.idToModel['local-dimension']).map(function(id){
+            return this.getLocalAbilities(learnerId, id);
+        }.bind(this));
+    }
+};
+
+KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, ability, keepCurrent) {
+    var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [learnerId, ability.dimensionId]);
+    if (!curAbil || curAbil.timestamp < ability.timestamp || (curAbil.timestamp === ability.timestamp && !keepCurrent)) {
+        KidaptiveUtils.putObject(this.latentAbilities, [learnerId, ability.dimensionId], ability);
+
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId).replace(/[.].*/,'.alpUserData'),
+            Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
+                return this.latentAbilities[learnerId][dimId];
+            }.bind(this)));
+    }
+};
+
+KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, ability, keepCurrent) {
+    var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, ability.localDimensionId]);
+    if (!curAbil || curAbil.timestamp < ability.timestamp || (curAbil.timestamp === ability.timestamp && !keepCurrent)) {
+        KidaptiveUtils.putObject(this.localAbilities, [learnerId, ability.localDimensionId], ability);
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId).replace(/[.].*/,'.alpUserData'),
+            Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
+                return this.localAbilities[learnerId][dimId];
+            }.bind(this)));
     }
 };
 

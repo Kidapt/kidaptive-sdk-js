@@ -126,6 +126,7 @@
                 this.userManager = new KidaptiveUserManager(this);
                 this.learnerManager = new KidaptiveLearnerManager(this);
                 this.modelManager = new KidaptiveModelManager(this);
+                this.attemptProcessor = new KidaptiveAttemptProcessor(this);
                 this.trialManager = new KidaptiveTrialManager(this);
                 this.eventManager = new KidaptiveEventManager(this);
 
@@ -207,6 +208,35 @@
         return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.idToModel, [type, id]));
     };
 
+    exports.getModelByUri = function(type, uri) {
+        sdkInitFilter();
+        return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.uriToModel, [type, uri]));
+    };
+
+    exports.getLatentAbilities = function(learnerId, uri) {
+        sdkInitFilter();
+        var dimId;
+        if (uri) {
+            dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel['dimension'], [uri, 'id']);
+            if (!dimId) {
+                return;
+            }
+        }
+        return KidaptiveUtils.copyObject(sdk.modelManager.getLatentAbilities(learnerId,dimId));
+    };
+
+    exports.getLocalAbilities = function(learnerId, uri) {
+        sdkInitFilter();
+        var dimId;
+        if (uri) {
+            dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel['local-dimension'], [uri, 'id']);
+            if (!dimId) {
+                return;
+            }
+        }
+        return KidaptiveUtils.copyObject(sdk.modelManager.getLocalAbilities(learnerId,dimId));
+    };
+
     //Trial Manager
     exports.startTrial = function(learnerId) {
         sdkInitFilter();
@@ -245,7 +275,11 @@
                         filterAuthError(r.error);
                     }
                 });
-            }).catch(handleAuthError).then(r, r);
+            }).catch(handleAuthError).then(function() {
+                return r();
+            }, function() {
+                return r();
+            });
         });
     };
 

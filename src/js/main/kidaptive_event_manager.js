@@ -196,6 +196,10 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
         });
     }
 
+    if (type === 'Result') {
+        attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
+    }
+
     return {
         appInfo: {
             uri: this.sdk.appInfo.uri,
