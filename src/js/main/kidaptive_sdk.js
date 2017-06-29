@@ -129,6 +129,7 @@
                 this.attemptProcessor = new KidaptiveAttemptProcessor(this);
                 this.trialManager = new KidaptiveTrialManager(this);
                 this.eventManager = new KidaptiveEventManager(this);
+                this.recManager = new KidaptiveRecommendationManager(this);
 
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
@@ -295,6 +296,11 @@
 
     exports.stopAutoFlush = function() {
         exports.startAutoFlush(0);
+    };
+
+    //Recommendation Manager
+    exports.getRandomRecommendations = function(params) {
+        return KidaptiveUtils.copyObject(sdk.recManager.RPRec.getRecommendations(params));
     };
 
     //Module

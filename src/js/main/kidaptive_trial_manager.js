@@ -3,7 +3,7 @@
  */
 
 "use strict";
-KidaptiveTrialManager = function(sdk) {
+var KidaptiveTrialManager = function(sdk) {
     this.sdk = sdk;
     this.openTrials = {};
 };
