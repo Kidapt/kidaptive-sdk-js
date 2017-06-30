@@ -299,8 +299,29 @@
     };
 
     //Recommendation Manager
+    exports.registerRecommender = function(key, rec) {
+        sdkInitFilter();
+        sdk.recManager.registerRecommender(key, rec);
+    };
+
+    exports.unregisterRecommender = function(key) {
+        sdkInitFilter();
+        sdk.recManager.unregisterRecommender(key);
+    };
+
+    exports.getRecommendations = function(key, params) {
+        sdkInitFilter();
+        return KidaptiveUtils.copyObject(sdk.recManager.getRecommendations(key, params));
+    };
+
     exports.getRandomRecommendations = function(params) {
+        sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.recManager.RPRec.getRecommendations(params));
+    };
+
+    exports.getOptimalDifficultyRecommendations = function(params) {
+        sdkInitFilter();
+        return KidaptiveUtils.copyObject(sdk.recManager.ODRec.getRecommendations(params));
     };
 
     //Module
