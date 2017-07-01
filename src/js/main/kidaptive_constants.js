@@ -27,7 +27,9 @@ var KidaptiveConstants = {
         INSIGHT:"/insight",
         INGESTION:"/ingestion",
 
+        CREATE_USER:"/user",
         USER:"/user/me",
+        LOGIN:"/user/login",
         LOGOUT:"/user/logout"
     },
 

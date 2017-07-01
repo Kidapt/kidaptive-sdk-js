@@ -235,7 +235,7 @@ KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, ability, 
     if (!curAbil || curAbil.timestamp < ability.timestamp || (curAbil.timestamp === ability.timestamp && !keepCurrent)) {
         KidaptiveUtils.putObject(this.latentAbilities, [learnerId, ability.dimensionId], ability);
 
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId).replace(/[.].*/,'.alpUserData'),
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId),
             Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
                 return this.latentAbilities[learnerId][dimId];
             }.bind(this)));
@@ -246,7 +246,7 @@ KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, ability, k
     var curAbil = KidaptiveUtils.getObject(this.localAbilities, [learnerId, ability.localDimensionId]);
     if (!curAbil || curAbil.timestamp < ability.timestamp || (curAbil.timestamp === ability.timestamp && !keepCurrent)) {
         KidaptiveUtils.putObject(this.localAbilities, [learnerId, ability.localDimensionId], ability);
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId).replace(/[.].*/,'.alpUserData'),
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId),
             Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
                 return this.localAbilities[learnerId][dimId];
             }.bind(this)));

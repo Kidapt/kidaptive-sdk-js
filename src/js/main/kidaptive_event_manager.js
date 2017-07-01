@@ -57,10 +57,6 @@ KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
 };
 
 KidaptiveEventManager.prototype.createAgentRequest = function(name, type, properties) {
-    if (!this.sdk.userManager.currentUser) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User is not logged in");
-    }
-
     if (!name) {
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
     }
@@ -196,7 +192,7 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
         });
     }
 
-    if (type === 'Result' && (!tags || (tags.SKIP_IRT !== 'true' && tags.SKIP_LEARNER_IRT !== 'true'))) {
+    if (type === 'Result' && (!tags || tags.SKIP_IRT !== 'true' && tags.SKIP_LEARNER_IRT !== 'true')) {
         attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
     }
 

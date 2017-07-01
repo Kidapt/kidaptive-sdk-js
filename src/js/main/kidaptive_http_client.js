@@ -18,6 +18,16 @@ KidaptiveHttpClient.USER_ENDPOINTS = [
     KidaptiveConstants.ENDPOINTS.LOGOUT
 ];
 
+KidaptiveHttpClient.isUserEndpoint = function(endpoint) {
+    var isUserEndpoint = false;
+    KidaptiveHttpClient.USER_ENDPOINTS.forEach(function(e) {
+        if (!isUserEndpoint && endpoint.match('^' + e)) {
+            isUserEndpoint = true;
+        }
+    });
+    return isUserEndpoint;
+};
+
 KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
     options = options || {};
     return KidaptiveUtils.Promise.wrap(function() {
@@ -79,7 +89,7 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
     settings = settings || {};
 
     settings.headers = {
-        "api-key": this.apiKey
+        "api-key": KidaptiveHttpClient.isUserEndpoint(endpoint) ? this.sdk.userManager.apiKey : this.apiKey
     };
 
     settings.xhrFields = {
@@ -94,8 +104,6 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
     } else if (settings.method === 'POST') {
         settings.contentType = "application/json";
         settings.data = JSON.stringify(params);
-    } else {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'");
     }
 
     //calculate cache key: sha256 of the stable json representation of ajax settings then convert to b64 for compactness
@@ -104,7 +112,8 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
     sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n,i){
         d.setInt32(4*i,n);
     });
+
     return btoa(String.fromCharCode.apply(undefined, new Array(32).fill(0).map(function(_,i) {
         return d.getUint8(i);
-    }))).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+/,'') + ((KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0) ? '.alpUserData' : '.alpAppData');
+    }))).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+/,'') + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? '.alpUserData' : '.alpAppData');
 };

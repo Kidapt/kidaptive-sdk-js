@@ -5,6 +5,86 @@
 
 var KidaptiveUserManager = function(sdk) {
     this.sdk = sdk;
+    var stored = KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/,'.alpUserData'));
+    this.apiKey =  KidaptiveUtils.getObject(stored, ['apiKey']) || sdk.httpClient.apiKey;
+};
+
+KidaptiveUserManager.prototype.storeUser = function(user) {
+    if (user.apiKey) {
+        this.apiKey = user.apiKey;
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/,'.alpUserData'), user);
+        delete user.apiKey;
+    }
+    this.currentUser = user;
+    KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.USER), user);
+};
+
+KidaptiveUserManager.prototype.createUser = function(params) {
+    params = KidaptiveUtils.copyObject(params);
+    var format = {email:'', password:'', nickname:''};
+    KidaptiveUtils.checkObjectFormat(params, format);
+
+    if (!params.email) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
+    }
+
+    if (!params.password) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+    }
+
+    Object.keys(params).forEach(function(key) {
+        if (format[key] === undefined) {
+            delete params[key];
+        }
+    });
+    return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {noCache:true}).then(function(user) {
+        this.storeUser(user);
+    }.bind(this));
+};
+
+KidaptiveUserManager.prototype.updateUser = function(params) {
+    params = KidaptiveUtils.copyObject(params);
+    var format = {password:'', nickname:'', deviceId:''};
+    KidaptiveUtils.checkObjectFormat(params, format);
+
+    Object.keys(params).forEach(function(key) {
+        if (format[key] === undefined) {
+            delete params[key];
+        }
+    });
+
+    ['nickname', 'deviceId'].forEach(function(prop) {
+        if (params[prop] === undefined) {
+            params[prop] = this.currentUser[prop];
+        }
+    }.bind(this));
+
+    return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.USER, params, {noCache:true}).then(function(user) {
+        this.storeUser(user);
+    }.bind(this));
+};
+
+KidaptiveUserManager.prototype.loginUser = function(params) {
+    params = KidaptiveUtils.copyObject(params);
+    var format = {email:'', password:''};
+    KidaptiveUtils.checkObjectFormat(params, format);
+
+    if (!params.email) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
+    }
+
+    if (!params.password) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+    }
+
+    Object.keys(params).forEach(function(key) {
+        if (format[key] === undefined) {
+            delete params[key];
+        }
+    });
+    return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.LOGIN, params, {noCache:true}).then(function(user) {
+        this.storeUser(user);
+    }.bind(this));
 };
 
 KidaptiveUserManager.prototype.refreshUser = function() {
@@ -16,7 +96,12 @@ KidaptiveUserManager.prototype.refreshUser = function() {
 
 KidaptiveUserManager.prototype.logoutUser = function() {
     this.currentUser = undefined;
-    return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {noCache:true});
+    return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {noCache:true}).then(function() {
+        this.apiKey = this.sdk.httpClient.apiKey;
+    }.bind(this), function(error) {
+        this.apiKey = this.sdk.httpClient.apiKey;
+        throw error;
+    }.bind(this));
 };
 
 //TODO: preferences

@@ -108,7 +108,9 @@
             KidaptiveUtils.checkObjectFormat(appVersion, {version:'', build:''});
 
             options = KidaptiveUtils.copyObject(options) || {};
-            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0});
+            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0, noOidc: false});
+
+            this.options = options;
 
             this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
 
@@ -134,6 +136,7 @@
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
                 sdk = this;
+                this.httpClient.sdk = this;
                 defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
                 exports.startAutoFlush();
                 return refreshUserData().catch(function(){}); //user data update shouldn't have to complete to initialize sdk
@@ -141,6 +144,18 @@
                 resolve(this);
             }.bind(this), reject);
         }.bind(this));
+    };
+
+    KidaptiveSdk.prototype.checkOidc = function() {
+        if (!this.options.noOidc) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in OIDC context");
+        }
+    };
+
+    KidaptiveSdk.prototype.checkUser = function() {
+        if (!this.userManager.currentUser) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User not logged in");
+        }
     };
 
     //public interface for SDK
@@ -178,7 +193,45 @@
     exports.logoutUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            logout();
+            return logout();
+        });
+    };
+
+    exports.loginUser = function(params) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+            return logout().then(function(){}, function(){}).then(function() {
+                return sdk.userManager.loginUser(params)
+            }).then(function(user) {
+                return refreshUserData().then(function() {
+                    return user;
+                });
+            });
+        });
+    };
+
+    exports.createUser = function(params) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+
+            return logout().catch(function(){}).then(function() {
+                return sdk.userManager.createUser(params)
+            }).then(function(user) {
+                return refreshUserData().then(function() {
+                    return user;
+                });
+            });
+        });
+    };
+
+    exports.updateUser = function(params) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+            sdk.checkUser();
+            return sdk.userManager.updateUser(params);
         });
     };
 

@@ -6656,7 +6656,9 @@
             LOCAL_ABILITY: "/local-ability",
             INSIGHT: "/insight",
             INGESTION: "/ingestion",
+            CREATE_USER: "/user",
             USER: "/user/me",
+            LOGIN: "/user/login",
             LOGOUT: "/user/logout"
         },
         ALP_EVENT_VERSION: "3.0"
@@ -6679,7 +6681,6 @@
         GENERIC_ERROR: "GENERIC_ERROR",
         INVALID_PARAMETER: "INVALID_PARAMETER",
         ILLEGAL_STATE: "ILLEGAL_STATE",
-        RECOMMENDER_ERROR: "RECOMMENDER_ERROR",
         API_KEY_ERROR: "API_KEY_ERROR",
         WEB_API_ERROR: "WEB_API_ERROR"
     };
@@ -6905,6 +6906,15 @@
         this.apiKey = _apiKey;
     };
     KidaptiveHttpClient.USER_ENDPOINTS = [ KidaptiveConstants.ENDPOINTS.USER, KidaptiveConstants.ENDPOINTS.LEARNER, KidaptiveConstants.ENDPOINTS.ABILITY, KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, KidaptiveConstants.ENDPOINTS.INSIGHT, KidaptiveConstants.ENDPOINTS.INGESTION, KidaptiveConstants.ENDPOINTS.LOGOUT ];
+    KidaptiveHttpClient.isUserEndpoint = function(endpoint) {
+        var isUserEndpoint = false;
+        KidaptiveHttpClient.USER_ENDPOINTS.forEach(function(e) {
+            if (!isUserEndpoint && endpoint.match("^" + e)) {
+                isUserEndpoint = true;
+            }
+        });
+        return isUserEndpoint;
+    };
     KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
         options = options || {};
         return KidaptiveUtils.Promise.wrap(function() {
@@ -6955,7 +6965,7 @@
     KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, settings) {
         settings = settings || {};
         settings.headers = {
-            "api-key": this.apiKey
+            "api-key": KidaptiveHttpClient.isUserEndpoint(endpoint) ? this.sdk.userManager.apiKey : this.apiKey
         };
         settings.xhrFields = {
             withCredentials: true
@@ -6967,8 +6977,6 @@
         } else if (settings.method === "POST") {
             settings.contentType = "application/json";
             settings.data = JSON.stringify(params);
-        } else {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Method must be 'GET' or 'POST'");
         }
         var d = new DataView(new ArrayBuffer(32));
         sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n, i) {
@@ -6976,11 +6984,95 @@
         });
         return btoa(String.fromCharCode.apply(undefined, new Array(32).fill(0).map(function(_, i) {
             return d.getUint8(i);
-        }))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) >= 0 ? ".alpUserData" : ".alpAppData");
+        }))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
     };
     "use strict";
     var KidaptiveUserManager = function(sdk) {
         this.sdk = sdk;
+        var stored = KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/, ".alpUserData"));
+        this.apiKey = KidaptiveUtils.getObject(stored, [ "apiKey" ]) || sdk.httpClient.apiKey;
+    };
+    KidaptiveUserManager.prototype.storeUser = function(user) {
+        if (user.apiKey) {
+            this.apiKey = user.apiKey;
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/, ".alpUserData"), user);
+            delete user.apiKey;
+        }
+        this.currentUser = user;
+        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.USER), user);
+    };
+    KidaptiveUserManager.prototype.createUser = function(params) {
+        params = KidaptiveUtils.copyObject(params);
+        var format = {
+            email: "",
+            password: "",
+            nickname: ""
+        };
+        KidaptiveUtils.checkObjectFormat(params, format);
+        if (!params.email) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
+        }
+        if (!params.password) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+        }
+        Object.keys(params).forEach(function(key) {
+            if (format[key] === undefined) {
+                delete params[key];
+            }
+        });
+        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {
+            noCache: true
+        }).then(function(user) {
+            this.storeUser(user);
+        }.bind(this));
+    };
+    KidaptiveUserManager.prototype.updateUser = function(params) {
+        params = KidaptiveUtils.copyObject(params);
+        var format = {
+            password: "",
+            nickname: "",
+            deviceId: ""
+        };
+        KidaptiveUtils.checkObjectFormat(params, format);
+        Object.keys(params).forEach(function(key) {
+            if (format[key] === undefined) {
+                delete params[key];
+            }
+        });
+        [ "nickname", "deviceId" ].forEach(function(prop) {
+            if (params[prop] === undefined) {
+                params[prop] = this.currentUser[prop];
+            }
+        }.bind(this));
+        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.USER, params, {
+            noCache: true
+        }).then(function(user) {
+            this.storeUser(user);
+        }.bind(this));
+    };
+    KidaptiveUserManager.prototype.loginUser = function(params) {
+        params = KidaptiveUtils.copyObject(params);
+        var format = {
+            email: "",
+            password: ""
+        };
+        KidaptiveUtils.checkObjectFormat(params, format);
+        if (!params.email) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
+        }
+        if (!params.password) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+        }
+        Object.keys(params).forEach(function(key) {
+            if (format[key] === undefined) {
+                delete params[key];
+            }
+        });
+        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGIN, params, {
+            noCache: true
+        }).then(function(user) {
+            this.storeUser(user);
+        }.bind(this));
     };
     KidaptiveUserManager.prototype.refreshUser = function() {
         return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.USER).then(function(user) {
@@ -6992,7 +7084,12 @@
         this.currentUser = undefined;
         return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {
             noCache: true
-        });
+        }).then(function() {
+            this.apiKey = this.sdk.httpClient.apiKey;
+        }.bind(this), function(error) {
+            this.apiKey = this.sdk.httpClient.apiKey;
+            throw error;
+        }.bind(this));
     };
     "use strict";
     var KidaptiveLearnerManager = function(sdk) {
@@ -7232,7 +7329,7 @@
         var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, ability.dimensionId ]);
         if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
             KidaptiveUtils.putObject(this.latentAbilities, [ learnerId, ability.dimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId).replace(/[.].*/, ".alpUserData"), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
                 return this.latentAbilities[learnerId][dimId];
             }.bind(this)));
         }
@@ -7241,7 +7338,7 @@
         var curAbil = KidaptiveUtils.getObject(this.localAbilities, [ learnerId, ability.localDimensionId ]);
         if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
             KidaptiveUtils.putObject(this.localAbilities, [ learnerId, ability.localDimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId).replace(/[.].*/, ".alpUserData"), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
                 return this.localAbilities[learnerId][dimId];
             }.bind(this)));
         }
@@ -7508,9 +7605,6 @@
         return this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.INGESTION).replace(/[.].*/, ".alpEventData");
     };
     KidaptiveEventManager.prototype.createAgentRequest = function(name, type, properties) {
-        if (!this.sdk.userManager.currentUser) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User is not logged in");
-        }
         if (!name) {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
         }
@@ -7635,7 +7729,7 @@
                 }
             });
         }
-        if (type === "Result") {
+        if (type === "Result" && (!tags || tags.SKIP_IRT !== "true" && tags.SKIP_LEARNER_IRT !== "true")) {
             attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
         }
         return {
@@ -7868,8 +7962,10 @@
                 options = KidaptiveUtils.copyObject(options) || {};
                 KidaptiveUtils.checkObjectFormat(options, {
                     dev: false,
-                    flushInterval: 0
+                    flushInterval: 0,
+                    noOidc: false
                 });
+                this.options = options;
                 this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
                 this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function(app) {
                     if (appVersion.version < app.minVersion) {
@@ -7888,6 +7984,7 @@
                     return this.modelManager.refreshAppModels();
                 }.bind(this)).then(function() {
                     sdk = this;
+                    this.httpClient.sdk = this;
                     defaultFlushInterval = options.flushInterval === undefined ? 6e4 : options.flushInterval;
                     exports.startAutoFlush();
                     return refreshUserData().catch(function() {});
@@ -7895,6 +7992,16 @@
                     resolve(this);
                 }.bind(this), reject);
             }.bind(this));
+        };
+        KidaptiveSdk.prototype.checkOidc = function() {
+            if (!this.options.noOidc) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in OIDC context");
+            }
+        };
+        KidaptiveSdk.prototype.checkUser = function() {
+            if (!this.userManager.currentUser) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User not logged in");
+            }
         };
         exports.init = function(apiKey, appVersion, options) {
             return addToQueue(function() {
@@ -7925,7 +8032,41 @@
         exports.logoutUser = function() {
             return addToQueue(function() {
                 sdkInitFilter();
-                logout();
+                return logout();
+            });
+        };
+        exports.loginUser = function(params) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                return logout().then(function() {}, function() {}).then(function() {
+                    return sdk.userManager.loginUser(params);
+                }).then(function(user) {
+                    return refreshUserData().then(function() {
+                        return user;
+                    });
+                });
+            });
+        };
+        exports.createUser = function(params) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                return logout().catch(function() {}).then(function() {
+                    return sdk.userManager.createUser(params);
+                }).then(function(user) {
+                    return refreshUserData().then(function() {
+                        return user;
+                    });
+                });
+            });
+        };
+        exports.updateUser = function(params) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                sdk.checkUser();
+                return sdk.userManager.updateUser(params);
             });
         };
         exports.getLearnerById = function(id) {
