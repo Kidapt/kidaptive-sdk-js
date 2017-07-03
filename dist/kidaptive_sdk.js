@@ -7879,7 +7879,7 @@
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Local dimension " + params["local-dimension"] + " not found");
         }
         var probSuccess = params.successProbability || .7;
-        var mean = this.sdk.modelManager.getLocalAbilities(learnerId, localDim.id).mean;
+        var mean = this.sdk.modelManager.getLocalAbilities(params.learnerId, localDim.id).mean;
         var context = {};
         var prompts = this.sdk.modelManager.getModels("item", params).map(function(i) {
             return {
