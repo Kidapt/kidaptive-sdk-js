@@ -5,6 +5,7 @@
 
 describe('KidaptiveHttpClient Unit Tests', function() {
     var API_KEY = 'API_KEY';
+    var USER_API_KEY = 'USER_API_KEY';
     var ENDPOINT = 'ENDPOINT';
     var DATA = {boolean: true, number: 1, string: 'a', array:[]};
     var PARAMS = {boolean: false, number: 2, string: 'b', array:[3]};
@@ -12,6 +13,17 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     var ajaxStub;
     var appDelSpy;
     var userDelSpy;
+
+    var createClient = function(dev) {
+        var client = new KidaptiveHttpClient(API_KEY, dev);
+        client.sdk = {
+            userManager: {
+                apiKey: USER_API_KEY
+            }
+        };
+
+        return client;
+    };
 
     before(function() {
         ajaxStub = sinon.stub($, 'ajax');
@@ -37,7 +49,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('dev parameters', function() {
-        var client = new KidaptiveHttpClient(API_KEY, true);
+        var client = createClient(true);
         return client.ajax('GET', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
@@ -51,7 +63,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('prod parameters', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
         return client.ajax('GET', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
@@ -65,12 +77,12 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('post', function() {
-        var client = new KidaptiveHttpClient(API_KEY, true);
+        var client = createClient();
         return client.ajax('POST', ENDPOINT, PARAMS).then(function(){
             $.ajax.calledOnce.should.true();
             var args = $.ajax.lastCall.args[0];
             should.exist(args);
-            args.should.property('url').startWith(KidaptiveConstants.HOST_DEV).endWith(ENDPOINT);
+            args.should.property('url').startWith(KidaptiveConstants.HOST_PROD).endWith(ENDPOINT);
             args.should.property('headers').property('api-key').equal(API_KEY);
             args.should.property('xhrFields').property('withCredentials').true();
             args.should.property('method').equal('POST');
@@ -78,16 +90,8 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         });
     });
 
-    it('bad method', function() {
-        var client = new KidaptiveHttpClient(API_KEY, true);
-        return client.ajax('METHOD', ENDPOINT, PARAMS).should.rejected().then(function() {
-            appDelSpy.called.should.false();
-            userDelSpy.called.should.false();
-        });
-    });
-
     it('caching', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -98,7 +102,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching undefined', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
         ajaxStub.resolves();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
@@ -110,7 +114,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('no cache option', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('POST', ENDPOINT, PARAMS, {noCache:true}).then(function() {
             ajaxStub.rejects({});
@@ -122,7 +126,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching miss method', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -134,7 +138,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching miss endpoint', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -146,7 +150,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching miss params', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -158,7 +162,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching miss API key', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -170,7 +174,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching miss host', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({});
@@ -182,7 +186,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('caching error with status code', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
 
         return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
             ajaxStub.rejects({status:123});
@@ -196,7 +200,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('user data removal', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
         var def = $.Deferred().resolve();
 
         Object.keys(KidaptiveConstants.ENDPOINTS).forEach(function(e){
@@ -226,7 +230,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('app data removal', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
         var def = $.Deferred().resolve();
 
         Object.keys(KidaptiveConstants.ENDPOINTS).forEach(function(e){
@@ -256,7 +260,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
     });
 
     it('401 user data removal', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+        var client = createClient();
         var def = $.Deferred().resolve();
 
         Object.keys(KidaptiveConstants.ENDPOINTS).forEach(function(e){
@@ -277,8 +281,8 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         });
     });
 
-    it('401 user data removal', function() {
-        var client = new KidaptiveHttpClient(API_KEY);
+    it('401 app data removal', function() {
+        var client = createClient();
         var def = $.Deferred().resolve();
 
         Object.keys(KidaptiveConstants.ENDPOINTS).forEach(function(e){
@@ -292,7 +296,7 @@ describe('KidaptiveHttpClient Unit Tests', function() {
         });
 
         return def.then(function() {
-            return client.ajax('GET', KidaptiveConstants.ENDPOINTS[0], {});
+            return client.ajax('GET', ENDPOINT, {});
         }).should.rejected().then(function() {
             appDelSpy.called.should.true();
             userDelSpy.called.should.true();

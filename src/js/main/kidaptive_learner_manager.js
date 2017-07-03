@@ -7,6 +7,64 @@ var KidaptiveLearnerManager = function(sdk) {
     this.clearLearnerList();
 };
 
+KidaptiveLearnerManager.prototype.createLearner = function(params) {
+    params = KidaptiveUtils.copyObject(params) || {};
+    var format = {name:'', birthday:0, gender:''};
+    KidaptiveUtils.checkObjectFormat(params, format);
+
+    if (!params.name) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "name is required");
+    }
+
+    if (params.gender && ['decline','male','female'].indexOf(params.gender) === -1) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+    }
+
+    Object.keys(params).forEach(function(key) {
+        if (format[key] === undefined) {
+            delete params[key];
+        }
+    });
+    return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.LEARNER, params, {noCache:true})
+};
+
+KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
+    var learner = this.idToLearner[learnerId];
+    if (!learner) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, 'Learner ' + learnerId + ' not found');
+    }
+
+    params = KidaptiveUtils.copyObject(params) || {};
+    var format = {name:'', birthday:0, gender:'', icon:''};
+    KidaptiveUtils.checkObjectFormat(params, format);
+
+    if (params.gender && ['decline','male','female'].indexOf(params.gender) === -1) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+    }
+
+    Object.keys(params).forEach(function(key) {
+        if (format[key] === undefined) {
+            delete params[key];
+        }
+    });
+
+    ['name', 'birthday', 'gender', 'icon'].forEach(function(prop) {
+        if (params[prop] === undefined) {
+            params[prop] = this.idToLearner[learnerId][prop];
+        }
+    }.bind(this));
+
+    return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, params, {noCache:true});
+};
+
+KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
+    if (!this.idToLearner[learnerId]) {
+        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, 'Learner ' + learnerId + ' not found');
+    }
+
+    return this.sdk.httpClient.ajax('DELETE', KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {noCache:true});
+};
+
 KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
     return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LEARNER).then(function(learners) {
         var idToLearner = {};

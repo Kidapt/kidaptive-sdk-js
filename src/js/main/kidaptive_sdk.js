@@ -201,7 +201,7 @@
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
-            return logout().then(function(){}, function(){}).then(function() {
+            return logout().catch(function(){}).then(function() {
                 return sdk.userManager.loginUser(params)
             }).then(function(user) {
                 return refreshUserData().then(function() {
@@ -231,11 +231,54 @@
             sdkInitFilter();
             sdk.checkOidc();
             sdk.checkUser();
-            return sdk.userManager.updateUser(params);
+            return sdk.userManager.updateUser(params).then(function(user) {
+                return refreshUserData().then(function() {
+                    return user;
+                });
+            });
         });
     };
 
     //Learner Manager
+    exports.createLearner = function(params) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+            sdk.checkUser();
+            return sdk.learnerManager.createLearner(params).then(function(learner) {
+                return refreshUserData().then(function() {
+                    return learner;
+                });
+            });
+        });
+    };
+
+    exports.updateLearner = function(learnerId, params) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+            sdk.checkUser();
+            return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
+                return refreshUserData().then(function() {
+                    return learner;
+                });
+            });
+        });
+    };
+
+    exports.deleteLearner = function(learnerId) {
+        return addToQueue(function() {
+            sdkInitFilter();
+            sdk.checkOidc();
+            sdk.checkUser();
+            return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
+                return refreshUserData().then(function() {
+                    return learner;
+                });
+            });
+        });
+    };
+
     exports.getLearnerById = function(id) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.learnerManager.idToLearner[id]);

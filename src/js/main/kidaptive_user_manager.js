@@ -5,14 +5,18 @@
 
 var KidaptiveUserManager = function(sdk) {
     this.sdk = sdk;
-    var stored = KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/,'.alpUserData'));
-    this.apiKey =  KidaptiveUtils.getObject(stored, ['apiKey']) || sdk.httpClient.apiKey;
+    this.apiKeyCacheKey = sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER);
+    try {
+        this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), ['apiKey']) || sdk.httpClient.apiKey;
+    } catch (e) {
+        this.apiKey = sdk.httpClient.apiKey;
+    }
 };
 
 KidaptiveUserManager.prototype.storeUser = function(user) {
     if (user.apiKey) {
         this.apiKey = user.apiKey;
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/,'.alpUserData'), user);
+        KidaptiveUtils.localStorageSetItem(this.apiKeyCacheKey, user);
         delete user.apiKey;
     }
     this.currentUser = user;
@@ -20,7 +24,7 @@ KidaptiveUserManager.prototype.storeUser = function(user) {
 };
 
 KidaptiveUserManager.prototype.createUser = function(params) {
-    params = KidaptiveUtils.copyObject(params);
+    params = KidaptiveUtils.copyObject(params) || {};
     var format = {email:'', password:'', nickname:''};
     KidaptiveUtils.checkObjectFormat(params, format);
 
@@ -39,11 +43,12 @@ KidaptiveUserManager.prototype.createUser = function(params) {
     });
     return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {noCache:true}).then(function(user) {
         this.storeUser(user);
+        return user;
     }.bind(this));
 };
 
 KidaptiveUserManager.prototype.updateUser = function(params) {
-    params = KidaptiveUtils.copyObject(params);
+    params = KidaptiveUtils.copyObject(params) || {};
     var format = {password:'', nickname:'', deviceId:''};
     KidaptiveUtils.checkObjectFormat(params, format);
 
@@ -61,11 +66,12 @@ KidaptiveUserManager.prototype.updateUser = function(params) {
 
     return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.USER, params, {noCache:true}).then(function(user) {
         this.storeUser(user);
+        return user;
     }.bind(this));
 };
 
 KidaptiveUserManager.prototype.loginUser = function(params) {
-    params = KidaptiveUtils.copyObject(params);
+    params = KidaptiveUtils.copyObject(params) || {};
     var format = {email:'', password:''};
     KidaptiveUtils.checkObjectFormat(params, format);
 
@@ -84,6 +90,7 @@ KidaptiveUserManager.prototype.loginUser = function(params) {
     });
     return this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.LOGIN, params, {noCache:true}).then(function(user) {
         this.storeUser(user);
+        return user;
     }.bind(this));
 };
 
