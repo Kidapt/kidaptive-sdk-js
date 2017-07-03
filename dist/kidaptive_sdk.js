@@ -6989,20 +6989,24 @@
     "use strict";
     var KidaptiveUserManager = function(sdk) {
         this.sdk = sdk;
-        var stored = KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/, ".alpUserData"));
-        this.apiKey = KidaptiveUtils.getObject(stored, [ "apiKey" ]) || sdk.httpClient.apiKey;
+        this.apiKeyCacheKey = sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER);
+        try {
+            this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), [ "apiKey" ]) || sdk.httpClient.apiKey;
+        } catch (e) {
+            this.apiKey = sdk.httpClient.apiKey;
+        }
     };
     KidaptiveUserManager.prototype.storeUser = function(user) {
         if (user.apiKey) {
             this.apiKey = user.apiKey;
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER).replace(/[.].*/, ".alpUserData"), user);
+            KidaptiveUtils.localStorageSetItem(this.apiKeyCacheKey, user);
             delete user.apiKey;
         }
         this.currentUser = user;
         KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.USER), user);
     };
     KidaptiveUserManager.prototype.createUser = function(params) {
-        params = KidaptiveUtils.copyObject(params);
+        params = KidaptiveUtils.copyObject(params) || {};
         var format = {
             email: "",
             password: "",
@@ -7024,10 +7028,11 @@
             noCache: true
         }).then(function(user) {
             this.storeUser(user);
+            return user;
         }.bind(this));
     };
     KidaptiveUserManager.prototype.updateUser = function(params) {
-        params = KidaptiveUtils.copyObject(params);
+        params = KidaptiveUtils.copyObject(params) || {};
         var format = {
             password: "",
             nickname: "",
@@ -7048,10 +7053,11 @@
             noCache: true
         }).then(function(user) {
             this.storeUser(user);
+            return user;
         }.bind(this));
     };
     KidaptiveUserManager.prototype.loginUser = function(params) {
-        params = KidaptiveUtils.copyObject(params);
+        params = KidaptiveUtils.copyObject(params) || {};
         var format = {
             email: "",
             password: ""
@@ -7072,6 +7078,7 @@
             noCache: true
         }).then(function(user) {
             this.storeUser(user);
+            return user;
         }.bind(this));
     };
     KidaptiveUserManager.prototype.refreshUser = function() {
@@ -7095,6 +7102,67 @@
     var KidaptiveLearnerManager = function(sdk) {
         this.sdk = sdk;
         this.clearLearnerList();
+    };
+    KidaptiveLearnerManager.prototype.createLearner = function(params) {
+        params = KidaptiveUtils.copyObject(params) || {};
+        var format = {
+            name: "",
+            birthday: 0,
+            gender: ""
+        };
+        KidaptiveUtils.checkObjectFormat(params, format);
+        if (!params.name) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "name is required");
+        }
+        if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+        }
+        Object.keys(params).forEach(function(key) {
+            if (format[key] === undefined) {
+                delete params[key];
+            }
+        });
+        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER, params, {
+            noCache: true
+        });
+    };
+    KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
+        var learner = this.idToLearner[learnerId];
+        if (!learner) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
+        }
+        params = KidaptiveUtils.copyObject(params) || {};
+        var format = {
+            name: "",
+            birthday: 0,
+            gender: "",
+            icon: ""
+        };
+        KidaptiveUtils.checkObjectFormat(params, format);
+        if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+        }
+        Object.keys(params).forEach(function(key) {
+            if (format[key] === undefined) {
+                delete params[key];
+            }
+        });
+        [ "name", "birthday", "gender", "icon" ].forEach(function(prop) {
+            if (params[prop] === undefined) {
+                params[prop] = this.idToLearner[learnerId][prop];
+            }
+        }.bind(this));
+        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, params, {
+            noCache: true
+        });
+    };
+    KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
+        if (!this.idToLearner[learnerId]) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
+        }
+        return this.sdk.httpClient.ajax("DELETE", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {
+            noCache: true
+        });
     };
     KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
         return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LEARNER).then(function(learners) {
@@ -8039,7 +8107,7 @@
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
-                return logout().then(function() {}, function() {}).then(function() {
+                return logout().catch(function() {}).then(function() {
                     return sdk.userManager.loginUser(params);
                 }).then(function(user) {
                     return refreshUserData().then(function() {
@@ -8066,7 +8134,47 @@
                 sdkInitFilter();
                 sdk.checkOidc();
                 sdk.checkUser();
-                return sdk.userManager.updateUser(params);
+                return sdk.userManager.updateUser(params).then(function(user) {
+                    return refreshUserData().then(function() {
+                        return user;
+                    });
+                });
+            });
+        };
+        exports.createLearner = function(params) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                sdk.checkUser();
+                return sdk.learnerManager.createLearner(params).then(function(learner) {
+                    return refreshUserData().then(function() {
+                        return learner;
+                    });
+                });
+            });
+        };
+        exports.updateLearner = function(learnerId, params) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                sdk.checkUser();
+                return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
+                    return refreshUserData().then(function() {
+                        return learner;
+                    });
+                });
+            });
+        };
+        exports.deleteLearner = function(learnerId) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                sdk.checkOidc();
+                sdk.checkUser();
+                return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
+                    return refreshUserData().then(function() {
+                        return learner;
+                    });
+                });
             });
         };
         exports.getLearnerById = function(id) {
