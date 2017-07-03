@@ -7990,13 +7990,17 @@
             }, function() {
                 return sdk.modelManager.refreshLatentAbilities().then(function(results) {
                     results.forEach(function(r) {
-                        filterAuthError(r.error);
+                        if (!r.resolved) {
+                            filterAuthError(r.error);
+                        }
                     });
                 });
             }, function() {
                 return sdk.modelManager.refreshLocalAbilities().then(function(results) {
                     results.forEach(function(r) {
-                        filterAuthError(r.error);
+                        if (!r.resolved) {
+                            filterAuthError(r.error);
+                        }
                     });
                 });
             } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
