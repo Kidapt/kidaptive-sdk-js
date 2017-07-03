@@ -192,7 +192,7 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
         });
     }
 
-    if (type === 'Result' && (!tags || tags.SKIP_IRT !== 'true' && tags.SKIP_LEARNER_IRT !== 'true')) {
+    if (type === 'Result' && (!tags || (tags.SKIP_IRT !== 'true' && tags.SKIP_LEARNER_IRT !== 'true'))) {
         attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
     }
 
