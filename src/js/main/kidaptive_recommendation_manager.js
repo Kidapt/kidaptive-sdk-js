@@ -61,7 +61,7 @@ OptimalDifficultyRecommender.prototype.getRecommendations = function(params) {
     }
 
     var probSuccess = params.successProbability || 0.7;
-    var mean = this.sdk.modelManager.getLocalAbilities(learnerId, localDim.id).mean;
+    var mean = this.sdk.modelManager.getLocalAbilities(params.learnerId, localDim.id).mean;
     var context = {};
     var prompts = this.sdk.modelManager.getModels('item', params).map(function(i) {
         //randomize order to break ties
