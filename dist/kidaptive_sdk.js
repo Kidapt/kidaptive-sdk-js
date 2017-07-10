@@ -7797,7 +7797,7 @@
                 }
             });
         }
-        if (type === "Result" && (!tags || tags.SKIP_IRT !== "true" && tags.SKIP_LEARNER_IRT !== "true")) {
+        if (type === "Result" && (!tags || tags.SKIP_IRT.toLowerCase() !== "true" && tags.SKIP_LEARNER_IRT.toLowerCase() !== "true")) {
             attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
         }
         return {
