@@ -5,7 +5,7 @@
 
 var KidaptiveUserManager = function(sdk) {
     this.sdk = sdk;
-    this.apiKeyCacheKey = sdk.httpClient.getCacheKey('POST', KidaptiveConstants.ENDPOINTS.CREATE_USER);
+    this.apiKeyCacheKey = sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.APP).replace(/[.].*/,'.alpApiKey');
     try {
         this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), ['apiKey']) || sdk.httpClient.apiKey;
     } catch (e) {
@@ -105,8 +105,10 @@ KidaptiveUserManager.prototype.logoutUser = function() {
     this.currentUser = undefined;
     return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {noCache:true}).then(function() {
         this.apiKey = this.sdk.httpClient.apiKey;
+        localStorage.removeItem(this.apiKeyCacheKey);
     }.bind(this), function(error) {
         this.apiKey = this.sdk.httpClient.apiKey;
+        localStorage.removeItem(this.apiKeyCacheKey);
         throw error;
     }.bind(this));
 };

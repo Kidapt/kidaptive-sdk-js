@@ -4,7 +4,10 @@
 KidaptiveSdk.init("gPt1fU+pTaNgFv61Qbp3GUiaHsGcu+0h8", {version:"0.0.0"}, {
     dev:true,
     flushInterval:10000,
-    noOidc:true
+    noOidc:true,
+    autoFlushCallbacks:function(resultPromise) {
+        resultPromise.then(console.log);
+    }
 }).then(function(_) {
     sdk = _;
 }, console.log);

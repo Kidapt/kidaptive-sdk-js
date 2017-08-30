@@ -220,6 +220,7 @@
     exports.refresh = function() {
         return addToQueue(function() {
             sdkInitFilter();
+            sdk.checkUser();
             return refreshUserData();
         });
     };
@@ -377,6 +378,7 @@
     //Trial Manager
     exports.startTrial = function(learnerId) {
         sdkInitFilter();
+        sdk.checkUser();
         sdk.trialManager.startTrial(learnerId);
     };
 
@@ -393,11 +395,13 @@
     //Event Manager
     exports.reportBehavior = function(eventName, properties) {
         sdkInitFilter();
+        sdk.checkUser();
         sdk.eventManager.reportBehavior(eventName, properties);
     };
 
     exports.reportEvidence = function(eventName, properties) {
         sdkInitFilter();
+        sdk.checkUser();
         sdk.eventManager.reportEvidence(eventName, properties);
     };
 
