@@ -6989,7 +6989,7 @@
     "use strict";
     var KidaptiveUserManager = function(sdk) {
         this.sdk = sdk;
-        this.apiKeyCacheKey = sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER);
+        this.apiKeyCacheKey = sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.APP).replace(/[.].*/, ".alpApiKey");
         try {
             this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), [ "apiKey" ]) || sdk.httpClient.apiKey;
         } catch (e) {
@@ -7093,8 +7093,10 @@
             noCache: true
         }).then(function() {
             this.apiKey = this.sdk.httpClient.apiKey;
+            localStorage.removeItem(this.apiKeyCacheKey);
         }.bind(this), function(error) {
             this.apiKey = this.sdk.httpClient.apiKey;
+            localStorage.removeItem(this.apiKeyCacheKey);
             throw error;
         }.bind(this));
     };
@@ -7646,7 +7648,10 @@
         this.eventQueue.push(event);
         KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey(), this.eventQueue);
     };
-    KidaptiveEventManager.prototype.flushEvents = function() {
+    KidaptiveEventManager.prototype.flushEvents = function(callbacks) {
+        if (!callbacks) {
+            callbacks = [];
+        }
         var user = this.sdk.userManager.currentUser;
         if (!user) {
             return KidaptiveUtils.Promise.resolve([]);
@@ -7667,6 +7672,9 @@
         }.bind(this));
         this.eventQueue = [];
         localStorage.removeItem(this.getEventQueueCacheKey());
+        callbacks.forEach(function(c) {
+            c(flushResults);
+        });
         return flushResults;
     };
     KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
@@ -7972,7 +7980,7 @@
         var logout = function(authError) {
             return KidaptiveUtils.Promise.wrap(function() {
                 if (!authError) {
-                    return sdk.eventManager.flushEvents();
+                    return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
                 }
             }).then(function() {
                 sdk.trialManager.endAllTrials();
@@ -8010,12 +8018,30 @@
             if (!flushing && flushInterval > 0) {
                 flushTimeoutId = window.setTimeout(function() {
                     flushing = true;
-                    exports.flushEvents().then(function() {
+                    flushEvents(sdk.options.autoFlushCallbacks).then(function() {
                         flushing = false;
                         autoFlush();
                     });
                 }, flushInterval);
             }
+        };
+        var flushEvents = function(callbacks) {
+            return addToQueue(function() {
+                sdkInitFilter();
+                var r;
+                return sdk.eventManager.flushEvents(callbacks).then(function(results) {
+                    r = returnResults.bind(undefined, results);
+                    results.forEach(function(r) {
+                        if (!r.resolved) {
+                            filterAuthError(r.error);
+                        }
+                    });
+                }).catch(handleAuthError).then(function() {
+                    return r();
+                }, function() {
+                    return r();
+                });
+            });
         };
         var returnResults = function(results) {
             return results;
@@ -8031,11 +8057,22 @@
                     version: "",
                     build: ""
                 });
+                var autoFlushCallbacks = options.autoFlushCallbacks || [];
                 options = KidaptiveUtils.copyObject(options) || {};
                 KidaptiveUtils.checkObjectFormat(options, {
                     dev: false,
                     flushInterval: 0,
                     noOidc: false
+                });
+                options.autoFlushCallbacks = [];
+                if (!(autoFlushCallbacks instanceof Array)) {
+                    autoFlushCallbacks = [ autoFlushCallbacks ];
+                }
+                autoFlushCallbacks.forEach(function(f) {
+                    if (!(f instanceof Function)) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "autoFlushCallback must be a function or array of functions");
+                    }
+                    options.autoFlushCallbacks.push(f);
                 });
                 this.options = options;
                 this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
@@ -8094,6 +8131,7 @@
         exports.refresh = function() {
             return addToQueue(function() {
                 sdkInitFilter();
+                sdk.checkUser();
                 return refreshUserData();
             });
         };
@@ -8229,6 +8267,7 @@
         };
         exports.startTrial = function(learnerId) {
             sdkInitFilter();
+            sdk.checkUser();
             sdk.trialManager.startTrial(learnerId);
         };
         exports.endTrial = function(learnerId) {
@@ -8241,29 +8280,16 @@
         };
         exports.reportBehavior = function(eventName, properties) {
             sdkInitFilter();
+            sdk.checkUser();
             sdk.eventManager.reportBehavior(eventName, properties);
         };
         exports.reportEvidence = function(eventName, properties) {
             sdkInitFilter();
+            sdk.checkUser();
             sdk.eventManager.reportEvidence(eventName, properties);
         };
         exports.flushEvents = function() {
-            return addToQueue(function() {
-                sdkInitFilter();
-                var r;
-                return sdk.eventManager.flushEvents().then(function(results) {
-                    r = returnResults.bind(undefined, results);
-                    results.forEach(function(r) {
-                        if (!r.resolved) {
-                            filterAuthError(r.error);
-                        }
-                    });
-                }).catch(handleAuthError).then(function() {
-                    return r();
-                }, function() {
-                    return r();
-                });
-            });
+            return flushEvents();
         };
         exports.startAutoFlush = function(interval) {
             sdkInitFilter();
@@ -8305,7 +8331,7 @@
                 sdk.trialManager.endAllTrials();
                 exports.stopAutoFlush();
             });
-            exports.flushEvents();
+            flushEvents(sdk.options.autoFlushCallbacks);
             return addToQueue(function() {
                 sdk = undefined;
             });
