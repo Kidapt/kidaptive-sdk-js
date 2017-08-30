@@ -27,7 +27,10 @@ KidaptiveEventManager.prototype.queueEvent = function(event) {
     KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey(), this.eventQueue);
 };
 
-KidaptiveEventManager.prototype.flushEvents = function() {
+KidaptiveEventManager.prototype.flushEvents = function(callbacks) {
+    if (!callbacks) {
+        callbacks = [];
+    }
     var user = this.sdk.userManager.currentUser;
     if (!user) {
         return KidaptiveUtils.Promise.resolve([]);
@@ -49,6 +52,9 @@ KidaptiveEventManager.prototype.flushEvents = function() {
 
     this.eventQueue = [];
     localStorage.removeItem(this.getEventQueueCacheKey());
+    callbacks.forEach(function(c) {
+        c(flushResults);
+    });
     return flushResults;
 };
 
