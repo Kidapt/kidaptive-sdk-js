@@ -9,9 +9,6 @@ var KidaptiveTrialManager = function(sdk) {
 };
 
 KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
-    if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-    }
     if (this.openTrials[learnerId]) {
         this.endTrial(learnerId);
     }

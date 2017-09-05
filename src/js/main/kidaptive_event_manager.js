@@ -19,7 +19,6 @@ KidaptiveEventManager.prototype.reportBehavior = function(eventName, properties)
 
 KidaptiveEventManager.prototype.reportEvidence = function(eventName, properties) {
     this.queueEvent(this.createAgentRequest(eventName, 'Result', properties));
-    //TODO: run IRT
 };
 
 KidaptiveEventManager.prototype.queueEvent = function(event) {
@@ -95,9 +94,7 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
     }
     if (learnerId) {
-        if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-        }
+        this.sdk.checkLearner(learnerId);
     }
 
     var trial = this.sdk.trialManager.openTrials[learnerId] || {};
@@ -204,6 +201,8 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
         attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
     }
 
+    var userId = this.sdk.anonymousSession ? 0 : this.sdk.userManager.currentUser.id;
+
     return {
         appInfo: {
             uri: this.sdk.appInfo.uri,
@@ -218,7 +217,7 @@ KidaptiveEventManager.prototype.createAgentRequest = function(name, type, proper
             version: KidaptiveConstants.ALP_EVENT_VERSION,
             type: type,
             name: name,
-            userId: this.sdk.userManager.currentUser.id,
+            userId: userId,
             learnerId: learnerId,
             gameURI: gameUri,
             promptURI: promptUri,
