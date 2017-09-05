@@ -51,6 +51,7 @@
             sdk.modelManager.clearLearnerModels();
             sdk.learnerManager.clearLearnerList();
             KidaptiveHttpClient.deleteUserData();
+            sdk.anonymousSession = false;
             return sdk.userManager.logoutUser();
         });
     };
@@ -198,6 +199,12 @@
         }
     };
 
+    KidaptiveSdk.prototype.checkLearner = function(learnerId) {
+        if (!this.learnerManager.idToLearner[learnerId]) {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, 'Learner ' + learnerId + ' not found');
+        }
+    };
+
     //public interface for SDK
     exports.init = function(apiKey, appVersion, options) {
         return addToQueue(function() {
@@ -215,6 +222,21 @@
     exports.getAppInfo = function() {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.appInfo);
+    };
+
+    exports.startAnonymousSession = function() {
+        return addToQueue(function() {
+            sdkInitFilter();
+            logout().catch(function(){}).then(function(){
+                sdk.learnerManager.idToLearner[-1] = {id:-1};
+                sdk.anonymousSession = true;
+            });
+        });
+    };
+
+    exports.isAnonymousSession = function() {
+        sdkInitFilter();
+        return sdk.anonymousSession;
     };
 
     exports.refresh = function() {
@@ -299,6 +321,7 @@
             sdkInitFilter();
             sdk.checkOidc();
             sdk.checkUser();
+            sdk.checkLearner(learnerId);
             return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
                 return refreshUserData().then(function() {
                     return learner;
@@ -312,6 +335,7 @@
             sdkInitFilter();
             sdk.checkOidc();
             sdk.checkUser();
+            sdk.checkLearner(learnerId);
             return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
                 return refreshUserData().then(function() {
                     return learner;
@@ -353,6 +377,7 @@
 
     exports.getLatentAbilities = function(learnerId, uri) {
         sdkInitFilter();
+        sdk.checkLearner(learnerId);
         var dimId;
         if (uri) {
             dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel['dimension'], [uri, 'id']);
@@ -365,6 +390,7 @@
 
     exports.getLocalAbilities = function(learnerId, uri) {
         sdkInitFilter();
+        sdk.checkLearner(learnerId);
         var dimId;
         if (uri) {
             dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel['local-dimension'], [uri, 'id']);
@@ -378,7 +404,7 @@
     //Trial Manager
     exports.startTrial = function(learnerId) {
         sdkInitFilter();
-        sdk.checkUser();
+        sdk.checkLearner(learnerId);
         sdk.trialManager.startTrial(learnerId);
     };
 
@@ -401,8 +427,13 @@
 
     exports.reportEvidence = function(eventName, properties) {
         sdkInitFilter();
-        sdk.checkUser();
-        sdk.eventManager.reportEvidence(eventName, properties);
+        if (!sdk.anonymousSession) {
+            sdk.checkUser();
+            sdk.eventManager.reportEvidence(eventName, properties);
+        } else {
+            //this verifies the event and runs IRT without putting it in the event queue.
+            sdk.eventManager.createAgentRequest(eventName, 'Result', properties)
+        }
     };
 
     exports.flushEvents = function() {
