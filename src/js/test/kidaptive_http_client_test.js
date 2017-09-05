@@ -302,4 +302,33 @@ describe('KidaptiveHttpClient Unit Tests', function() {
             userDelSpy.called.should.true();
         });
     });
+
+    it('default cache no existing value', function() {
+        var client = createClient();
+        var defaultCache = {};
+
+        return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
+            Object.keys(localStorage).forEach(function(k) {
+                defaultCache[k] = "{}";
+            });
+            localStorage.clear();
+            ajaxStub.rejects({});
+            client = new KidaptiveHttpClient(API_KEY,false,defaultCache);
+            return client.ajax('GET', ENDPOINT, PARAMS);
+        }).should.fulfilledWith({});
+    });
+
+    it('default cache existing value', function() {
+        var client = createClient();
+        var defaultCache = {};
+
+        return client.ajax('GET', ENDPOINT, PARAMS).then(function() {
+            Object.keys(localStorage).forEach(function(k) {
+                defaultCache[k] = "{}";
+            });
+            ajaxStub.rejects({});
+            client = new KidaptiveHttpClient(API_KEY,false,defaultCache);
+            return client.ajax('GET', ENDPOINT, PARAMS);
+        }).should.fulfilledWith(DATA);
+    });
 });
