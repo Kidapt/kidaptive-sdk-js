@@ -3,9 +3,17 @@
  */
 "use strict";
 
-var KidaptiveHttpClient = function(_apiKey, dev) {
+var KidaptiveHttpClient = function(_apiKey, dev, defaultCache) {
     this.host = dev ? KidaptiveConstants.HOST_DEV : KidaptiveConstants.HOST_PROD;
     this.apiKey = _apiKey;
+    defaultCache = defaultCache || {};
+    Object.keys(defaultCache).forEach(function(k) {
+        try {
+            KidaptiveUtils.localStorageGetItem(k);
+        } catch (e) {
+            localStorage[k] = defaultCache[k];
+        }
+    });
 };
 
 KidaptiveHttpClient.USER_ENDPOINTS = [

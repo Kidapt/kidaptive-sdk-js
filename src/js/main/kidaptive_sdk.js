@@ -135,7 +135,7 @@
             var autoFlushCallbacks = options.autoFlushCallbacks || [];
 
             options = KidaptiveUtils.copyObject(options) || {};
-            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0, noOidc: false});
+            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0, noOidc: false, defaultHttpCache:{}});
 
             options.autoFlushCallbacks = [];
 
@@ -153,7 +153,7 @@
 
             this.options = options;
 
-            this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
+            this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
 
             this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
                 if (appVersion.version < app.minVersion) {
