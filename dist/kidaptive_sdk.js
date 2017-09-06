@@ -5881,7 +5881,7 @@
     sjcl.codec.utf8String = {
         fromBits: function(a) {
             var b = "", c = sjcl.bitArray.bitLength(a), d, e;
-            for (d = 0; d < c / 8; d++) 0 === (d & 3) && (e = a[d / 4]), b += String.fromCharCode(e >>> 24), 
+            for (d = 0; d < c / 8; d++) 0 === (d & 3) && (e = a[d / 4]), b += String.fromCharCode(e >>> 8 >>> 8 >>> 8), 
             e <<= 8;
             return decodeURIComponent(escape(b));
         },
@@ -8136,7 +8136,7 @@
         exports.startAnonymousSession = function() {
             return addToQueue(function() {
                 sdkInitFilter();
-                logout().catch(function() {}).then(function() {
+                return logout().catch(function() {}).then(function() {
                     sdk.learnerManager.idToLearner[-1] = {
                         id: -1
                     };
