@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
   "devDependencies": {
-    "uglify-js": "^3.0.11",
+    "uglify-js": "^3.0.28",
     "watchify": "^3.9.0"
   }
 }
