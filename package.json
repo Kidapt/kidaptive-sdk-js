@@ -6,7 +6,7 @@
   "scripts": {
     "install": "bower install",
     "build:irt": "cd src/js/main/irt && (make clean; make)",
-    "build:debug": "cat $(cat build_order) | uglifyjs -b --wrap KidaptiveSdk > dist/kidaptive_sdk.js",
+    "build:debug": "npm install && cat $(cat build_order) | uglifyjs -b --wrap KidaptiveSdk > dist/kidaptive_sdk.js",
     "build": "npm run build:irt && npm run build:debug && uglifyjs -m < dist/kidaptive_sdk.js > dist/kidaptive_sdk.min.js",
     "version": "npm run build && git add -A",
     "postversion": "git push --follow-tags kidapt master"
