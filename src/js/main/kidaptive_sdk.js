@@ -227,7 +227,7 @@
     exports.startAnonymousSession = function() {
         return addToQueue(function() {
             sdkInitFilter();
-            logout().catch(function(){}).then(function(){
+            return logout().catch(function(){}).then(function(){
                 sdk.learnerManager.idToLearner[-1] = {id:-1};
                 sdk.anonymousSession = true;
             });
