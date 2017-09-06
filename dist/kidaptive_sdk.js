@@ -6901,9 +6901,17 @@
         }
     };
     "use strict";
-    var KidaptiveHttpClient = function(_apiKey, dev) {
+    var KidaptiveHttpClient = function(_apiKey, dev, defaultCache) {
         this.host = dev ? KidaptiveConstants.HOST_DEV : KidaptiveConstants.HOST_PROD;
         this.apiKey = _apiKey;
+        defaultCache = defaultCache || {};
+        Object.keys(defaultCache).forEach(function(k) {
+            try {
+                KidaptiveUtils.localStorageGetItem(k);
+            } catch (e) {
+                localStorage[k] = defaultCache[k];
+            }
+        });
     };
     KidaptiveHttpClient.USER_ENDPOINTS = [ KidaptiveConstants.ENDPOINTS.USER, KidaptiveConstants.ENDPOINTS.LEARNER, KidaptiveConstants.ENDPOINTS.ABILITY, KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, KidaptiveConstants.ENDPOINTS.INSIGHT, KidaptiveConstants.ENDPOINTS.INGESTION, KidaptiveConstants.ENDPOINTS.LOGOUT ];
     KidaptiveHttpClient.isUserEndpoint = function(endpoint) {
@@ -7130,9 +7138,6 @@
     };
     KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
         var learner = this.idToLearner[learnerId];
-        if (!learner) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-        }
         params = KidaptiveUtils.copyObject(params) || {};
         var format = {
             name: "",
@@ -7159,9 +7164,6 @@
         });
     };
     KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
-        if (!this.idToLearner[learnerId]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-        }
         return this.sdk.httpClient.ajax("DELETE", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {
             noCache: true
         });
@@ -7595,9 +7597,6 @@
         this.openTrials = {};
     };
     KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
-        if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-        }
         if (this.openTrials[learnerId]) {
             this.endTrial(learnerId);
         }
@@ -7709,9 +7708,7 @@
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
         }
         if (learnerId) {
-            if (!this.sdk.learnerManager.idToLearner[learnerId]) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
-            }
+            this.sdk.checkLearner(learnerId);
         }
         var trial = this.sdk.trialManager.openTrials[learnerId] || {};
         if (type === "Result" && (!trial.trialTime || !trial.trialSalt)) {
@@ -7808,6 +7805,7 @@
         if (type === "Result" && (KidaptiveUtils.getObject(tags, [ "SKIP_IRT" ]) || "").toLowerCase() !== "true" && (KidaptiveUtils.getObject(tags, [ "SKIP_LEARNER_IRT" ]) || "").toLowerCase() !== "true") {
             attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
         }
+        var userId = this.sdk.anonymousSession ? 0 : this.sdk.userManager.currentUser.id;
         return {
             appInfo: {
                 uri: this.sdk.appInfo.uri,
@@ -7822,7 +7820,7 @@
                 version: KidaptiveConstants.ALP_EVENT_VERSION,
                 type: type,
                 name: name,
-                userId: this.sdk.userManager.currentUser.id,
+                userId: userId,
                 learnerId: learnerId,
                 gameURI: gameUri,
                 promptURI: promptUri,
@@ -7987,6 +7985,7 @@
                 sdk.modelManager.clearLearnerModels();
                 sdk.learnerManager.clearLearnerList();
                 KidaptiveHttpClient.deleteUserData();
+                sdk.anonymousSession = false;
                 return sdk.userManager.logoutUser();
             });
         };
@@ -8062,7 +8061,8 @@
                 KidaptiveUtils.checkObjectFormat(options, {
                     dev: false,
                     flushInterval: 0,
-                    noOidc: false
+                    noOidc: false,
+                    defaultHttpCache: {}
                 });
                 options.autoFlushCallbacks = [];
                 if (!(autoFlushCallbacks instanceof Array)) {
@@ -8075,7 +8075,7 @@
                     options.autoFlushCallbacks.push(f);
                 });
                 this.options = options;
-                this.httpClient = new KidaptiveHttpClient(apiKey, options.dev);
+                this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
                 this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function(app) {
                     if (appVersion.version < app.minVersion) {
                         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + appVersion.version);
@@ -8112,6 +8112,11 @@
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User not logged in");
             }
         };
+        KidaptiveSdk.prototype.checkLearner = function(learnerId) {
+            if (!this.learnerManager.idToLearner[learnerId]) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
+            }
+        };
         exports.init = function(apiKey, appVersion, options) {
             return addToQueue(function() {
                 if (!sdk) {
@@ -8127,6 +8132,21 @@
         exports.getAppInfo = function() {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.appInfo);
+        };
+        exports.startAnonymousSession = function() {
+            return addToQueue(function() {
+                sdkInitFilter();
+                logout().catch(function() {}).then(function() {
+                    sdk.learnerManager.idToLearner[-1] = {
+                        id: -1
+                    };
+                    sdk.anonymousSession = true;
+                });
+            });
+        };
+        exports.isAnonymousSession = function() {
+            sdkInitFilter();
+            return sdk.anonymousSession;
         };
         exports.refresh = function() {
             return addToQueue(function() {
@@ -8200,6 +8220,7 @@
                 sdkInitFilter();
                 sdk.checkOidc();
                 sdk.checkUser();
+                sdk.checkLearner(learnerId);
                 return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
                     return refreshUserData().then(function() {
                         return learner;
@@ -8212,6 +8233,7 @@
                 sdkInitFilter();
                 sdk.checkOidc();
                 sdk.checkUser();
+                sdk.checkLearner(learnerId);
                 return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
                     return refreshUserData().then(function() {
                         return learner;
@@ -8245,6 +8267,7 @@
         };
         exports.getLatentAbilities = function(learnerId, uri) {
             sdkInitFilter();
+            sdk.checkLearner(learnerId);
             var dimId;
             if (uri) {
                 dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel["dimension"], [ uri, "id" ]);
@@ -8256,6 +8279,7 @@
         };
         exports.getLocalAbilities = function(learnerId, uri) {
             sdkInitFilter();
+            sdk.checkLearner(learnerId);
             var dimId;
             if (uri) {
                 dimId = KidaptiveUtils.getObject(sdk.modelManager.uriToModel["local-dimension"], [ uri, "id" ]);
@@ -8267,7 +8291,7 @@
         };
         exports.startTrial = function(learnerId) {
             sdkInitFilter();
-            sdk.checkUser();
+            sdk.checkLearner(learnerId);
             sdk.trialManager.startTrial(learnerId);
         };
         exports.endTrial = function(learnerId) {
@@ -8285,8 +8309,12 @@
         };
         exports.reportEvidence = function(eventName, properties) {
             sdkInitFilter();
-            sdk.checkUser();
-            sdk.eventManager.reportEvidence(eventName, properties);
+            if (!sdk.anonymousSession) {
+                sdk.checkUser();
+                sdk.eventManager.reportEvidence(eventName, properties);
+            } else {
+                sdk.eventManager.createAgentRequest(eventName, "Result", properties);
+            }
         };
         exports.flushEvents = function() {
             return flushEvents();
