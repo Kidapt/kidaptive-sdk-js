@@ -116,12 +116,18 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
 
     //calculate cache key: sha256 of the stable json representation of ajax settings then convert to b64 for compactness
     //mark user data for deletion on logout or auth error
-    var d = new DataView(new ArrayBuffer(32));
+    var d = new Array(32);
     sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n,i){
-        d.setInt32(4*i,n);
+        if (n < 0) {
+            n = ((n << 1) >>> 1) - (1 << 31)
+        }
+        for (var j = 0; j < 4; j++) {
+            d[4 * i + j] = (n >>> ((3 - j) * 8)) % 256
+        }
     });
 
-    return btoa(String.fromCharCode.apply(undefined, KidaptiveUtils.fillArray(new Array(32),0).map(function(_,i) {
-        return d.getUint8(i);
-    }))).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+/,'') + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? '.alpUserData' : '.alpAppData');
+    return btoa(String.fromCharCode.apply(undefined,d))
+            .replace(/[+]/g,'-')
+            .replace(/[/]/g,'_')
+            .replace(/=+/,'') + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? '.alpUserData' : '.alpAppData');
 };

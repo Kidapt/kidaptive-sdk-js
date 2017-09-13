@@ -186,13 +186,6 @@ KidaptiveUtils.putObject = function(object, key, value) {
     return object;
 };
 
-KidaptiveUtils.fillArray = function(array,value) {
-    for (var i = 0; i < array.length; i++) {
-        array[i] = value;
-    }
-    return array;
-};
-
 KidaptiveUtils.toCamelCase = function(str, delimiters) {
     return str.split(delimiters).filter(function(s) {
         return s.length > 0;
