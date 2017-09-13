@@ -217,7 +217,7 @@ KidaptiveUtils.localStorageGetItem = function(key) {
 //create a copy of an object
 KidaptiveUtils.copyObject = function(o, preserveFunctions) {
     var oCopy = JSON.stringify(o);
-    oCopy = oCopy === undefined ? o : JSON.parse(oCopy);
+    oCopy = oCopy === undefined ? oCopy : JSON.parse(oCopy);
     if (preserveFunctions) {
         if (typeof o === 'function') {
             return o;
