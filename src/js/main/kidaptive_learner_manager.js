@@ -29,8 +29,6 @@ KidaptiveLearnerManager.prototype.createLearner = function(params) {
 };
 
 KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
-    var learner = this.idToLearner[learnerId];
-
     params = KidaptiveUtils.copyObject(params) || {};
     var format = {name:'', birthday:0, gender:'', icon:''};
     KidaptiveUtils.checkObjectFormat(params, format);
