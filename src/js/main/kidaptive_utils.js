@@ -215,16 +215,36 @@ KidaptiveUtils.localStorageGetItem = function(key) {
 };
 
 //create a copy of an object
-KidaptiveUtils.copyObject = function(o) {
-    return o === undefined ? o : JSON.parse(JSON.stringify(o));
+KidaptiveUtils.copyObject = function(o, preserveFunctions) {
+    var oCopy = JSON.stringify(o);
+    oCopy = oCopy === undefined ? o : JSON.parse(oCopy);
+    if (preserveFunctions) {
+        if (typeof o === 'function') {
+            return o;
+        } else if (oCopy instanceof Array) {
+            for (var i = 0; i < o.length; i ++) {
+                var v = KidaptiveUtils.copyObject(o[i],true);
+                oCopy[i] = v === undefined ? null : v;
+            }
+        } else if (oCopy instanceof Object) {
+            Object.keys(o).forEach(function(k) {
+                var v = KidaptiveUtils.copyObject(o[k],true);
+                if (v !== undefined) {
+                    oCopy[k] = v;
+                }
+            });
+        }
+    }
+
+    return oCopy;
 };
 
 //
 KidaptiveUtils.checkObjectFormat = function(object, format) {
     //this normalizes objects, dropping undefined properties, converting primitive wrappers, converting subclasses of
-    //Object to objects, converting functions to undefined/null etc.
-    object = KidaptiveUtils.copyObject(object);
-    format = KidaptiveUtils.copyObject(format);
+    //Object to objects, etc
+    object = KidaptiveUtils.copyObject(object,true);
+    format = KidaptiveUtils.copyObject(format,true);
 
     if (object === undefined || format === undefined) {
         return;
@@ -233,6 +253,10 @@ KidaptiveUtils.checkObjectFormat = function(object, format) {
     if (format === null) {
         if (object !== null) {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected null");
+        }
+    } else if (typeof format === 'function') {
+        if (typeof object !== 'function') {
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected function");
         }
     } else if (format instanceof Array) {
         if (!(object instanceof Array)) {
@@ -247,7 +271,7 @@ KidaptiveUtils.checkObjectFormat = function(object, format) {
             }
         });
     } else if (format instanceof Object) {
-        if (!(object instanceof Object) || object instanceof Array) {
+        if (!(object instanceof Object) || object instanceof Array || typeof object === 'function') {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected object");
         }
         Object.keys(format).forEach(function(k) {

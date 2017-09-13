@@ -131,24 +131,18 @@
             appVersion = KidaptiveUtils.copyObject(appVersion) || {};
             KidaptiveUtils.checkObjectFormat(appVersion, {version:'', build:''});
 
-            //need to copy this out before copying
-            var autoFlushCallbacks = options.autoFlushCallbacks || [];
+            options = KidaptiveUtils.copyObject(options, true) || {};
 
-            options = KidaptiveUtils.copyObject(options) || {};
-            KidaptiveUtils.checkObjectFormat(options, {dev: false, flushInterval: 0, noOidc: false, defaultHttpCache:{}});
-
-            options.autoFlushCallbacks = [];
-
-            if (!(autoFlushCallbacks instanceof Array)) {
-                autoFlushCallbacks = [autoFlushCallbacks];
+            if (!(options.autoFlushCallbacks instanceof Array)) {
+                options.autoFlushCallbacks = [options.autoFlushCallbacks];
             }
 
-            autoFlushCallbacks.forEach(function(f) {
-                if (!(f instanceof Function)) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER,
-                        "autoFlushCallback must be a function or array of functions");
-                }
-                options.autoFlushCallbacks.push(f);
+            KidaptiveUtils.checkObjectFormat(options, {
+                dev: false,
+                flushInterval: 0,
+                noOidc: false,
+                defaultHttpCache:{},
+                autoFlushCallbacks:[function(){}]
             });
 
             this.options = options;
