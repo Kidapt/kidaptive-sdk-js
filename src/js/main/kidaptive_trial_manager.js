@@ -12,9 +12,12 @@ KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
     if (this.openTrials[learnerId]) {
         this.endTrial(learnerId);
     }
+
+    var min = 1 << 31;
+
     this.openTrials[learnerId] = {
         trialTime: Date.now(),
-        trialSalt: window.crypto.getRandomValues(new Int32Array(1))[0],
+        trialSalt: Math.floor(Math.random() * (-min * 2) + min),
         dimensionsReset: {}
     };
 };

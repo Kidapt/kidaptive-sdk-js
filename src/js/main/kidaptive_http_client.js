@@ -121,7 +121,7 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
         d.setInt32(4*i,n);
     });
 
-    return btoa(String.fromCharCode.apply(undefined, new Array(32).fill(0).map(function(_,i) {
+    return btoa(String.fromCharCode.apply(undefined, KidaptiveUtils.fillArray(new Array(32),0).map(function(_,i) {
         return d.getUint8(i);
     }))).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+/,'') + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? '.alpUserData' : '.alpAppData');
 };
