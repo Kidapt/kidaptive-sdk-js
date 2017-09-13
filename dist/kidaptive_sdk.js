@@ -6836,6 +6836,12 @@
         }
         return object;
     };
+    KidaptiveUtils.fillArray = function(array, value) {
+        for (var i = 0; i < array.length; i++) {
+            array[i] = value;
+        }
+        return array;
+    };
     KidaptiveUtils.toCamelCase = function(str, delimiters) {
         return str.split(delimiters).filter(function(s) {
             return s.length > 0;
@@ -6990,7 +6996,7 @@
         sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n, i) {
             d.setInt32(4 * i, n);
         });
-        return btoa(String.fromCharCode.apply(undefined, new Array(32).fill(0).map(function(_, i) {
+        return btoa(String.fromCharCode.apply(undefined, KidaptiveUtils.fillArray(new Array(32), 0).map(function(_, i) {
             return d.getUint8(i);
         }))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
     };
@@ -7137,7 +7143,6 @@
         });
     };
     KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
-        var learner = this.idToLearner[learnerId];
         params = KidaptiveUtils.copyObject(params) || {};
         var format = {
             name: "",
@@ -7600,9 +7605,10 @@
         if (this.openTrials[learnerId]) {
             this.endTrial(learnerId);
         }
+        var min = 1 << 31;
         this.openTrials[learnerId] = {
             trialTime: Date.now(),
-            trialSalt: window.crypto.getRandomValues(new Int32Array(1))[0],
+            trialSalt: Math.floor(Math.random() * (-min * 2) + min),
             dimensionsReset: {}
         };
     };
