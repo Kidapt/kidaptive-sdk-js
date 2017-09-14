@@ -75,7 +75,7 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
 
 KidaptiveHttpClient.deleteUserData = function() {
     Object.keys(localStorage).forEach(function(k) {
-        if (k.match(/^[\w\-]*[.]alpUserData$/)) {
+        if (k.match(/^[\w-]*[.]alpUserData$/)) {
             localStorage.removeItem(k);
         }
     });
@@ -83,7 +83,7 @@ KidaptiveHttpClient.deleteUserData = function() {
 
 KidaptiveHttpClient.deleteAppData = function() {
     Object.keys(localStorage).forEach(function(k) {
-        if (k.match(/^[\w\-]*[.]alpAppData$/)) {
+        if (k.match(/^[\w-]*[.]alpAppData$/)) {
             localStorage.removeItem(k);
         }
     });

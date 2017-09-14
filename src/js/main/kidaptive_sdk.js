@@ -3,7 +3,7 @@
  */
 "use strict";
 
-(function(){
+(function(exports){
     var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
     var defaultFlushInterval;
@@ -488,4 +488,4 @@
             sdk = undefined;
         });
     };
-})();
+})(exports);
