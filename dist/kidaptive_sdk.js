@@ -6836,12 +6836,6 @@
         }
         return object;
     };
-    KidaptiveUtils.fillArray = function(array, value) {
-        for (var i = 0; i < array.length; i++) {
-            array[i] = value;
-        }
-        return array;
-    };
     KidaptiveUtils.toCamelCase = function(str, delimiters) {
         return str.split(delimiters).filter(function(s) {
             return s.length > 0;
@@ -6867,18 +6861,41 @@
         }
         return cached === "undefined" ? undefined : JSON.parse(cached);
     };
-    KidaptiveUtils.copyObject = function(o) {
-        return o === undefined ? o : JSON.parse(JSON.stringify(o));
+    KidaptiveUtils.copyObject = function(o, preserveFunctions) {
+        var oCopy = JSON.stringify(o);
+        oCopy = oCopy === undefined ? oCopy : JSON.parse(oCopy);
+        if (preserveFunctions) {
+            if (typeof o === "function") {
+                return o;
+            } else if (oCopy instanceof Array) {
+                for (var i = 0; i < o.length; i++) {
+                    var v = KidaptiveUtils.copyObject(o[i], true);
+                    oCopy[i] = v === undefined ? null : v;
+                }
+            } else if (oCopy instanceof Object) {
+                Object.keys(o).forEach(function(k) {
+                    var v = KidaptiveUtils.copyObject(o[k], true);
+                    if (v !== undefined) {
+                        oCopy[k] = v;
+                    }
+                });
+            }
+        }
+        return oCopy;
     };
     KidaptiveUtils.checkObjectFormat = function(object, format) {
-        object = KidaptiveUtils.copyObject(object);
-        format = KidaptiveUtils.copyObject(format);
+        object = KidaptiveUtils.copyObject(object, true);
+        format = KidaptiveUtils.copyObject(format, true);
         if (object === undefined || format === undefined) {
             return;
         }
         if (format === null) {
             if (object !== null) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected null");
+            }
+        } else if (typeof format === "function") {
+            if (typeof object !== "function") {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected function");
             }
         } else if (format instanceof Array) {
             if (!(object instanceof Array)) {
@@ -6892,7 +6909,7 @@
                 }
             });
         } else if (format instanceof Object) {
-            if (!(object instanceof Object) || object instanceof Array) {
+            if (!(object instanceof Object) || object instanceof Array || typeof object === "function") {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected object");
             }
             Object.keys(format).forEach(function(k) {
@@ -6992,13 +7009,16 @@
             settings.contentType = "application/json";
             settings.data = JSON.stringify(params);
         }
-        var d = new DataView(new ArrayBuffer(32));
+        var d = new Array(32);
         sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n, i) {
-            d.setInt32(4 * i, n);
+            if (n < 0) {
+                n = (n << 1 >>> 1) - (1 << 31);
+            }
+            for (var j = 0; j < 4; j++) {
+                d[4 * i + j] = (n >>> (3 - j) * 8) % 256;
+            }
         });
-        return btoa(String.fromCharCode.apply(undefined, KidaptiveUtils.fillArray(new Array(32), 0).map(function(_, i) {
-            return d.getUint8(i);
-        }))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
+        return btoa(String.fromCharCode.apply(undefined, d)).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
     };
     "use strict";
     var KidaptiveUserManager = function(sdk) {
@@ -8062,23 +8082,16 @@
                     version: "",
                     build: ""
                 });
-                var autoFlushCallbacks = options.autoFlushCallbacks || [];
-                options = KidaptiveUtils.copyObject(options) || {};
+                options = KidaptiveUtils.copyObject(options, true) || {};
+                if (!(options.autoFlushCallbacks instanceof Array) && options.autoFlushCallbacks) {
+                    options.autoFlushCallbacks = [ options.autoFlushCallbacks ];
+                }
                 KidaptiveUtils.checkObjectFormat(options, {
                     dev: false,
                     flushInterval: 0,
                     noOidc: false,
-                    defaultHttpCache: {}
-                });
-                options.autoFlushCallbacks = [];
-                if (!(autoFlushCallbacks instanceof Array)) {
-                    autoFlushCallbacks = [ autoFlushCallbacks ];
-                }
-                autoFlushCallbacks.forEach(function(f) {
-                    if (!(f instanceof Function)) {
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "autoFlushCallback must be a function or array of functions");
-                    }
-                    options.autoFlushCallbacks.push(f);
+                    defaultHttpCache: {},
+                    autoFlushCallbacks: [ function() {} ]
                 });
                 this.options = options;
                 this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
