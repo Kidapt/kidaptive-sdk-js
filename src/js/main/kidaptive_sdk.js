@@ -133,7 +133,7 @@
 
             options = KidaptiveUtils.copyObject(options, true) || {};
 
-            if (!(options.autoFlushCallbacks instanceof Array)) {
+            if (!(options.autoFlushCallbacks instanceof Array) && options.autoFlushCallbacks) {
                 options.autoFlushCallbacks = [options.autoFlushCallbacks];
             }
 
