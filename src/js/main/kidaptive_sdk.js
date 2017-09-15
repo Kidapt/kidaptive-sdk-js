@@ -51,8 +51,11 @@
             sdk.modelManager.clearLearnerModels();
             sdk.learnerManager.clearLearnerList();
             KidaptiveHttpClient.deleteUserData();
-            sdk.anonymousSession = false;
-            return sdk.userManager.logoutUser();
+            if (sdk.anonymousSession) {
+                sdk.anonymousSession = false;
+            } else {
+                return sdk.userManager.logoutUser();
+            }
         });
     };
 
