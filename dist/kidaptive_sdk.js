@@ -6981,14 +6981,14 @@
     };
     KidaptiveHttpClient.deleteUserData = function() {
         Object.keys(localStorage).forEach(function(k) {
-            if (k.match(/^[\w\-]*[.]alpUserData$/)) {
+            if (k.match(/^[\w-]*[.]alpUserData$/)) {
                 localStorage.removeItem(k);
             }
         });
     };
     KidaptiveHttpClient.deleteAppData = function() {
         Object.keys(localStorage).forEach(function(k) {
-            if (k.match(/^[\w\-]*[.]alpAppData$/)) {
+            if (k.match(/^[\w-]*[.]alpAppData$/)) {
                 localStorage.removeItem(k);
             }
         });
@@ -7971,7 +7971,7 @@
         };
     };
     "use strict";
-    (function() {
+    (function(exports) {
         var operationQueue = KidaptiveUtils.Promise.resolve();
         var sdk = undefined;
         var defaultFlushInterval;
@@ -8011,8 +8011,11 @@
                 sdk.modelManager.clearLearnerModels();
                 sdk.learnerManager.clearLearnerList();
                 KidaptiveHttpClient.deleteUserData();
-                sdk.anonymousSession = false;
-                return sdk.userManager.logoutUser();
+                if (sdk.anonymousSession) {
+                    sdk.anonymousSession = false;
+                } else {
+                    return sdk.userManager.logoutUser();
+                }
             });
         };
         var refreshUserData = function() {
@@ -8383,5 +8386,5 @@
                 sdk = undefined;
             });
         };
-    })();
+    })(exports);
 })(typeof KidaptiveSdk == "undefined" ? KidaptiveSdk = {} : KidaptiveSdk);
