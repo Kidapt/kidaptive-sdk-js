@@ -7356,12 +7356,14 @@
                 noCache: true
             }).then(function(abilities) {
                 if (!this.latentAbilities[learnerId]) {
-                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                        learnerId: learnerId
-                    }));
-                    if (stored) {
-                        this.latentAbilities[learnerId] = stored;
-                    }
+                    try {
+                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                            learnerId: learnerId
+                        }));
+                        if (stored) {
+                            this.latentAbilities[learnerId] = stored;
+                        }
+                    } catch (e) {}
                 }
                 abilities.forEach(function(ability) {
                     this.setLatentAbility(learnerId, ability, true);
@@ -7382,12 +7384,14 @@
                 noCache: true
             }).then(function(abilities) {
                 if (!this.localAbilities[learnerId]) {
-                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                        learnerId: learnerId
-                    }));
-                    if (stored) {
-                        this.localAbilities[learnerId] = stored;
-                    }
+                    try {
+                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                            learnerId: learnerId
+                        }));
+                        if (stored) {
+                            this.localAbilities[learnerId] = stored;
+                        }
+                    } catch (e) {}
                 }
                 abilities.forEach(function(ability) {
                     this.setLocalAbility(learnerId, ability, true);
