@@ -7350,11 +7350,15 @@
                 return this.refreshLatentAbilities.bind(this, learner);
             }.bind(this)));
         } else {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId, undefined, {
+            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                learnerId: learnerId
+            }, {
                 noCache: true
             }).then(function(abilities) {
                 if (!this.latentAbilities[learnerId]) {
-                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId));
+                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                        learnerId: learnerId
+                    }));
                     if (stored) {
                         this.latentAbilities[learnerId] = stored;
                     }
@@ -7372,11 +7376,15 @@
                 return this.refreshLocalAbilities.bind(this, learner);
             }.bind(this)));
         } else {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId, undefined, {
+            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                learnerId: learnerId
+            }, {
                 noCache: true
             }).then(function(abilities) {
                 if (!this.localAbilities[learnerId]) {
-                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId));
+                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                        learnerId: learnerId
+                    }));
                     if (stored) {
                         this.localAbilities[learnerId] = stored;
                     }
@@ -7426,7 +7434,9 @@
         var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, ability.dimensionId ]);
         if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
             KidaptiveUtils.putObject(this.latentAbilities, [ learnerId, ability.dimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY + "/" + learnerId), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                learnerId: learnerId
+            }), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
                 return this.latentAbilities[learnerId][dimId];
             }.bind(this)));
         }
@@ -7435,7 +7445,9 @@
         var curAbil = KidaptiveUtils.getObject(this.localAbilities, [ learnerId, ability.localDimensionId ]);
         if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
             KidaptiveUtils.putObject(this.localAbilities, [ learnerId, ability.localDimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY + "/" + learnerId), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                learnerId: learnerId
+            }), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
                 return this.localAbilities[learnerId][dimId];
             }.bind(this)));
         }
