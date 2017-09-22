@@ -152,10 +152,12 @@ KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.latentAbilities[learnerId]) {
-                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
-                if (stored) {
-                    this.latentAbilities[learnerId] = stored;
-                }
+                try {
+                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
+                    if (stored) {
+                        this.latentAbilities[learnerId] = stored;
+                    }
+                } catch (e) {}
             }
 
             abilities.forEach(function(ability) {
@@ -178,10 +180,12 @@ KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
             //abilities from overwriting more recent locally stored abilities.
             if (!this.localAbilities[learnerId]) {
-                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
-                if (stored) {
-                    this.localAbilities[learnerId] = stored;
-                }
+                try {
+                    var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
+                    if (stored) {
+                        this.localAbilities[learnerId] = stored;
+                    }
+                } catch (e) {}
             }
 
             abilities.forEach(function(ability) {
