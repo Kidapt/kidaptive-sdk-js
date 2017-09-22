@@ -8189,7 +8189,9 @@
         exports.refresh = function() {
             return addToQueue(function() {
                 sdkInitFilter();
-                sdk.checkUser();
+                if (sdk.anonymousSession) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in an anonymous session");
+                }
                 return refreshUserData();
             });
         };
