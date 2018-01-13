@@ -29,6 +29,11 @@ define([
 ) {
     'use strict';
 
+    var KidaptiveSdk = {};
+    try {
+        KidaptiveSdk = KidaptiveSdkGlobal;
+    } catch (e) {}
+
     var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
     var defaultFlushInterval;
@@ -518,4 +523,6 @@ define([
             sdk = undefined;
         });
     };
+
+    return KidaptiveSdk;
 });

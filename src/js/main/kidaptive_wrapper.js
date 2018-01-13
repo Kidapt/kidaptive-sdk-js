@@ -13,11 +13,11 @@
         factory(root.KidaptiveSdk || (root.KidaptiveSdk = {})); // <script>
     }
 
-})(typeof window !== "undefined" ? window : this, function(KidaptiveSdk) {
+})(typeof window !== "undefined" ? window : this, function(KidaptiveSdkGlobal) {
     'use strict';
 
 // @CODE
 // compiled kidaptive_sdk is injected here
 
-    return KidaptiveSdk;
+    return KidaptiveSdkGlobal;
 });
