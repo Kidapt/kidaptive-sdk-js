@@ -70,6 +70,7 @@ for match in re.finditer(r'([;{}]|^)\s*(void|double)\s+(\w+)\s*\(([\w\s,*]*)\)',
 #input = re.sub(r'(var\s+\w+)\s*\(([\w\s,*]*)\)', startFunction, input)
 #input = re.sub(r'([^\w\s()]|^)\s*\*\s*(\w+)', r'\1 \2', input)
 
+print 'define([], function() {'
 print 'var KidaptiveIrt = {};'
 print '(function() {'
 
@@ -79,3 +80,5 @@ print 'KidaptiveIrt.estimate = function(' + ','.join(estimateParams) + ') {'
 print 'return estimate(' + ','.join([p + '||0' for p in estimateParams]) + ');'
 print '};'
 print '})();'
+print 'return KidaptiveIrt'
+print '});'

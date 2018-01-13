@@ -1,24 +1,36 @@
 /**
  * Created by solomonliu on 2017-06-28.
  */
-"use strict";
 
-var KidaptiveAttemptProcessor = function(sdk) {
-    this.sdk = sdk;
-};
+define([
+    './irt/irt.js',
+    './kidaptive_utils.js'
+], function(
+    KidaptiveIrt, 
+    KidaptiveUtils
+) {
+    'use strict';
 
-KidaptiveAttemptProcessor.prototype.processAttempt = function(learnerId, attempt) {
-    var item = this.sdk.modelManager.uriToModel['item'][attempt.itemURI];
-    var ability = KidaptiveUtils.copyObject(this.sdk.modelManager.getLocalAbilities(learnerId, item.localDimensionId));
-    if (!this.sdk.trialManager.openTrials[learnerId].dimensionsReset[item.localDimensionId]) {
-        if (ability.standardDeviation < .65) {
-            ability.standardDeviation = .65;
+    var KidaptiveAttemptProcessor = function(sdk) {
+        this.sdk = sdk;
+    };
+
+    KidaptiveAttemptProcessor.prototype.processAttempt = function(learnerId, attempt) {
+        var item = this.sdk.modelManager.uriToModel['item'][attempt.itemURI];
+        var ability = KidaptiveUtils.copyObject(this.sdk.modelManager.getLocalAbilities(learnerId, item.localDimensionId));
+        if (!this.sdk.trialManager.openTrials[learnerId].dimensionsReset[item.localDimensionId]) {
+            if (ability.standardDeviation < .65) {
+                ability.standardDeviation = .65;
+            }
+            this.sdk.trialManager.resetDimension(learnerId, item.localDimensionId)
         }
-        this.sdk.trialManager.resetDimension(learnerId, item.localDimensionId)
-    }
-    var postAbility = KidaptiveIrt.estimate(!!attempt.outcome, item.mean, ability.mean, ability.standardDeviation);
-    ability.mean = postAbility.post_mean;
-    ability.standardDeviation = postAbility.post_sd;
-    ability.timestamp = this.sdk.trialManager.openTrials[learnerId].trialTime;
-    this.sdk.modelManager.setLocalAbility(learnerId, ability);
-};
+        var postAbility = KidaptiveIrt.estimate(!!attempt.outcome, item.mean, ability.mean, ability.standardDeviation);
+        ability.mean = postAbility.post_mean;
+        ability.standardDeviation = postAbility.post_sd;
+        ability.timestamp = this.sdk.trialManager.openTrials[learnerId].trialTime;
+        this.sdk.modelManager.setLocalAbility(learnerId, ability);
+    };
+
+    return KidaptiveAttemptProcessor;
+});
+ 

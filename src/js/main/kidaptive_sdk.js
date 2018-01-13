@@ -1,9 +1,34 @@
 /**
  * Created by solomonliu on 2017-05-23.
  */
-"use strict";
 
-(function(exports){
+define([
+    './kidaptive_attempt_processor.js',
+    './kidaptive_constants.js',
+    './kidaptive_error.js',
+    './kidaptive_event_manager.js',
+    './kidaptive_http_client.js',
+    './kidaptive_learner_manager.js',
+    './kidaptive_model_manager.js',
+    './kidaptive_recommendation_manager.js',
+    './kidaptive_trial_manager.js',
+    './kidaptive_user_manager.js',
+    './kidaptive_utils.js'
+], function(
+    KidaptiveAttemptProcessor,
+    KidaptiveConstants,
+    KidaptiveError,
+    KidaptiveEventManager,
+    KidaptiveHttpClient,
+    KidaptiveLearnerManager,
+    KidaptiveModelManager,
+    KidaptiveRecommendationManager,
+    KidaptiveTrialManager,
+    KidaptiveUserManager,
+    KidaptiveUtils
+) {
+    'use strict';
+
     var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
     var defaultFlushInterval;
@@ -89,9 +114,9 @@
     };
 
     var autoFlush = function() {
-        window.clearTimeout(flushTimeoutId);
+        clearTimeout(flushTimeoutId);
         if (!flushing && flushInterval > 0) {
-            flushTimeoutId = window.setTimeout(function () {
+            flushTimeoutId = setTimeout(function () {
                 flushing = true;
                 flushEvents(sdk.options.autoFlushCallbacks).then(function () {
                     flushing = false;
@@ -493,4 +518,6 @@
             sdk = undefined;
         });
     };
-})(exports);
+
+    return exports;
+});

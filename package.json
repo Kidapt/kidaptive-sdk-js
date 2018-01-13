@@ -4,10 +4,12 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
-    "install": "bower install",
-    "build:irt": "cd src/js/main/irt && (make clean; make)",
-    "build:debug": "npm install && cat $(cat build_order) | uglifyjs -b --wrap KidaptiveSdk > dist/kidaptive_sdk.js",
-    "build": "npm run build:irt && npm run build:debug && uglifyjs -m < dist/kidaptive_sdk.js > dist/kidaptive_sdk.min.js",
+    "install": "bower install;",
+    "build:irt": "cd src/js/main/irt; make clean; make;",
+    "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js;",
+    "build:debug": "r.js -o build.js; npm run build:beautify;",
+    "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js;",
+    "build": "npm install; npm run build:irt; npm run build:debug; npm run build:minify;",
     "version": "npm run build && git add -A",
     "postversion": "git push --follow-tags kidapt master"
   },
@@ -28,7 +30,9 @@
   },
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
   "devDependencies": {
-    "uglify-js": "^3.0.28",
-    "watchify": "^3.9.0"
+    "amdclean": "2.7.0",
+    "bower": "1.8.2",
+    "requirejs": "2.3.3",
+    "uglify-js": "3.0.28"
   }
 }
