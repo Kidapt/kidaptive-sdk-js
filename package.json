@@ -4,7 +4,6 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
-    "install": "bower install;",
     "build:irt": "cd src/js/main/irt; make clean; make;",
     "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js;",
     "build:debug": "r.js -o build.js; npm run build:beautify;",
@@ -29,10 +28,17 @@
     "url": "https://github.com/Kidapt/kidaptive-sdk-js/issues"
   },
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
+  "dependencies": {
+    "jquery": "3.2.1",
+    "sjcl": "1.0.7"
+  },
   "devDependencies": {
     "amdclean": "2.7.0",
-    "bower": "1.8.2",
+    "mocha": "4.0.1",
+    "phantomjs": "2.1.7",
     "requirejs": "2.3.3",
+    "should": "13.1.3",
+    "sinon": "2.3.2",
     "uglify-js": "3.0.28"
   }
 }

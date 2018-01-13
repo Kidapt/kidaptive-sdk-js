@@ -5,9 +5,9 @@
 define([
     'jquery',
     'sjcl',
-    './kidaptive_constants.js',
-    './kidaptive_error.js',
-    './kidaptive_utils.js'
+    'kidaptive_constants',
+    'kidaptive_error',
+    'kidaptive_utils'
 ], function(
     $,
     sjcl,

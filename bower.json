@@ -15,15 +15,8 @@
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js",
   "ignore": [
     "**/.*",
-    "/jasmine-standalone-2.5.0",
     "/src",
+    "/test",
     "/*.json"
-  ],
-  "devDependencies": {
-    "mocha": "^3.5.0",
-    "should": "^11.2.0",
-    "sinon-2.3.2": "http://sinonjs.org/releases/sinon-2.3.2.js",
-    "jquery": "^3.2.1",
-    "sjcl": "^1.0.7"
-  }
+  ]
 }

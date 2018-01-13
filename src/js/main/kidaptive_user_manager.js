@@ -3,9 +3,9 @@
  */
 
 define([
-    './kidaptive_constants.js',
-    './kidaptive_error.js',
-    './kidaptive_utils.js'
+    'kidaptive_constants',
+    'kidaptive_error',
+    'kidaptive_utils'
 ], function(
     KidaptiveConstants,
     KidaptiveError,

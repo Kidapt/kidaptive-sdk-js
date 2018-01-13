@@ -3,17 +3,17 @@
  */
 
 define([
-    './kidaptive_attempt_processor.js',
-    './kidaptive_constants.js',
-    './kidaptive_error.js',
-    './kidaptive_event_manager.js',
-    './kidaptive_http_client.js',
-    './kidaptive_learner_manager.js',
-    './kidaptive_model_manager.js',
-    './kidaptive_recommendation_manager.js',
-    './kidaptive_trial_manager.js',
-    './kidaptive_user_manager.js',
-    './kidaptive_utils.js'
+    'kidaptive_attempt_processor',
+    'kidaptive_constants',
+    'kidaptive_error',
+    'kidaptive_event_manager',
+    'kidaptive_http_client',
+    'kidaptive_learner_manager',
+    'kidaptive_model_manager',
+    'kidaptive_recommendation_manager',
+    'kidaptive_trial_manager',
+    'kidaptive_user_manager',
+    'kidaptive_utils'
 ], function(
     KidaptiveAttemptProcessor,
     KidaptiveConstants,

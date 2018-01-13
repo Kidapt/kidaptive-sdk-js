@@ -3,7 +3,7 @@
  */
 
 define([
-    './kidaptive_utils.js'
+    'kidaptive_utils'
 ], function(
     KidaptiveUtils
 ) {

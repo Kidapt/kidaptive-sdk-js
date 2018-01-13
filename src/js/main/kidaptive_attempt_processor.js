@@ -3,8 +3,8 @@
  */
 
 define([
-    './irt/irt.js',
-    './kidaptive_utils.js'
+    'irt/irt',
+    'kidaptive_utils'
 ], function(
     KidaptiveIrt, 
     KidaptiveUtils

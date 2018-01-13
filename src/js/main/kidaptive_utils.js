@@ -4,7 +4,7 @@
 
 define([
     'jquery',
-    './kidaptive_error.js'
+    'kidaptive_error'
 ], function(
     $,
     KidaptiveError

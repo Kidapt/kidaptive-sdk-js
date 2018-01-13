@@ -2,8 +2,8 @@
     return {
         baseUrl: 'src/js/main/',
         paths: {
-            jquery: '../../../bower_components/jquery/dist/jquery',
-            sjcl: '../../../bower_components/sjcl/sjcl'
+            jquery: '../../../node_modules/jquery/dist/jquery',
+            sjcl: '../../../node_modules/sjcl/sjcl'
         },
         name: 'kidaptive_sdk',
         out: 'dist/kidaptive_sdk.js',

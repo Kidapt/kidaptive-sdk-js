@@ -3,8 +3,8 @@
  */
 
 define([
-    './kidaptive_constants.js',
-    './kidaptive_utils.js'
+    'kidaptive_constants',
+    'kidaptive_utils'
 ], function(
     KidaptiveConstants,
     KidaptiveUtils

@@ -3,7 +3,7 @@
  */
 
 define([
-    './kidaptive_error.js'
+    'kidaptive_error'
 ], function(
     KidaptiveError
 ) {
