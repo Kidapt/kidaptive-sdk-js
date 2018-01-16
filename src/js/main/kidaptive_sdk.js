@@ -1,9 +1,39 @@
 /**
  * Created by solomonliu on 2017-05-23.
  */
-"use strict";
 
-(function(exports){
+define([
+    'kidaptive_attempt_processor',
+    'kidaptive_constants',
+    'kidaptive_error',
+    'kidaptive_event_manager',
+    'kidaptive_http_client',
+    'kidaptive_learner_manager',
+    'kidaptive_model_manager',
+    'kidaptive_recommendation_manager',
+    'kidaptive_trial_manager',
+    'kidaptive_user_manager',
+    'kidaptive_utils'
+], function(
+    KidaptiveAttemptProcessor,
+    KidaptiveConstants,
+    KidaptiveError,
+    KidaptiveEventManager,
+    KidaptiveHttpClient,
+    KidaptiveLearnerManager,
+    KidaptiveModelManager,
+    KidaptiveRecommendationManager,
+    KidaptiveTrialManager,
+    KidaptiveUserManager,
+    KidaptiveUtils
+) {
+    'use strict';
+
+    var KidaptiveSdk = {};
+    try {
+        KidaptiveSdk = KidaptiveSdkGlobal;
+    } catch (e) {}
+
     var operationQueue = KidaptiveUtils.Promise.resolve(); //enforces order of async operations
     var sdk = undefined; //sdk singleton
     var defaultFlushInterval;
@@ -89,9 +119,9 @@
     };
 
     var autoFlush = function() {
-        window.clearTimeout(flushTimeoutId);
+        clearTimeout(flushTimeoutId);
         if (!flushing && flushInterval > 0) {
-            flushTimeoutId = window.setTimeout(function () {
+            flushTimeoutId = setTimeout(function () {
                 flushing = true;
                 flushEvents(sdk.options.autoFlushCallbacks).then(function () {
                     flushing = false;
@@ -124,7 +154,7 @@
         return results;
     };
 
-    var KidaptiveSdk = function(apiKey, appVersion, options) {
+    var KidaptiveSdkClass = function(apiKey, appVersion, options) {
         return KidaptiveUtils.Promise(function(resolve, reject) {
             apiKey = KidaptiveUtils.copyObject(apiKey);
             if (!apiKey || KidaptiveUtils.checkObjectFormat(apiKey, '')) {
@@ -176,7 +206,7 @@
                 sdk = this;
                 this.httpClient.sdk = this;
                 defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
-                exports.startAutoFlush();
+                KidaptiveSdk.startAutoFlush();
                 return refreshUserData().catch(function(){}); //user data update shouldn't have to complete to initialize sdk
             }.bind(this)).then(function() {
                 resolve(this);
@@ -184,44 +214,44 @@
         }.bind(this));
     };
 
-    KidaptiveSdk.prototype.checkOidc = function() {
+    KidaptiveSdkClass.prototype.checkOidc = function() {
         if (!this.options.noOidc) {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in OIDC context");
         }
     };
 
-    KidaptiveSdk.prototype.checkUser = function() {
+    KidaptiveSdkClass.prototype.checkUser = function() {
         if (!this.userManager.currentUser) {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User not logged in");
         }
     };
 
-    KidaptiveSdk.prototype.checkLearner = function(learnerId) {
+    KidaptiveSdkClass.prototype.checkLearner = function(learnerId) {
         if (!this.learnerManager.idToLearner[learnerId]) {
             throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, 'Learner ' + learnerId + ' not found');
         }
     };
 
     //public interface for SDK
-    exports.init = function(apiKey, appVersion, options) {
+    KidaptiveSdk.init = function(apiKey, appVersion, options) {
         return addToQueue(function() {
             if(!sdk) {
-                return new KidaptiveSdk(apiKey, appVersion, options).then(function() {
-                    return exports;
+                return new KidaptiveSdkClass(apiKey, appVersion, options).then(function() {
+                    return KidaptiveSdk;
                 });
             } else if (apiKey || appVersion || options) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
             }
-            return exports;
+            return KidaptiveSdk;
         });
     };
 
-    exports.getAppInfo = function() {
+    KidaptiveSdk.getAppInfo = function() {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.appInfo);
     };
 
-    exports.startAnonymousSession = function() {
+    KidaptiveSdk.startAnonymousSession = function() {
         return addToQueue(function() {
             sdkInitFilter();
             return logout().catch(function(){}).then(function(){
@@ -231,12 +261,12 @@
         });
     };
 
-    exports.isAnonymousSession = function() {
+    KidaptiveSdk.isAnonymousSession = function() {
         sdkInitFilter();
         return sdk.anonymousSession;
     };
 
-    exports.refresh = function() {
+    KidaptiveSdk.refresh = function() {
         return addToQueue(function() {
             sdkInitFilter();
             if (sdk.anonymousSession) {
@@ -247,19 +277,19 @@
     };
 
     //User Manager
-    exports.getCurrentUser = function() {
+    KidaptiveSdk.getCurrentUser = function() {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.userManager.currentUser);
     };
 
-    exports.logoutUser = function() {
+    KidaptiveSdk.logoutUser = function() {
         return addToQueue(function() {
             sdkInitFilter();
             return logout();
         });
     };
 
-    exports.loginUser = function(params) {
+    KidaptiveSdk.loginUser = function(params) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -273,7 +303,7 @@
         });
     };
 
-    exports.createUser = function(params) {
+    KidaptiveSdk.createUser = function(params) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -288,7 +318,7 @@
         });
     };
 
-    exports.updateUser = function(params) {
+    KidaptiveSdk.updateUser = function(params) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -302,7 +332,7 @@
     };
 
     //Learner Manager
-    exports.createLearner = function(params) {
+    KidaptiveSdk.createLearner = function(params) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -315,7 +345,7 @@
         });
     };
 
-    exports.updateLearner = function(learnerId, params) {
+    KidaptiveSdk.updateLearner = function(learnerId, params) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -329,7 +359,7 @@
         });
     };
 
-    exports.deleteLearner = function(learnerId) {
+    KidaptiveSdk.deleteLearner = function(learnerId) {
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
@@ -343,38 +373,38 @@
         });
     };
 
-    exports.getLearnerById = function(id) {
+    KidaptiveSdk.getLearnerById = function(id) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.learnerManager.idToLearner[id]);
     };
 
-    exports.getLearnerByProviderId = function(providerId) {
+    KidaptiveSdk.getLearnerByProviderId = function(providerId) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.learnerManager.providerIdToLearner[providerId]);
     };
 
-    exports.getLearnerList = function() {
+    KidaptiveSdk.getLearnerList = function() {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.learnerManager.getLearnerList());
     };
 
     //Model Manager
-    exports.getModels = function(type, conditions) {
+    KidaptiveSdk.getModels = function(type, conditions) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
     };
 
-    exports.getModelById = function(type, id) {
+    KidaptiveSdk.getModelById = function(type, id) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.idToModel, [type, id]));
     };
 
-    exports.getModelByUri = function(type, uri) {
+    KidaptiveSdk.getModelByUri = function(type, uri) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.uriToModel, [type, uri]));
     };
 
-    exports.getLatentAbilities = function(learnerId, uri) {
+    KidaptiveSdk.getLatentAbilities = function(learnerId, uri) {
         sdkInitFilter();
         sdk.checkLearner(learnerId);
         var dimId;
@@ -387,7 +417,7 @@
         return KidaptiveUtils.copyObject(sdk.modelManager.getLatentAbilities(learnerId,dimId));
     };
 
-    exports.getLocalAbilities = function(learnerId, uri) {
+    KidaptiveSdk.getLocalAbilities = function(learnerId, uri) {
         sdkInitFilter();
         sdk.checkLearner(learnerId);
         var dimId;
@@ -401,30 +431,30 @@
     };
 
     //Trial Manager
-    exports.startTrial = function(learnerId) {
+    KidaptiveSdk.startTrial = function(learnerId) {
         sdkInitFilter();
         sdk.checkLearner(learnerId);
         sdk.trialManager.startTrial(learnerId);
     };
 
-    exports.endTrial = function(learnerId) {
+    KidaptiveSdk.endTrial = function(learnerId) {
         sdkInitFilter();
         sdk.trialManager.endTrial(learnerId);
     };
 
-    exports.endAllTrials = function() {
+    KidaptiveSdk.endAllTrials = function() {
         sdkInitFilter();
         sdk.trialManager.endAllTrials();
     };
 
     //Event Manager
-    exports.reportBehavior = function(eventName, properties) {
+    KidaptiveSdk.reportBehavior = function(eventName, properties) {
         sdkInitFilter();
         sdk.checkUser();
         sdk.eventManager.reportBehavior(eventName, properties);
     };
 
-    exports.reportEvidence = function(eventName, properties) {
+    KidaptiveSdk.reportEvidence = function(eventName, properties) {
         sdkInitFilter();
         if (!sdk.anonymousSession) {
             sdk.checkUser();
@@ -435,11 +465,11 @@
         }
     };
 
-    exports.flushEvents = function() {
+    KidaptiveSdk.flushEvents = function() {
         return flushEvents();
     };
 
-    exports.startAutoFlush = function(interval) {
+    KidaptiveSdk.startAutoFlush = function(interval) {
         sdkInitFilter();
         KidaptiveUtils.checkObjectFormat(interval, 0);
         if (interval === undefined) {
@@ -449,48 +479,50 @@
         autoFlush();
     };
 
-    exports.stopAutoFlush = function() {
-        exports.startAutoFlush(0);
+    KidaptiveSdk.stopAutoFlush = function() {
+        KidaptiveSdk.startAutoFlush(0);
     };
 
     //Recommendation Manager
-    exports.registerRecommender = function(key, rec) {
+    KidaptiveSdk.registerRecommender = function(key, rec) {
         sdkInitFilter();
         sdk.recManager.registerRecommender(key, rec);
     };
 
-    exports.unregisterRecommender = function(key) {
+    KidaptiveSdk.unregisterRecommender = function(key) {
         sdkInitFilter();
         sdk.recManager.unregisterRecommender(key);
     };
 
-    exports.getRecommendations = function(key, params) {
+    KidaptiveSdk.getRecommendations = function(key, params) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.recManager.getRecommendations(key, params));
     };
 
-    exports.getRandomRecommendations = function(params) {
+    KidaptiveSdk.getRandomRecommendations = function(params) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.recManager.RPRec.getRecommendations(params));
     };
 
-    exports.getOptimalDifficultyRecommendations = function(params) {
+    KidaptiveSdk.getOptimalDifficultyRecommendations = function(params) {
         sdkInitFilter();
         return KidaptiveUtils.copyObject(sdk.recManager.ODRec.getRecommendations(params));
     };
 
     //Module
-    exports.KidaptiveError = KidaptiveError;
-    exports.KidaptiveConstants = KidaptiveConstants;
-    exports.KidaptiveUtils = KidaptiveUtils;
-    exports.destroy = function() {
+    KidaptiveSdk.KidaptiveError = KidaptiveError;
+    KidaptiveSdk.KidaptiveConstants = KidaptiveConstants;
+    KidaptiveSdk.KidaptiveUtils = KidaptiveUtils;
+    KidaptiveSdk.destroy = function() {
         addToQueue(function() {
             sdk.trialManager.endAllTrials();
-            exports.stopAutoFlush();
+            KidaptiveSdk.stopAutoFlush();
         });
         flushEvents(sdk.options.autoFlushCallbacks);
         return addToQueue(function() {
             sdk = undefined;
         });
     };
-})(exports);
+
+    return KidaptiveSdk;
+});
