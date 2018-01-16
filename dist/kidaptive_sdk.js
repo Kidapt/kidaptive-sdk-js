@@ -1,4 +1,169 @@
-(function(exports) {
+(function(root, factory) {
+    "use strict";
+    if (typeof define === "function" && define.amd) {
+        define([ "exports" ], factory);
+    } else if (typeof exports === "object" && exports && typeof require === "function" && typeof module === "object") {
+        module.exports = factory(exports);
+    } else {
+        factory(root.KidaptiveSdk || (root.KidaptiveSdk = {}));
+    }
+})(typeof window !== "undefined" ? window : this, function(KidaptiveSdkGlobal) {
+    "use strict";
+    var irt_irt, jquery, kidaptive_error, kidaptive_utils, kidaptive_attempt_processor, kidaptive_constants, kidaptive_event_manager, kidaptive_http_client, kidaptive_learner_manager, kidaptive_model_manager, kidaptive_recommendation_manager, kidaptive_trial_manager, kidaptive_user_manager, kidaptive_sdk;
+    irt_irt = function() {
+        var KidaptiveIrt = {};
+        (function() {
+            var normal_dist = function(x, mu, sigma) {
+                return Math.exp(-Math.pow(x - mu, 2) / 2 / Math.pow(sigma, 2)) / sigma / Math.sqrt(2 * Math.PI);
+            };
+            var logistic_dist = function(x, mu, alpha) {
+                return 1 / (1 + Math.exp(-alpha * (x - mu)));
+            };
+            var inv_logis = function(p) {
+                return Math.log(1 / p - 1) * Math.sqrt(Math.PI / 8);
+            };
+            var estimate = function(y, beta, theta, sigma, post_mean, post_sd) {
+                if (sigma === 0) {
+                    post_mean = theta;
+                    post_sd = sigma;
+                    return {
+                        post_mean: post_mean,
+                        post_sd: post_sd
+                    };
+                }
+                var x = theta;
+                var s1 = 0;
+                var s2 = 0;
+                var x_new = theta;
+                var a = Math.sqrt(8 / Math.PI);
+                var delta = 1;
+                var max = 0;
+                var upper = Infinity;
+                var lower = -Infinity;
+                var phi = 0;
+                var g = 0;
+                var y0 = 0;
+                var y1 = 0;
+                var y1sign0 = 0;
+                var y1sign1 = 0;
+                var sd_ratio = Math.exp(-.5);
+                if (!y) {
+                    a = -a;
+                }
+                while (true) {
+                    phi = normal_dist(x, theta, sigma);
+                    g = logistic_dist(x, beta, a);
+                    y0 = phi * g;
+                    y1sign0 = a * (1 - g) - (x - theta) / Math.pow(sigma, 2);
+                    y1sign1 = -Math.pow(a, 2) * g * (1 - g) - 1 / Math.pow(sigma, 2);
+                    if (y0 > max) {
+                        max = y0;
+                    }
+                    if (Math.abs(y1sign0) < 1e-6) {
+                        break;
+                    } else if (y1sign0 > 0) {
+                        lower = x;
+                    } else if (y1sign0 < 0) {
+                        upper = x;
+                    }
+                    x_new = x - y1sign0 / y1sign1;
+                    if (x_new > lower && x_new < upper) {
+                        x = x_new;
+                        continue;
+                    }
+                    if (lower > -Infinity && upper < Infinity) {
+                        x_new = (upper + lower) / 2;
+                    } else if (lower === -Infinity) {
+                        x_new = x - delta;
+                        delta = delta * 2;
+                    } else {
+                        x_new = x + delta;
+                        delta = delta * 2;
+                    }
+                    x = x_new;
+                }
+                max = normal_dist(x, theta, sigma) * logistic_dist(x, beta, a);
+                s1 = x - sigma;
+                delta = 1;
+                lower = -Infinity;
+                upper = x;
+                while (true) {
+                    phi = normal_dist(s1, theta, sigma);
+                    g = logistic_dist(s1, beta, a);
+                    y0 = phi * g;
+                    y1 = y0 * (a * (1 - g) - (s1 - theta) / Math.pow(sigma, 2));
+                    y0 = y0 - sd_ratio * max;
+                    if (Math.abs(y0) < max * 1e-6) {
+                        break;
+                    } else if (y0 < 0) {
+                        lower = s1;
+                    } else {
+                        upper = s1;
+                    }
+                    x_new = s1 - y0 / y1;
+                    if (x_new > lower && x_new < upper) {
+                        s1 = x_new;
+                        continue;
+                    }
+                    if (lower > -Infinity && upper < Infinity) {
+                        x_new = (upper + lower) / 2;
+                    } else if (lower === -Infinity) {
+                        x_new = s1 - delta;
+                        delta = delta * 2;
+                    } else {
+                        x_new = s1 + delta;
+                        delta = delta * 2;
+                    }
+                    s1 = x_new;
+                }
+                s2 = x + sigma;
+                delta = 1;
+                lower = x;
+                upper = Infinity;
+                while (true) {
+                    phi = normal_dist(s2, theta, sigma);
+                    g = logistic_dist(s2, beta, a);
+                    y0 = phi * g;
+                    y1 = y0 * (a * (1 - g) - (s2 - theta) / Math.pow(sigma, 2));
+                    y0 = y0 - sd_ratio * max;
+                    if (Math.abs(y0) < max * 1e-6) {
+                        break;
+                    } else if (y0 > 0) {
+                        lower = s2;
+                    } else {
+                        upper = s2;
+                    }
+                    x_new = s2 - y0 / y1;
+                    if (x_new > lower && x_new < upper) {
+                        s2 = x_new;
+                        continue;
+                    }
+                    if (lower > -Infinity && upper < Infinity) {
+                        x_new = (upper + lower) / 2;
+                    } else if (lower === -Infinity) {
+                        x_new = s2 - delta;
+                        delta = delta * 2;
+                    } else {
+                        x_new = s2 + delta;
+                        delta = delta * 2;
+                    }
+                    s2 = x_new;
+                }
+                var postSigma1 = x - s1;
+                var postSigma2 = s2 - x;
+                post_mean = x + Math.sqrt(2 / Math.PI) * (postSigma2 - postSigma1);
+                post_sd = Math.sqrt((Math.pow(postSigma1, 3) + Math.pow(postSigma2, 3)) / (postSigma1 + postSigma2) - 2 * Math.pow(postSigma2 - postSigma1, 2) / Math.PI);
+                return {
+                    post_mean: post_mean,
+                    post_sd: post_sd
+                };
+            };
+            KidaptiveIrt.estimate = function(y, beta, theta, sigma, post_mean, post_sd) {
+                return estimate(y || 0, beta || 0, theta || 0, sigma || 0, post_mean || 0, post_sd || 0);
+            };
+        })();
+        return KidaptiveIrt;
+    }();
     (function(global, factory) {
         "use strict";
         if (typeof module === "object" && typeof module.exports === "object") {
@@ -12,7 +177,6 @@
             factory(global);
         }
     })(typeof window !== "undefined" ? window : this, function(window, noGlobal) {
-        "use strict";
         var arr = [];
         var document = window.document;
         var getProto = Object.getPrototypeOf;
@@ -5716,10 +5880,10 @@
         jQuery.isArray = Array.isArray;
         jQuery.parseJSON = JSON.parse;
         jQuery.nodeName = nodeName;
-        if (typeof define === "function" && define.amd) {
-            define("jquery", [], function() {
+        if (true) {
+            jquery = function() {
                 return jQuery;
-            });
+            }();
         }
         var _jQuery = window.jQuery, _$ = window.$;
         jQuery.noConflict = function(deep) {
@@ -5736,7 +5900,534 @@
         }
         return jQuery;
     });
-    "use strict";
+    kidaptive_error = function() {
+        var KidaptiveError = function(type, message) {
+            var e = new Error(message);
+            Object.getOwnPropertyNames(e).map(function(k) {
+                Object.defineProperty(this, k, Object.getOwnPropertyDescriptor(e, k));
+            }.bind(this));
+            this.type = type;
+        };
+        KidaptiveError.prototype = Object.create(Error.prototype);
+        KidaptiveError.prototype.constructor = KidaptiveError;
+        KidaptiveError.prototype.name = "KidaptiveError";
+        KidaptiveError.prototype.toString = function() {
+            return this.name + " (" + this.type + "): " + this.message;
+        };
+        KidaptiveError.KidaptiveErrorCode = {
+            GENERIC_ERROR: "GENERIC_ERROR",
+            INVALID_PARAMETER: "INVALID_PARAMETER",
+            ILLEGAL_STATE: "ILLEGAL_STATE",
+            API_KEY_ERROR: "API_KEY_ERROR",
+            WEB_API_ERROR: "WEB_API_ERROR"
+        };
+        return KidaptiveError;
+    }();
+    kidaptive_utils = function($, KidaptiveError) {
+        var KidaptiveUtils = {};
+        KidaptiveUtils.Promise = function(func) {
+            var def = $.Deferred();
+            var resolve = function(value) {
+                def.resolve(value);
+            };
+            var reject = function(error) {
+                def.reject(error);
+            };
+            setTimeout(function() {
+                try {
+                    func(resolve, reject);
+                } catch (e) {
+                    def.reject(e);
+                }
+            });
+            return def.then(function(v) {
+                return v;
+            });
+        };
+        KidaptiveUtils.Promise.resolve = function(value) {
+            return KidaptiveUtils.Promise(function(resolve) {
+                resolve(value);
+            });
+        };
+        KidaptiveUtils.Promise.reject = function(err) {
+            return KidaptiveUtils.Promise(function(_, reject) {
+                reject(err);
+            });
+        };
+        KidaptiveUtils.Promise.wrap = function(obj) {
+            if (typeof obj === "function") {
+                return KidaptiveUtils.Promise(function(resolve, reject) {
+                    try {
+                        resolve(obj());
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            } else {
+                return KidaptiveUtils.Promise.resolve(obj);
+            }
+        };
+        KidaptiveUtils.Promise.parallel = function(objArray) {
+            return KidaptiveUtils.Promise(function(resolve) {
+                var results = [];
+                objArray.forEach(function(o, i) {
+                    KidaptiveUtils.Promise.wrap(o).then(function(v) {
+                        return {
+                            resolved: true,
+                            value: v
+                        };
+                    }, function(e) {
+                        return {
+                            resolved: false,
+                            error: e
+                        };
+                    }).then(function(r) {
+                        results[i] = r;
+                        if (Object.keys(results).length === objArray.length) {
+                            resolve(results);
+                        }
+                    });
+                });
+                if (objArray.length === 0) {
+                    resolve(results);
+                }
+            });
+        };
+        KidaptiveUtils.Promise.serial = function(funcArray, errors) {
+            errors = KidaptiveUtils.copyObject(errors);
+            if (typeof errors === "string") {
+                errors = [ errors ];
+            } else if (!(errors instanceof Array)) {
+                errors = undefined;
+            }
+            var promise = KidaptiveUtils.Promise.resolve();
+            funcArray.forEach(function(f) {
+                promise = promise.then(KidaptiveUtils.Promise.wrap.bind(undefined, f)).catch(errors ? function(e) {
+                    if (errors.indexOf(e.type) !== -1) {
+                        throw e;
+                    }
+                } : undefined);
+            });
+            return promise.then(function() {});
+        };
+        var jsonHelper = function(o, inArray) {
+            o = KidaptiveUtils.copyObject(o);
+            switch (typeof o) {
+              case "object":
+                if (o !== null) {
+                    if (o instanceof Array) {
+                        return "[" + o.map(function(i) {
+                            return jsonHelper(i, true);
+                        }).join(",") + "]";
+                    } else {
+                        return "{" + Object.keys(o).sort().map(function(i) {
+                            var value = jsonHelper(o[i]);
+                            return value === undefined ? value : [ JSON.stringify(i), value ].join(":");
+                        }).filter(function(i) {
+                            return i !== undefined;
+                        }).join(",") + "}";
+                    }
+                }
+
+              case "boolean":
+              case "number":
+              case "string":
+                return JSON.stringify(o);
+
+              default:
+                return inArray ? "null" : undefined;
+            }
+        };
+        KidaptiveUtils.toJson = function(o) {
+            return jsonHelper(o);
+        };
+        KidaptiveUtils.getObject = function(object, key) {
+            key = KidaptiveUtils.copyObject(key);
+            if (key === undefined) {
+                return object;
+            } else if (key instanceof Array) {
+                key.forEach(function(i) {
+                    object = (object || {})[i];
+                });
+                return object;
+            }
+            return (object || {})[key];
+        };
+        KidaptiveUtils.putObject = function(object, key, value) {
+            key = KidaptiveUtils.copyObject(key);
+            var o = object;
+            if (key instanceof Array) {
+                if (key.length === 0) {
+                    return object;
+                }
+                key.forEach(function(k, i) {
+                    if (i === key.length - 1) {
+                        key = k;
+                    } else {
+                        o = o[k] || (o[k] = {});
+                    }
+                });
+            }
+            if (value === undefined) {
+                delete o[key];
+            } else {
+                o[key] = value;
+            }
+            return object;
+        };
+        KidaptiveUtils.toCamelCase = function(str, delimiters) {
+            return str.split(delimiters).filter(function(s) {
+                return s.length > 0;
+            }).map(function(s, i) {
+                s = s.toLowerCase();
+                if (i) {
+                    return s[0].toUpperCase() + s.substr(1);
+                }
+                return s;
+            }).join("");
+        };
+        KidaptiveUtils.localStorageSetItem = function(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) {
+                console.log("Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date");
+            }
+        };
+        KidaptiveUtils.localStorageGetItem = function(key) {
+            var cached = localStorage.getItem(key);
+            if (cached === null) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "No item found for key " + key + " in localStorage");
+            }
+            return cached === "undefined" ? undefined : JSON.parse(cached);
+        };
+        KidaptiveUtils.copyObject = function(o, preserveFunctions) {
+            var oCopy = JSON.stringify(o);
+            oCopy = oCopy === undefined ? oCopy : JSON.parse(oCopy);
+            if (preserveFunctions) {
+                if (typeof o === "function") {
+                    return o;
+                } else if (oCopy instanceof Array) {
+                    for (var i = 0; i < o.length; i++) {
+                        var v = KidaptiveUtils.copyObject(o[i], true);
+                        oCopy[i] = v === undefined ? null : v;
+                    }
+                } else if (oCopy instanceof Object) {
+                    Object.keys(o).forEach(function(k) {
+                        var v = KidaptiveUtils.copyObject(o[k], true);
+                        if (v !== undefined) {
+                            oCopy[k] = v;
+                        }
+                    });
+                }
+            }
+            return oCopy;
+        };
+        KidaptiveUtils.checkObjectFormat = function(object, format) {
+            object = KidaptiveUtils.copyObject(object, true);
+            format = KidaptiveUtils.copyObject(format, true);
+            if (object === undefined || format === undefined) {
+                return;
+            }
+            if (format === null) {
+                if (object !== null) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected null");
+                }
+            } else if (typeof format === "function") {
+                if (typeof object !== "function") {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected function");
+                }
+            } else if (format instanceof Array) {
+                if (!(object instanceof Array)) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected array");
+                }
+                object.forEach(function(v, i) {
+                    try {
+                        KidaptiveUtils.checkObjectFormat(v, format[Math.min(i, format.length - 1)]);
+                    } catch (e) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at index " + i + ": " + e.message);
+                    }
+                });
+            } else if (format instanceof Object) {
+                if (!(object instanceof Object) || object instanceof Array || typeof object === "function") {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected object");
+                }
+                Object.keys(format).forEach(function(k) {
+                    try {
+                        KidaptiveUtils.checkObjectFormat(object[k], format[k]);
+                    } catch (e) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at property " + k + ": " + e.message);
+                    }
+                });
+            } else if (typeof object !== typeof format) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected " + typeof format);
+            }
+        };
+        return KidaptiveUtils;
+    }(jquery, kidaptive_error);
+    kidaptive_attempt_processor = function(KidaptiveIrt, KidaptiveUtils) {
+        var KidaptiveAttemptProcessor = function(sdk) {
+            this.sdk = sdk;
+        };
+        KidaptiveAttemptProcessor.prototype.processAttempt = function(learnerId, attempt) {
+            var item = this.sdk.modelManager.uriToModel["item"][attempt.itemURI];
+            var ability = KidaptiveUtils.copyObject(this.sdk.modelManager.getLocalAbilities(learnerId, item.localDimensionId));
+            if (!this.sdk.trialManager.openTrials[learnerId].dimensionsReset[item.localDimensionId]) {
+                if (ability.standardDeviation < .65) {
+                    ability.standardDeviation = .65;
+                }
+                this.sdk.trialManager.resetDimension(learnerId, item.localDimensionId);
+            }
+            var postAbility = KidaptiveIrt.estimate(!!attempt.outcome, item.mean, ability.mean, ability.standardDeviation);
+            ability.mean = postAbility.post_mean;
+            ability.standardDeviation = postAbility.post_sd;
+            ability.timestamp = this.sdk.trialManager.openTrials[learnerId].trialTime;
+            this.sdk.modelManager.setLocalAbility(learnerId, ability);
+        };
+        return KidaptiveAttemptProcessor;
+    }(irt_irt, kidaptive_utils);
+    kidaptive_constants = function() {
+        var KidaptiveConstants = {
+            HOST_PROD: "https://service.kidaptive.com/v3",
+            HOST_DEV: "https://develop.kidaptive.com/v3",
+            ENDPOINTS: {
+                APP: "/app/me",
+                GAME: "/game",
+                PROMPT: "/prompt",
+                CATEGORY: "/category",
+                SUB_CATEGORY: "/sub-category",
+                INSTANCE: "/instance",
+                PROMPT_CATEGORY: "/prompt-category",
+                SKILLS_FRAMEWORK: "/skills-framework",
+                SKILLS_CLUSTER: "/skills-cluster",
+                SKILLS_DOMAIN: "/skills-domain",
+                DIMENSION: "/dimension",
+                LOCAL_DIMENSION: "/local-dimension",
+                ITEM: "/item",
+                LEARNER: "/learner",
+                ABILITY: "/ability",
+                LOCAL_ABILITY: "/local-ability",
+                INSIGHT: "/insight",
+                INGESTION: "/ingestion",
+                CREATE_USER: "/user",
+                USER: "/user/me",
+                LOGIN: "/user/login",
+                LOGOUT: "/user/logout"
+            },
+            ALP_EVENT_VERSION: "3.0"
+        };
+        return KidaptiveConstants;
+    }();
+    kidaptive_event_manager = function(KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
+        var KidaptiveEventManager = function(sdk) {
+            this.sdk = sdk;
+            this.eventSequence = 0;
+            try {
+                this.eventQueue = KidaptiveUtils.localStorageGetItem(this.getEventQueueCacheKey());
+            } catch (e) {
+                this.eventQueue = [];
+            }
+        };
+        KidaptiveEventManager.prototype.reportBehavior = function(eventName, properties) {
+            this.queueEvent(this.createAgentRequest(eventName, "Behavior", properties));
+        };
+        KidaptiveEventManager.prototype.reportEvidence = function(eventName, properties) {
+            this.queueEvent(this.createAgentRequest(eventName, "Result", properties));
+        };
+        KidaptiveEventManager.prototype.queueEvent = function(event) {
+            this.eventQueue.push(event);
+            KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey(), this.eventQueue);
+        };
+        KidaptiveEventManager.prototype.flushEvents = function(callbacks) {
+            if (!callbacks) {
+                callbacks = [];
+            }
+            var user = this.sdk.userManager.currentUser;
+            if (!user) {
+                return KidaptiveUtils.Promise.resolve([]);
+            }
+            var eventQueue = this.eventQueue;
+            var flushResults = KidaptiveUtils.Promise.parallel(eventQueue.map(function(event) {
+                return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.INGESTION, event, {
+                    noCache: true
+                });
+            }.bind(this))).then(function(results) {
+                results.forEach(function(r, i) {
+                    r.event = KidaptiveUtils.copyObject(eventQueue[i]);
+                    if (!r.resolved && (r.error.code === KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR || r.error.code === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR)) {
+                        this.queueEvent(eventQueue[i]);
+                    }
+                }.bind(this));
+                return results;
+            }.bind(this));
+            this.eventQueue = [];
+            localStorage.removeItem(this.getEventQueueCacheKey());
+            callbacks.forEach(function(c) {
+                c(flushResults);
+            });
+            return flushResults;
+        };
+        KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
+            return this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.INGESTION).replace(/[.].*/, ".alpEventData");
+        };
+        KidaptiveEventManager.prototype.createAgentRequest = function(name, type, properties) {
+            if (!name) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
+            }
+            KidaptiveUtils.checkObjectFormat(name, "");
+            properties = KidaptiveUtils.copyObject(properties) || {};
+            if (type === "Behavior") {
+                delete properties["attempts"];
+                delete properties["promptAnswers"];
+            }
+            KidaptiveUtils.checkObjectFormat(properties, {
+                learnerId: 0,
+                gameURI: "",
+                promptURI: "",
+                duration: 0,
+                attempts: [ {
+                    itemURI: "",
+                    outcome: 0,
+                    guessingParameter: 0
+                } ],
+                promptAnswers: {},
+                additionalFields: {},
+                tags: {}
+            });
+            var learnerId = properties.learnerId;
+            if (type === "Result" && !learnerId) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
+            }
+            if (learnerId) {
+                this.sdk.checkLearner(learnerId);
+            }
+            var trial = this.sdk.trialManager.openTrials[learnerId] || {};
+            if (type === "Result" && (!trial.trialTime || !trial.trialSalt)) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "Must start a trial for learner " + learnerId + " before reporting evidence");
+            }
+            var gameUri = properties.gameURI;
+            if (gameUri) {
+                if (!this.sdk.modelManager.uriToModel["game"][gameUri]) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + gameUri + " not found");
+                }
+            }
+            var promptUri = properties.promptURI;
+            if (type === "Result" && !promptUri) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "promptURI is required");
+            }
+            if (promptUri) {
+                var prompt = this.sdk.modelManager.uriToModel["prompt"][promptUri];
+                if (!prompt) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " not found");
+                }
+                var promptGameUri = this.sdk.modelManager.idToModel["game"][prompt.gameId].uri;
+                if (gameUri && promptGameUri !== gameUri) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + promptUri + " has no prompt " + promptUri);
+                }
+                if (!gameUri) {
+                    gameUri = promptGameUri;
+                }
+            }
+            var duration = properties.duration;
+            if (duration) {
+                if (duration < 0) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Duration must not be negative");
+                }
+            }
+            var attempts = properties.attempts;
+            if (type === "Result") {
+                attempts = properties.attempts || [];
+                var itemUris = this.sdk.modelManager.getModels("item", {
+                    prompt: promptUri
+                }).map(function(item) {
+                    return item.uri;
+                });
+                attempts.forEach(function(attempt, i) {
+                    if (itemUris.indexOf(attempt.itemURI) < 0) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no item " + attempt.itemURI);
+                    }
+                    if (attempt.outcome === undefined || attempt.outcome < 0 || attempt.outcome > 1) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Outcome in attempt " + i + " must be between 0 and 1 (inclusive)");
+                    }
+                    if (attempt.guessingParameter < 0 || attempt.guessingParameter > 1) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Guessing parameter in attempt " + i + " must be between 0 and 1 (inclusive)");
+                    }
+                });
+            }
+            var promptAnswers;
+            if (type === "Result") {
+                promptAnswers = properties.promptAnswers || {};
+                var categoryUris = this.sdk.modelManager.getModels("prompt-category", {
+                    prompt: promptUri
+                }).map(function(pc) {
+                    return this.sdk.modelManager.idToModel["category"][pc.categoryId].uri;
+                }.bind(this));
+                Object.keys(promptAnswers).forEach(function(key) {
+                    if (typeof promptAnswers[key] !== "string") {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt answers must be strings");
+                    }
+                    var i = categoryUris.indexOf(key);
+                    if (i < 0) {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no category " + key);
+                    } else {
+                        categoryUris.splice(i, 1);
+                    }
+                });
+                if (categoryUris.length > 0) {
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Missing category " + categoryUris[0] + " for prompt " + promptUri);
+                }
+            }
+            var additionalFields = properties.additionalFields;
+            if (additionalFields) {
+                Object.keys(additionalFields).forEach(function(key) {
+                    if (typeof additionalFields[key] !== "string") {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Additional fields must be strings");
+                    }
+                });
+            }
+            var tags = properties.tags;
+            if (tags) {
+                Object.keys(tags).forEach(function(key) {
+                    if (typeof tags[key] !== "string") {
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Tags must be strings");
+                    }
+                });
+            }
+            if (type === "Result" && (KidaptiveUtils.getObject(tags, [ "SKIP_IRT" ]) || "").toLowerCase() !== "true" && (KidaptiveUtils.getObject(tags, [ "SKIP_LEARNER_IRT" ]) || "").toLowerCase() !== "true") {
+                attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
+            }
+            var userId = this.sdk.anonymousSession ? 0 : this.sdk.userManager.currentUser.id;
+            return {
+                appInfo: {
+                    uri: this.sdk.appInfo.uri,
+                    version: this.sdk.appInfo.version,
+                    build: this.sdk.appInfo.build
+                },
+                deviceInfo: {
+                    deviceType: KidaptiveUtils.getObject(window, [ "navigator", "userAgent" ]),
+                    language: KidaptiveUtils.getObject(window, [ "navigator", "language" ])
+                },
+                events: [ {
+                    version: KidaptiveConstants.ALP_EVENT_VERSION,
+                    type: type,
+                    name: name,
+                    userId: userId,
+                    learnerId: learnerId,
+                    gameURI: gameUri,
+                    promptURI: promptUri,
+                    trialTime: trial.trialTime,
+                    trialSalt: trial.trialSalt,
+                    eventTime: Date.now(),
+                    eventSequence: ++this.eventSequence,
+                    duration: duration,
+                    attempts: attempts,
+                    promptAnswers: promptAnswers,
+                    additionalFields: additionalFields,
+                    tags: tags
+                } ]
+            };
+        };
+        return KidaptiveEventManager;
+    }(kidaptive_constants, kidaptive_error, kidaptive_utils);
     var sjcl = {
         cipher: {},
         hash: {},
@@ -6479,7 +7170,7 @@
         if (G = "undefined" !== typeof module && module.exports) {
             var H;
             try {
-                H = require("crypto");
+                H = crypto;
             } catch (a) {
                 H = null;
             }
@@ -6630,1364 +7321,710 @@
         };
     };
     "undefined" !== typeof module && module.exports && (module.exports = sjcl);
-    "function" === typeof define && define([], function() {
+    "function" === typeof define && define("sjcl", [], function() {
         return sjcl;
     });
-    "use strict";
-    var KidaptiveConstants = {
-        HOST_PROD: "https://service.kidaptive.com/v3",
-        HOST_DEV: "https://develop.kidaptive.com/v3",
-        ENDPOINTS: {
-            APP: "/app/me",
-            GAME: "/game",
-            PROMPT: "/prompt",
-            CATEGORY: "/category",
-            SUB_CATEGORY: "/sub-category",
-            INSTANCE: "/instance",
-            PROMPT_CATEGORY: "/prompt-category",
-            SKILLS_FRAMEWORK: "/skills-framework",
-            SKILLS_CLUSTER: "/skills-cluster",
-            SKILLS_DOMAIN: "/skills-domain",
-            DIMENSION: "/dimension",
-            LOCAL_DIMENSION: "/local-dimension",
-            ITEM: "/item",
-            LEARNER: "/learner",
-            ABILITY: "/ability",
-            LOCAL_ABILITY: "/local-ability",
-            INSIGHT: "/insight",
-            INGESTION: "/ingestion",
-            CREATE_USER: "/user",
-            USER: "/user/me",
-            LOGIN: "/user/login",
-            LOGOUT: "/user/logout"
-        },
-        ALP_EVENT_VERSION: "3.0"
-    };
-    "use strict";
-    var KidaptiveError = function(type, message) {
-        var e = new Error(message);
-        Object.getOwnPropertyNames(e).map(function(k) {
-            Object.defineProperty(this, k, Object.getOwnPropertyDescriptor(e, k));
-        }.bind(this));
-        this.type = type;
-    };
-    KidaptiveError.prototype = Object.create(Error.prototype);
-    KidaptiveError.prototype.constructor = KidaptiveError;
-    KidaptiveError.prototype.name = "KidaptiveError";
-    KidaptiveError.prototype.toString = function() {
-        return this.name + " (" + this.type + "): " + this.message;
-    };
-    KidaptiveError.KidaptiveErrorCode = {
-        GENERIC_ERROR: "GENERIC_ERROR",
-        INVALID_PARAMETER: "INVALID_PARAMETER",
-        ILLEGAL_STATE: "ILLEGAL_STATE",
-        API_KEY_ERROR: "API_KEY_ERROR",
-        WEB_API_ERROR: "WEB_API_ERROR"
-    };
-    "use strict";
-    var KidaptiveUtils = {};
-    KidaptiveUtils.Promise = function(func) {
-        var def = $.Deferred();
-        var resolve = function(value) {
-            def.resolve(value);
-        };
-        var reject = function(error) {
-            def.reject(error);
-        };
-        setTimeout(function() {
-            try {
-                func(resolve, reject);
-            } catch (e) {
-                def.reject(e);
-            }
-        });
-        return def.then(function(v) {
-            return v;
-        });
-    };
-    KidaptiveUtils.Promise.resolve = function(value) {
-        return KidaptiveUtils.Promise(function(resolve) {
-            resolve(value);
-        });
-    };
-    KidaptiveUtils.Promise.reject = function(err) {
-        return KidaptiveUtils.Promise(function(_, reject) {
-            reject(err);
-        });
-    };
-    KidaptiveUtils.Promise.wrap = function(obj) {
-        if (typeof obj === "function") {
-            return KidaptiveUtils.Promise(function(resolve, reject) {
+    kidaptive_http_client = function($, sjcl, KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
+        var KidaptiveHttpClient = function(_apiKey, dev, defaultCache) {
+            this.host = dev ? KidaptiveConstants.HOST_DEV : KidaptiveConstants.HOST_PROD;
+            this.apiKey = _apiKey;
+            defaultCache = defaultCache || {};
+            Object.keys(defaultCache).forEach(function(k) {
                 try {
-                    resolve(obj());
+                    KidaptiveUtils.localStorageGetItem(k);
                 } catch (e) {
-                    reject(e);
+                    localStorage[k] = defaultCache[k];
                 }
             });
-        } else {
-            return KidaptiveUtils.Promise.resolve(obj);
-        }
-    };
-    KidaptiveUtils.Promise.parallel = function(objArray) {
-        return KidaptiveUtils.Promise(function(resolve) {
-            var results = [];
-            objArray.forEach(function(o, i) {
-                KidaptiveUtils.Promise.wrap(o).then(function(v) {
-                    return {
-                        resolved: true,
-                        value: v
-                    };
-                }, function(e) {
-                    return {
-                        resolved: false,
-                        error: e
-                    };
-                }).then(function(r) {
-                    results[i] = r;
-                    if (Object.keys(results).length === objArray.length) {
-                        resolve(results);
+        };
+        KidaptiveHttpClient.USER_ENDPOINTS = [ KidaptiveConstants.ENDPOINTS.USER, KidaptiveConstants.ENDPOINTS.LEARNER, KidaptiveConstants.ENDPOINTS.ABILITY, KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, KidaptiveConstants.ENDPOINTS.INSIGHT, KidaptiveConstants.ENDPOINTS.INGESTION, KidaptiveConstants.ENDPOINTS.LOGOUT ];
+        KidaptiveHttpClient.isUserEndpoint = function(endpoint) {
+            var isUserEndpoint = false;
+            KidaptiveHttpClient.USER_ENDPOINTS.forEach(function(e) {
+                if (!isUserEndpoint && endpoint.match("^" + e)) {
+                    isUserEndpoint = true;
+                }
+            });
+            return isUserEndpoint;
+        };
+        KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
+            options = options || {};
+            return KidaptiveUtils.Promise.wrap(function() {
+                var settings = {};
+                var cacheKey = this.getCacheKey(method, endpoint, params, settings);
+                return $.ajax(settings).then(function(data) {
+                    if (!options.noCache) {
+                        KidaptiveUtils.localStorageSetItem(cacheKey, data);
                     }
-                });
-            });
-            if (objArray.length === 0) {
-                resolve(results);
-            }
-        });
-    };
-    KidaptiveUtils.Promise.serial = function(funcArray, errors) {
-        errors = KidaptiveUtils.copyObject(errors);
-        if (typeof errors === "string") {
-            errors = [ errors ];
-        } else if (!(errors instanceof Array)) {
-            errors = undefined;
-        }
-        var promise = KidaptiveUtils.Promise.resolve();
-        funcArray.forEach(function(f) {
-            promise = promise.then(KidaptiveUtils.Promise.wrap.bind(undefined, f)).catch(errors ? function(e) {
-                if (errors.indexOf(e.type) !== -1) {
-                    throw e;
-                }
-            } : undefined);
-        });
-        return promise.then(function() {});
-    };
-    var jsonHelper = function(o, inArray) {
-        o = KidaptiveUtils.copyObject(o);
-        switch (typeof o) {
-          case "object":
-            if (o !== null) {
-                if (o instanceof Array) {
-                    return "[" + o.map(function(i) {
-                        return jsonHelper(i, true);
-                    }).join(",") + "]";
-                } else {
-                    return "{" + Object.keys(o).sort().map(function(i) {
-                        var value = jsonHelper(o[i]);
-                        return value === undefined ? value : [ JSON.stringify(i), value ].join(":");
-                    }).filter(function(i) {
-                        return i !== undefined;
-                    }).join(",") + "}";
-                }
-            }
-
-          case "boolean":
-          case "number":
-          case "string":
-            return JSON.stringify(o);
-
-          default:
-            return inArray ? "null" : undefined;
-        }
-    };
-    KidaptiveUtils.toJson = function(o) {
-        return jsonHelper(o);
-    };
-    KidaptiveUtils.getObject = function(object, key) {
-        key = KidaptiveUtils.copyObject(key);
-        if (key === undefined) {
-            return object;
-        } else if (key instanceof Array) {
-            key.forEach(function(i) {
-                object = (object || {})[i];
-            });
-            return object;
-        }
-        return (object || {})[key];
-    };
-    KidaptiveUtils.putObject = function(object, key, value) {
-        key = KidaptiveUtils.copyObject(key);
-        var o = object;
-        if (key instanceof Array) {
-            if (key.length === 0) {
-                return object;
-            }
-            key.forEach(function(k, i) {
-                if (i === key.length - 1) {
-                    key = k;
-                } else {
-                    o = o[k] || (o[k] = {});
-                }
-            });
-        }
-        if (value === undefined) {
-            delete o[key];
-        } else {
-            o[key] = value;
-        }
-        return object;
-    };
-    KidaptiveUtils.toCamelCase = function(str, delimiters) {
-        return str.split(delimiters).filter(function(s) {
-            return s.length > 0;
-        }).map(function(s, i) {
-            s = s.toLowerCase();
-            if (i) {
-                return s[0].toUpperCase() + s.substr(1);
-            }
-            return s;
-        }).join("");
-    };
-    KidaptiveUtils.localStorageSetItem = function(key, value) {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            console.log("Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date");
-        }
-    };
-    KidaptiveUtils.localStorageGetItem = function(key) {
-        var cached = localStorage.getItem(key);
-        if (cached === null) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "No item found for key " + key + " in localStorage");
-        }
-        return cached === "undefined" ? undefined : JSON.parse(cached);
-    };
-    KidaptiveUtils.copyObject = function(o, preserveFunctions) {
-        var oCopy = JSON.stringify(o);
-        oCopy = oCopy === undefined ? oCopy : JSON.parse(oCopy);
-        if (preserveFunctions) {
-            if (typeof o === "function") {
-                return o;
-            } else if (oCopy instanceof Array) {
-                for (var i = 0; i < o.length; i++) {
-                    var v = KidaptiveUtils.copyObject(o[i], true);
-                    oCopy[i] = v === undefined ? null : v;
-                }
-            } else if (oCopy instanceof Object) {
-                Object.keys(o).forEach(function(k) {
-                    var v = KidaptiveUtils.copyObject(o[k], true);
-                    if (v !== undefined) {
-                        oCopy[k] = v;
-                    }
-                });
-            }
-        }
-        return oCopy;
-    };
-    KidaptiveUtils.checkObjectFormat = function(object, format) {
-        object = KidaptiveUtils.copyObject(object, true);
-        format = KidaptiveUtils.copyObject(format, true);
-        if (object === undefined || format === undefined) {
-            return;
-        }
-        if (format === null) {
-            if (object !== null) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected null");
-            }
-        } else if (typeof format === "function") {
-            if (typeof object !== "function") {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected function");
-            }
-        } else if (format instanceof Array) {
-            if (!(object instanceof Array)) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected array");
-            }
-            object.forEach(function(v, i) {
-                try {
-                    KidaptiveUtils.checkObjectFormat(v, format[Math.min(i, format.length - 1)]);
-                } catch (e) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at index " + i + ": " + e.message);
-                }
-            });
-        } else if (format instanceof Object) {
-            if (!(object instanceof Object) || object instanceof Array || typeof object === "function") {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected object");
-            }
-            Object.keys(format).forEach(function(k) {
-                try {
-                    KidaptiveUtils.checkObjectFormat(object[k], format[k]);
-                } catch (e) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Error at property " + k + ": " + e.message);
-                }
-            });
-        } else if (typeof object !== typeof format) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected " + typeof format);
-        }
-    };
-    "use strict";
-    var KidaptiveHttpClient = function(_apiKey, dev, defaultCache) {
-        this.host = dev ? KidaptiveConstants.HOST_DEV : KidaptiveConstants.HOST_PROD;
-        this.apiKey = _apiKey;
-        defaultCache = defaultCache || {};
-        Object.keys(defaultCache).forEach(function(k) {
-            try {
-                KidaptiveUtils.localStorageGetItem(k);
-            } catch (e) {
-                localStorage[k] = defaultCache[k];
-            }
-        });
-    };
-    KidaptiveHttpClient.USER_ENDPOINTS = [ KidaptiveConstants.ENDPOINTS.USER, KidaptiveConstants.ENDPOINTS.LEARNER, KidaptiveConstants.ENDPOINTS.ABILITY, KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, KidaptiveConstants.ENDPOINTS.INSIGHT, KidaptiveConstants.ENDPOINTS.INGESTION, KidaptiveConstants.ENDPOINTS.LOGOUT ];
-    KidaptiveHttpClient.isUserEndpoint = function(endpoint) {
-        var isUserEndpoint = false;
-        KidaptiveHttpClient.USER_ENDPOINTS.forEach(function(e) {
-            if (!isUserEndpoint && endpoint.match("^" + e)) {
-                isUserEndpoint = true;
-            }
-        });
-        return isUserEndpoint;
-    };
-    KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
-        options = options || {};
-        return KidaptiveUtils.Promise.wrap(function() {
-            var settings = {};
-            var cacheKey = this.getCacheKey(method, endpoint, params, settings);
-            return $.ajax(settings).then(function(data) {
-                if (!options.noCache) {
-                    KidaptiveUtils.localStorageSetItem(cacheKey, data);
-                }
-                return data;
-            }, function(xhr) {
-                if (xhr.status === 400) {
-                    localStorage.removeItem(cacheKey);
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
-                } else if (xhr.status === 401) {
-                    KidaptiveHttpClient.deleteUserData();
-                    if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
-                        KidaptiveHttpClient.deleteAppData();
-                    }
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
-                } else if (xhr.status) {
-                    localStorage.removeItem(cacheKey);
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
-                } else {
-                    try {
-                        return KidaptiveUtils.localStorageGetItem(cacheKey);
-                    } catch (e) {
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
-                    }
-                }
-            });
-        }.bind(this));
-    };
-    KidaptiveHttpClient.deleteUserData = function() {
-        Object.keys(localStorage).forEach(function(k) {
-            if (k.match(/^[\w-]*[.]alpUserData$/)) {
-                localStorage.removeItem(k);
-            }
-        });
-    };
-    KidaptiveHttpClient.deleteAppData = function() {
-        Object.keys(localStorage).forEach(function(k) {
-            if (k.match(/^[\w-]*[.]alpAppData$/)) {
-                localStorage.removeItem(k);
-            }
-        });
-    };
-    KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, settings) {
-        settings = settings || {};
-        settings.headers = {
-            "api-key": KidaptiveHttpClient.isUserEndpoint(endpoint) ? this.sdk.userManager.apiKey : this.apiKey
-        };
-        settings.xhrFields = {
-            withCredentials: true
-        };
-        settings.method = method;
-        settings.url = this.host + endpoint;
-        if (settings.method === "GET") {
-            settings.data = params;
-        } else if (settings.method === "POST") {
-            settings.contentType = "application/json";
-            settings.data = JSON.stringify(params);
-        }
-        var d = new Array(32);
-        sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n, i) {
-            if (n < 0) {
-                n = (n << 1 >>> 1) - (1 << 31);
-            }
-            for (var j = 0; j < 4; j++) {
-                d[4 * i + j] = (n >>> (3 - j) * 8) % 256;
-            }
-        });
-        return btoa(String.fromCharCode.apply(undefined, d)).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
-    };
-    "use strict";
-    var KidaptiveUserManager = function(sdk) {
-        this.sdk = sdk;
-        this.apiKeyCacheKey = sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.APP).replace(/[.].*/, ".alpApiKey");
-        try {
-            this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), [ "apiKey" ]) || sdk.httpClient.apiKey;
-        } catch (e) {
-            this.apiKey = sdk.httpClient.apiKey;
-        }
-    };
-    KidaptiveUserManager.prototype.storeUser = function(user) {
-        if (user.apiKey) {
-            this.apiKey = user.apiKey;
-            KidaptiveUtils.localStorageSetItem(this.apiKeyCacheKey, user);
-            delete user.apiKey;
-        }
-        this.currentUser = user;
-        KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.USER), user);
-    };
-    KidaptiveUserManager.prototype.createUser = function(params) {
-        params = KidaptiveUtils.copyObject(params) || {};
-        var format = {
-            email: "",
-            password: "",
-            nickname: ""
-        };
-        KidaptiveUtils.checkObjectFormat(params, format);
-        if (!params.email) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
-        }
-        if (!params.password) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
-        }
-        Object.keys(params).forEach(function(key) {
-            if (format[key] === undefined) {
-                delete params[key];
-            }
-        });
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {
-            noCache: true
-        }).then(function(user) {
-            this.storeUser(user);
-            return user;
-        }.bind(this));
-    };
-    KidaptiveUserManager.prototype.updateUser = function(params) {
-        params = KidaptiveUtils.copyObject(params) || {};
-        var format = {
-            password: "",
-            nickname: "",
-            deviceId: ""
-        };
-        KidaptiveUtils.checkObjectFormat(params, format);
-        Object.keys(params).forEach(function(key) {
-            if (format[key] === undefined) {
-                delete params[key];
-            }
-        });
-        [ "nickname", "deviceId" ].forEach(function(prop) {
-            if (params[prop] === undefined) {
-                params[prop] = this.currentUser[prop];
-            }
-        }.bind(this));
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.USER, params, {
-            noCache: true
-        }).then(function(user) {
-            this.storeUser(user);
-            return user;
-        }.bind(this));
-    };
-    KidaptiveUserManager.prototype.loginUser = function(params) {
-        params = KidaptiveUtils.copyObject(params) || {};
-        var format = {
-            email: "",
-            password: ""
-        };
-        KidaptiveUtils.checkObjectFormat(params, format);
-        if (!params.email) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
-        }
-        if (!params.password) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
-        }
-        Object.keys(params).forEach(function(key) {
-            if (format[key] === undefined) {
-                delete params[key];
-            }
-        });
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGIN, params, {
-            noCache: true
-        }).then(function(user) {
-            this.storeUser(user);
-            return user;
-        }.bind(this));
-    };
-    KidaptiveUserManager.prototype.refreshUser = function() {
-        return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.USER).then(function(user) {
-            this.currentUser = user;
-            return user;
-        }.bind(this));
-    };
-    KidaptiveUserManager.prototype.logoutUser = function() {
-        this.currentUser = undefined;
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {
-            noCache: true
-        }).then(function() {
-            this.apiKey = this.sdk.httpClient.apiKey;
-            localStorage.removeItem(this.apiKeyCacheKey);
-        }.bind(this), function(error) {
-            this.apiKey = this.sdk.httpClient.apiKey;
-            localStorage.removeItem(this.apiKeyCacheKey);
-            throw error;
-        }.bind(this));
-    };
-    "use strict";
-    var KidaptiveLearnerManager = function(sdk) {
-        this.sdk = sdk;
-        this.clearLearnerList();
-    };
-    KidaptiveLearnerManager.prototype.createLearner = function(params) {
-        params = KidaptiveUtils.copyObject(params) || {};
-        var format = {
-            name: "",
-            birthday: 0,
-            gender: ""
-        };
-        KidaptiveUtils.checkObjectFormat(params, format);
-        if (!params.name) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "name is required");
-        }
-        if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
-        }
-        Object.keys(params).forEach(function(key) {
-            if (format[key] === undefined) {
-                delete params[key];
-            }
-        });
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER, params, {
-            noCache: true
-        });
-    };
-    KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
-        params = KidaptiveUtils.copyObject(params) || {};
-        var format = {
-            name: "",
-            birthday: 0,
-            gender: "",
-            icon: ""
-        };
-        KidaptiveUtils.checkObjectFormat(params, format);
-        if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
-        }
-        Object.keys(params).forEach(function(key) {
-            if (format[key] === undefined) {
-                delete params[key];
-            }
-        });
-        [ "name", "birthday", "gender", "icon" ].forEach(function(prop) {
-            if (params[prop] === undefined) {
-                params[prop] = this.idToLearner[learnerId][prop];
-            }
-        }.bind(this));
-        return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, params, {
-            noCache: true
-        });
-    };
-    KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
-        return this.sdk.httpClient.ajax("DELETE", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {
-            noCache: true
-        });
-    };
-    KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
-        return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LEARNER).then(function(learners) {
-            var idToLearner = {};
-            var providerIdToLearner = {};
-            learners.forEach(function(l) {
-                if (l.id) {
-                    idToLearner[l.id] = l;
-                    if (l.providerId) {
-                        providerIdToLearner[l.providerId] = l;
-                    }
-                }
-            });
-            this.idToLearner = idToLearner;
-            this.providerIdToLearner = providerIdToLearner;
-            return learners;
-        }.bind(this));
-    };
-    KidaptiveLearnerManager.prototype.getLearnerList = function() {
-        return Object.keys(this.idToLearner).map(function(id) {
-            return this.idToLearner[id];
-        }.bind(this));
-    };
-    KidaptiveLearnerManager.prototype.clearLearnerList = function() {
-        this.idToLearner = {};
-        this.providerIdToLearner = {};
-    };
-    "use strict";
-    var KidaptiveModelManager = function(sdk) {
-        this.sdk = sdk;
-        this.uriToModel = {};
-        this.idToModel = {};
-        this.clearLearnerModels();
-    };
-    KidaptiveModelManager.modelParents = {
-        "skills-framework": [],
-        "skills-cluster": [ "skills-framework" ],
-        "skills-domain": [ "skills-cluster" ],
-        dimension: [ "skills-domain" ],
-        game: [],
-        "local-dimension": [ "dimension", "game" ],
-        prompt: [ "game" ],
-        item: [ "prompt", "local-dimension" ],
-        category: [],
-        "sub-category": [ "category" ],
-        instance: [ "sub-category" ],
-        "prompt-category": [ "prompt", "category", "instance" ]
-    };
-    KidaptiveModelManager.getModelParents = function(type) {
-        var allParents = {};
-        var parents = KidaptiveModelManager.modelParents[type];
-        if (parents) {
-            allParents[type] = true;
-            parents.forEach(function(p) {
-                KidaptiveModelManager.getModelParents(p).forEach(function(p) {
-                    allParents[p] = true;
-                });
-            });
-        }
-        return Object.keys(allParents);
-    };
-    KidaptiveModelManager.buildModelIndex = function(type, id, idToModel) {
-        var o = KidaptiveUtils.getObject(idToModel, [ type, id ]);
-        var index = {};
-        if (o) {
-            KidaptiveUtils.putObject(index, [ type, id ], true);
-            KidaptiveModelManager.modelParents[type].forEach(function(p) {
-                var parentIndex = KidaptiveModelManager.buildModelIndex(p, o[KidaptiveUtils.toCamelCase(p, "-") + "Id"], idToModel);
-                Object.keys(parentIndex).forEach(function(type) {
-                    parentIndex[type].forEach(function(id) {
-                        KidaptiveUtils.putObject(index, [ type, id ], true);
-                    });
-                });
-            });
-        }
-        Object.keys(index).forEach(function(type) {
-            index[type] = Object.keys(index[type]);
-        });
-        return index;
-    };
-    KidaptiveModelManager.prototype.refreshAppModels = function() {
-        var modelList = Object.keys(KidaptiveModelManager.modelParents);
-        return KidaptiveUtils.Promise.parallel(modelList.map(function(model) {
-            return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, "GET", "/" + model);
-        }.bind(this))).then(function(results) {
-            var uriToModel = {};
-            var idToModel = {};
-            for (var i = 0; i < results.length; i++) {
-                if (results[i].resolved) {
-                    var model = modelList[i];
-                    var uriMap = {};
-                    var idMap = {};
-                    results[i].value.forEach(function(o) {
-                        uriMap[o.uri] = o;
-                        idMap[o.id] = o;
-                    });
-                    uriToModel[model] = uriMap;
-                    idToModel[model] = idMap;
-                } else {
-                    throw results[i].error;
-                }
-            }
-            var modelIndex = {};
-            Object.keys(idToModel).forEach(function(model) {
-                Object.keys(idToModel[model]).forEach(function(id) {
-                    KidaptiveUtils.putObject(modelIndex, [ model, id ], KidaptiveModelManager.buildModelIndex(model, id, idToModel));
-                });
-            });
-            this.uriToModel = uriToModel;
-            this.idToModel = idToModel;
-            this.modelIndex = modelIndex;
-        }.bind(this));
-    };
-    KidaptiveModelManager.prototype.getModels = function(type, conditions) {
-        var index = this.modelIndex[type];
-        if (!index) {
-            return [];
-        }
-        var modelParents = KidaptiveModelManager.getModelParents(type);
-        conditions = KidaptiveUtils.copyObject(conditions) || {};
-        return Object.keys(index).filter(function(id) {
-            var shouldReturn = true;
-            modelParents.forEach(function(parent) {
-                if (!shouldReturn) {
-                    return;
-                }
-                var con = conditions[parent];
-                if (con) {
-                    var prop = index[id][parent];
-                    if (!prop || !prop.length) {
-                        shouldReturn = false;
+                    return data;
+                }, function(xhr) {
+                    if (xhr.status === 400) {
+                        localStorage.removeItem(cacheKey);
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
+                    } else if (xhr.status === 401) {
+                        KidaptiveHttpClient.deleteUserData();
+                        if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
+                            KidaptiveHttpClient.deleteAppData();
+                        }
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
+                    } else if (xhr.status) {
+                        localStorage.removeItem(cacheKey);
+                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
                     } else {
-                        if (!(con instanceof Array)) {
-                            con = [ con ];
+                        try {
+                            return KidaptiveUtils.localStorageGetItem(cacheKey);
+                        } catch (e) {
+                            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
                         }
-                        con = con.map(function(uri) {
-                            var id = KidaptiveUtils.getObject(this.uriToModel, [ parent, uri, "id" ]);
-                            return id ? id.toString() : id;
-                        }.bind(this));
-                        prop.forEach(function(id) {
-                            shouldReturn = shouldReturn && con.indexOf(id) !== -1;
+                    }
+                });
+            }.bind(this));
+        };
+        KidaptiveHttpClient.deleteUserData = function() {
+            Object.keys(localStorage).forEach(function(k) {
+                if (k.match(/^[\w-]*[.]alpUserData$/)) {
+                    localStorage.removeItem(k);
+                }
+            });
+        };
+        KidaptiveHttpClient.deleteAppData = function() {
+            Object.keys(localStorage).forEach(function(k) {
+                if (k.match(/^[\w-]*[.]alpAppData$/)) {
+                    localStorage.removeItem(k);
+                }
+            });
+        };
+        KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, settings) {
+            settings = settings || {};
+            settings.headers = {
+                "api-key": KidaptiveHttpClient.isUserEndpoint(endpoint) ? this.sdk.userManager.apiKey : this.apiKey
+            };
+            settings.xhrFields = {
+                withCredentials: true
+            };
+            settings.method = method;
+            settings.url = this.host + endpoint;
+            if (settings.method === "GET") {
+                settings.data = params;
+            } else if (settings.method === "POST") {
+                settings.contentType = "application/json";
+                settings.data = JSON.stringify(params);
+            }
+            var d = new Array(32);
+            sjcl.hash.sha256.hash(KidaptiveUtils.toJson(settings)).forEach(function(n, i) {
+                if (n < 0) {
+                    n = (n << 1 >>> 1) - (1 << 31);
+                }
+                for (var j = 0; j < 4; j++) {
+                    d[4 * i + j] = (n >>> (3 - j) * 8) % 256;
+                }
+            });
+            return btoa(String.fromCharCode.apply(undefined, d)).replace(/[+]/g, "-").replace(/[\/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
+        };
+        return KidaptiveHttpClient;
+    }(jquery, sjcl, kidaptive_constants, kidaptive_error, kidaptive_utils);
+    kidaptive_learner_manager = function(KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
+        var KidaptiveLearnerManager = function(sdk) {
+            this.sdk = sdk;
+            this.clearLearnerList();
+        };
+        KidaptiveLearnerManager.prototype.createLearner = function(params) {
+            params = KidaptiveUtils.copyObject(params) || {};
+            var format = {
+                name: "",
+                birthday: 0,
+                gender: ""
+            };
+            KidaptiveUtils.checkObjectFormat(params, format);
+            if (!params.name) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "name is required");
+            }
+            if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+            }
+            Object.keys(params).forEach(function(key) {
+                if (format[key] === undefined) {
+                    delete params[key];
+                }
+            });
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER, params, {
+                noCache: true
+            });
+        };
+        KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
+            params = KidaptiveUtils.copyObject(params) || {};
+            var format = {
+                name: "",
+                birthday: 0,
+                gender: "",
+                icon: ""
+            };
+            KidaptiveUtils.checkObjectFormat(params, format);
+            if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
+            }
+            Object.keys(params).forEach(function(key) {
+                if (format[key] === undefined) {
+                    delete params[key];
+                }
+            });
+            [ "name", "birthday", "gender", "icon" ].forEach(function(prop) {
+                if (params[prop] === undefined) {
+                    params[prop] = this.idToLearner[learnerId][prop];
+                }
+            }.bind(this));
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, params, {
+                noCache: true
+            });
+        };
+        KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
+            return this.sdk.httpClient.ajax("DELETE", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {
+                noCache: true
+            });
+        };
+        KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
+            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LEARNER).then(function(learners) {
+                var idToLearner = {};
+                var providerIdToLearner = {};
+                learners.forEach(function(l) {
+                    if (l.id) {
+                        idToLearner[l.id] = l;
+                        if (l.providerId) {
+                            providerIdToLearner[l.providerId] = l;
+                        }
+                    }
+                });
+                this.idToLearner = idToLearner;
+                this.providerIdToLearner = providerIdToLearner;
+                return learners;
+            }.bind(this));
+        };
+        KidaptiveLearnerManager.prototype.getLearnerList = function() {
+            return Object.keys(this.idToLearner).map(function(id) {
+                return this.idToLearner[id];
+            }.bind(this));
+        };
+        KidaptiveLearnerManager.prototype.clearLearnerList = function() {
+            this.idToLearner = {};
+            this.providerIdToLearner = {};
+        };
+        return KidaptiveLearnerManager;
+    }(kidaptive_constants, kidaptive_error, kidaptive_utils);
+    kidaptive_model_manager = function(KidaptiveConstants, KidaptiveUtils) {
+        var KidaptiveModelManager = function(sdk) {
+            this.sdk = sdk;
+            this.uriToModel = {};
+            this.idToModel = {};
+            this.clearLearnerModels();
+        };
+        KidaptiveModelManager.modelParents = {
+            "skills-framework": [],
+            "skills-cluster": [ "skills-framework" ],
+            "skills-domain": [ "skills-cluster" ],
+            dimension: [ "skills-domain" ],
+            game: [],
+            "local-dimension": [ "dimension", "game" ],
+            prompt: [ "game" ],
+            item: [ "prompt", "local-dimension" ],
+            category: [],
+            "sub-category": [ "category" ],
+            instance: [ "sub-category" ],
+            "prompt-category": [ "prompt", "category", "instance" ]
+        };
+        KidaptiveModelManager.getModelParents = function(type) {
+            var allParents = {};
+            var parents = KidaptiveModelManager.modelParents[type];
+            if (parents) {
+                allParents[type] = true;
+                parents.forEach(function(p) {
+                    KidaptiveModelManager.getModelParents(p).forEach(function(p) {
+                        allParents[p] = true;
+                    });
+                });
+            }
+            return Object.keys(allParents);
+        };
+        KidaptiveModelManager.buildModelIndex = function(type, id, idToModel) {
+            var o = KidaptiveUtils.getObject(idToModel, [ type, id ]);
+            var index = {};
+            if (o) {
+                KidaptiveUtils.putObject(index, [ type, id ], true);
+                KidaptiveModelManager.modelParents[type].forEach(function(p) {
+                    var parentIndex = KidaptiveModelManager.buildModelIndex(p, o[KidaptiveUtils.toCamelCase(p, "-") + "Id"], idToModel);
+                    Object.keys(parentIndex).forEach(function(type) {
+                        parentIndex[type].forEach(function(id) {
+                            KidaptiveUtils.putObject(index, [ type, id ], true);
                         });
+                    });
+                });
+            }
+            Object.keys(index).forEach(function(type) {
+                index[type] = Object.keys(index[type]);
+            });
+            return index;
+        };
+        KidaptiveModelManager.prototype.refreshAppModels = function() {
+            var modelList = Object.keys(KidaptiveModelManager.modelParents);
+            return KidaptiveUtils.Promise.parallel(modelList.map(function(model) {
+                return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, "GET", "/" + model);
+            }.bind(this))).then(function(results) {
+                var uriToModel = {};
+                var idToModel = {};
+                for (var i = 0; i < results.length; i++) {
+                    if (results[i].resolved) {
+                        var model = modelList[i];
+                        var uriMap = {};
+                        var idMap = {};
+                        results[i].value.forEach(function(o) {
+                            uriMap[o.uri] = o;
+                            idMap[o.id] = o;
+                        });
+                        uriToModel[model] = uriMap;
+                        idToModel[model] = idMap;
+                    } else {
+                        throw results[i].error;
                     }
                 }
+                var modelIndex = {};
+                Object.keys(idToModel).forEach(function(model) {
+                    Object.keys(idToModel[model]).forEach(function(id) {
+                        KidaptiveUtils.putObject(modelIndex, [ model, id ], KidaptiveModelManager.buildModelIndex(model, id, idToModel));
+                    });
+                });
+                this.uriToModel = uriToModel;
+                this.idToModel = idToModel;
+                this.modelIndex = modelIndex;
             }.bind(this));
-            return shouldReturn;
-        }.bind(this)).map(function(id) {
-            return KidaptiveUtils.getObject(this.idToModel, [ type, id ]);
-        }.bind(this)).filter(function(o) {
-            return o !== undefined;
-        });
-    };
-    KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
-        if (!learnerId) {
-            return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                return this.refreshLatentAbilities.bind(this, learner);
-            }.bind(this)));
-        } else {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                learnerId: learnerId
-            }, {
-                noCache: true
-            }).then(function(abilities) {
-                if (!this.latentAbilities[learnerId]) {
-                    try {
-                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                            learnerId: learnerId
-                        }));
-                        if (stored) {
-                            this.latentAbilities[learnerId] = stored;
-                        }
-                    } catch (e) {}
-                }
-                abilities.forEach(function(ability) {
-                    this.setLatentAbility(learnerId, ability, true);
-                }.bind(this));
-                return this.latentAbilities;
-            }.bind(this));
-        }
-    };
-    KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
-        if (!learnerId) {
-            return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                return this.refreshLocalAbilities.bind(this, learner);
-            }.bind(this)));
-        } else {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                learnerId: learnerId
-            }, {
-                noCache: true
-            }).then(function(abilities) {
-                if (!this.localAbilities[learnerId]) {
-                    try {
-                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                            learnerId: learnerId
-                        }));
-                        if (stored) {
-                            this.localAbilities[learnerId] = stored;
-                        }
-                    } catch (e) {}
-                }
-                abilities.forEach(function(ability) {
-                    this.setLocalAbility(learnerId, ability, true);
-                }.bind(this));
-                return this.localAbilities;
-            }.bind(this));
-        }
-    };
-    KidaptiveModelManager.prototype.getLatentAbilities = function(learnerId, dimId) {
-        if (dimId) {
-            var dim = this.idToModel["dimension"][dimId];
-            if (dim) {
-                return KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, dimId ]) || {
-                    dimensionId: dim.id,
-                    mean: 0,
-                    standardDeviation: 1,
-                    timestamp: 0
-                };
+        };
+        KidaptiveModelManager.prototype.getModels = function(type, conditions) {
+            var index = this.modelIndex[type];
+            if (!index) {
+                return [];
             }
-        } else {
-            return Object.keys(this.idToModel["dimension"]).map(function(id) {
-                return this.getLatentAbilities(learnerId, id);
-            }.bind(this));
-        }
-    };
-    KidaptiveModelManager.prototype.getLocalAbilities = function(learnerId, dimId) {
-        if (dimId) {
-            var dim = this.idToModel["local-dimension"][dimId];
-            if (dim) {
-                return KidaptiveUtils.getObject(this.localAbilities, [ learnerId, dimId ]) || {
-                    localDimensionId: dim.id,
-                    mean: 0,
-                    standardDeviation: 1,
-                    timestamp: 0
-                };
+            var modelParents = KidaptiveModelManager.getModelParents(type);
+            conditions = KidaptiveUtils.copyObject(conditions) || {};
+            return Object.keys(index).filter(function(id) {
+                var shouldReturn = true;
+                modelParents.forEach(function(parent) {
+                    if (!shouldReturn) {
+                        return;
+                    }
+                    var con = conditions[parent];
+                    if (con) {
+                        var prop = index[id][parent];
+                        if (!prop || !prop.length) {
+                            shouldReturn = false;
+                        } else {
+                            if (!(con instanceof Array)) {
+                                con = [ con ];
+                            }
+                            con = con.map(function(uri) {
+                                var id = KidaptiveUtils.getObject(this.uriToModel, [ parent, uri, "id" ]);
+                                return id ? id.toString() : id;
+                            }.bind(this));
+                            prop.forEach(function(id) {
+                                shouldReturn = shouldReturn && con.indexOf(id) !== -1;
+                            });
+                        }
+                    }
+                }.bind(this));
+                return shouldReturn;
+            }.bind(this)).map(function(id) {
+                return KidaptiveUtils.getObject(this.idToModel, [ type, id ]);
+            }.bind(this)).filter(function(o) {
+                return o !== undefined;
+            });
+        };
+        KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
+            if (!learnerId) {
+                return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
+                    return this.refreshLatentAbilities.bind(this, learner);
+                }.bind(this)));
+            } else {
+                return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                    learnerId: learnerId
+                }, {
+                    noCache: true
+                }).then(function(abilities) {
+                    if (!this.latentAbilities[learnerId]) {
+                        try {
+                            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                                learnerId: learnerId
+                            }));
+                            if (stored) {
+                                this.latentAbilities[learnerId] = stored;
+                            }
+                        } catch (e) {}
+                    }
+                    abilities.forEach(function(ability) {
+                        this.setLatentAbility(learnerId, ability, true);
+                    }.bind(this));
+                    return this.latentAbilities;
+                }.bind(this));
             }
-        } else {
-            return Object.keys(this.idToModel["local-dimension"]).map(function(id) {
-                return this.getLocalAbilities(learnerId, id);
-            }.bind(this));
-        }
-    };
-    KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, ability, keepCurrent) {
-        var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, ability.dimensionId ]);
-        if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
-            KidaptiveUtils.putObject(this.latentAbilities, [ learnerId, ability.dimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                learnerId: learnerId
-            }), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
-                return this.latentAbilities[learnerId][dimId];
-            }.bind(this)));
-        }
-    };
-    KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, ability, keepCurrent) {
-        var curAbil = KidaptiveUtils.getObject(this.localAbilities, [ learnerId, ability.localDimensionId ]);
-        if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
-            KidaptiveUtils.putObject(this.localAbilities, [ learnerId, ability.localDimensionId ], ability);
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                learnerId: learnerId
-            }), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
-                return this.localAbilities[learnerId][dimId];
-            }.bind(this)));
-        }
-    };
-    KidaptiveModelManager.prototype.fetchInsights = function(learnerId, minDateCreated, latest) {};
-    KidaptiveModelManager.prototype.clearLearnerModels = function() {
-        this.latentAbilities = {};
-        this.localAbilities = {};
-        this.insights = {};
-    };
-    var KidaptiveIrt = {};
-    (function() {
-        var normal_dist = function(x, mu, sigma) {
-            return Math.exp(-Math.pow(x - mu, 2) / 2 / Math.pow(sigma, 2)) / sigma / Math.sqrt(2 * Math.PI);
         };
-        var logistic_dist = function(x, mu, alpha) {
-            return 1 / (1 + Math.exp(-alpha * (x - mu)));
+        KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
+            if (!learnerId) {
+                return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
+                    return this.refreshLocalAbilities.bind(this, learner);
+                }.bind(this)));
+            } else {
+                return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                    learnerId: learnerId
+                }, {
+                    noCache: true
+                }).then(function(abilities) {
+                    if (!this.localAbilities[learnerId]) {
+                        try {
+                            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                                learnerId: learnerId
+                            }));
+                            if (stored) {
+                                this.localAbilities[learnerId] = stored;
+                            }
+                        } catch (e) {}
+                    }
+                    abilities.forEach(function(ability) {
+                        this.setLocalAbility(learnerId, ability, true);
+                    }.bind(this));
+                    return this.localAbilities;
+                }.bind(this));
+            }
         };
-        var inv_logis = function(p) {
-            return Math.log(1 / p - 1) * Math.sqrt(Math.PI / 8);
+        KidaptiveModelManager.prototype.getLatentAbilities = function(learnerId, dimId) {
+            if (dimId) {
+                var dim = this.idToModel["dimension"][dimId];
+                if (dim) {
+                    return KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, dimId ]) || {
+                        dimensionId: dim.id,
+                        mean: 0,
+                        standardDeviation: 1,
+                        timestamp: 0
+                    };
+                }
+            } else {
+                return Object.keys(this.idToModel["dimension"]).map(function(id) {
+                    return this.getLatentAbilities(learnerId, id);
+                }.bind(this));
+            }
         };
-        var estimate = function(y, beta, theta, sigma, post_mean, post_sd) {
-            if (sigma === 0) {
-                post_mean = theta;
-                post_sd = sigma;
+        KidaptiveModelManager.prototype.getLocalAbilities = function(learnerId, dimId) {
+            if (dimId) {
+                var dim = this.idToModel["local-dimension"][dimId];
+                if (dim) {
+                    return KidaptiveUtils.getObject(this.localAbilities, [ learnerId, dimId ]) || {
+                        localDimensionId: dim.id,
+                        mean: 0,
+                        standardDeviation: 1,
+                        timestamp: 0
+                    };
+                }
+            } else {
+                return Object.keys(this.idToModel["local-dimension"]).map(function(id) {
+                    return this.getLocalAbilities(learnerId, id);
+                }.bind(this));
+            }
+        };
+        KidaptiveModelManager.prototype.setLatentAbility = function(learnerId, ability, keepCurrent) {
+            var curAbil = KidaptiveUtils.getObject(this.latentAbilities, [ learnerId, ability.dimensionId ]);
+            if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
+                KidaptiveUtils.putObject(this.latentAbilities, [ learnerId, ability.dimensionId ], ability);
+                KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                    learnerId: learnerId
+                }), Object.keys(this.latentAbilities[learnerId]).map(function(dimId) {
+                    return this.latentAbilities[learnerId][dimId];
+                }.bind(this)));
+            }
+        };
+        KidaptiveModelManager.prototype.setLocalAbility = function(learnerId, ability, keepCurrent) {
+            var curAbil = KidaptiveUtils.getObject(this.localAbilities, [ learnerId, ability.localDimensionId ]);
+            if (!curAbil || curAbil.timestamp < ability.timestamp || curAbil.timestamp === ability.timestamp && !keepCurrent) {
+                KidaptiveUtils.putObject(this.localAbilities, [ learnerId, ability.localDimensionId ], ability);
+                KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                    learnerId: learnerId
+                }), Object.keys(this.localAbilities[learnerId]).map(function(dimId) {
+                    return this.localAbilities[learnerId][dimId];
+                }.bind(this)));
+            }
+        };
+        KidaptiveModelManager.prototype.fetchInsights = function(learnerId, minDateCreated, latest) {};
+        KidaptiveModelManager.prototype.clearLearnerModels = function() {
+            this.latentAbilities = {};
+            this.localAbilities = {};
+            this.insights = {};
+        };
+        return KidaptiveModelManager;
+    }(kidaptive_constants, kidaptive_utils);
+    kidaptive_recommendation_manager = function(KidaptiveError) {
+        var KidaptiveRecommendationManager = function(sdk) {
+            this.sdk = sdk;
+            this.recommenders = {};
+            this.ODRec = new OptimalDifficultyRecommender(sdk);
+            this.RPRec = new RandomPromptRecommender(sdk);
+        };
+        KidaptiveRecommendationManager.checkRecommender = function(rec) {
+            if (!rec || typeof rec.getRecommendations !== "function") {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Recommender must have function 'getRecommendations(params)'");
+            }
+        };
+        KidaptiveRecommendationManager.prototype.registerRecommender = function(key, rec) {
+            KidaptiveRecommendationManager.checkRecommender(rec);
+            this.recommenders[key] = rec;
+        };
+        KidaptiveRecommendationManager.prototype.unregisterRecommender = function(key) {
+            delete this.recommenders[key];
+        };
+        KidaptiveRecommendationManager.prototype.getRecommendations = function(key, params) {
+            var rec = this.recommenders[key];
+            if (!rec) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "No recommender registered for key " + key);
+            }
+            KidaptiveRecommendationManager.checkRecommender(rec);
+            return rec.getRecommendations(params);
+        };
+        var OptimalDifficultyRecommender = function(sdk) {
+            this.sdk = sdk;
+        };
+        OptimalDifficultyRecommender.prototype.getRecommendations = function(params) {
+            params = params || {};
+            if (!params.learnerId) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
+            } else if (!this.sdk.learnerManager.idToLearner[params.learnerId]) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + params.learnerId + " not found");
+            }
+            if (!params.game) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game is required");
+            } else if (!this.sdk.modelManager.uriToModel["game"][params.game]) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + params.game + " not found");
+            }
+            var localDim = this.sdk.modelManager.uriToModel["local-dimension"][params["local-dimension"]];
+            if (!params["local-dimension"]) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "local-dimension is required");
+            } else if (!localDim) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Local dimension " + params["local-dimension"] + " not found");
+            }
+            var probSuccess = params.successProbability || .7;
+            var mean = this.sdk.modelManager.getLocalAbilities(params.learnerId, localDim.id).mean;
+            var context = {};
+            var prompts = this.sdk.modelManager.getModels("item", params).map(function(i) {
                 return {
-                    post_mean: post_mean,
-                    post_sd: post_sd
+                    key: Math.random(),
+                    value: i
                 };
-            }
-            var x = theta;
-            var s1 = 0;
-            var s2 = 0;
-            var x_new = theta;
-            var a = Math.sqrt(8 / Math.PI);
-            var delta = 1;
-            var max = 0;
-            var upper = Infinity;
-            var lower = -Infinity;
-            var phi = 0;
-            var g = 0;
-            var y0 = 0;
-            var y1 = 0;
-            var y1sign0 = 0;
-            var y1sign1 = 0;
-            var sd_ratio = Math.exp(-.5);
-            if (!y) {
-                a = -a;
-            }
-            while (true) {
-                phi = normal_dist(x, theta, sigma);
-                g = logistic_dist(x, beta, a);
-                y0 = phi * g;
-                y1sign0 = a * (1 - g) - (x - theta) / Math.pow(sigma, 2);
-                y1sign1 = -Math.pow(a, 2) * g * (1 - g) - 1 / Math.pow(sigma, 2);
-                if (y0 > max) {
-                    max = y0;
-                }
-                if (Math.abs(y1sign0) < 1e-6) {
-                    break;
-                } else if (y1sign0 > 0) {
-                    lower = x;
-                } else if (y1sign0 < 0) {
-                    upper = x;
-                }
-                x_new = x - y1sign0 / y1sign1;
-                if (x_new > lower && x_new < upper) {
-                    x = x_new;
-                    continue;
-                }
-                if (lower > -Infinity && upper < Infinity) {
-                    x_new = (upper + lower) / 2;
-                } else if (lower === -Infinity) {
-                    x_new = x - delta;
-                    delta = delta * 2;
-                } else {
-                    x_new = x + delta;
-                    delta = delta * 2;
-                }
-                x = x_new;
-            }
-            max = normal_dist(x, theta, sigma) * logistic_dist(x, beta, a);
-            s1 = x - sigma;
-            delta = 1;
-            lower = -Infinity;
-            upper = x;
-            while (true) {
-                phi = normal_dist(s1, theta, sigma);
-                g = logistic_dist(s1, beta, a);
-                y0 = phi * g;
-                y1 = y0 * (a * (1 - g) - (s1 - theta) / Math.pow(sigma, 2));
-                y0 = y0 - sd_ratio * max;
-                if (Math.abs(y0) < max * 1e-6) {
-                    break;
-                } else if (y0 < 0) {
-                    lower = s1;
-                } else {
-                    upper = s1;
-                }
-                x_new = s1 - y0 / y1;
-                if (x_new > lower && x_new < upper) {
-                    s1 = x_new;
-                    continue;
-                }
-                if (lower > -Infinity && upper < Infinity) {
-                    x_new = (upper + lower) / 2;
-                } else if (lower === -Infinity) {
-                    x_new = s1 - delta;
-                    delta = delta * 2;
-                } else {
-                    x_new = s1 + delta;
-                    delta = delta * 2;
-                }
-                s1 = x_new;
-            }
-            s2 = x + sigma;
-            delta = 1;
-            lower = x;
-            upper = Infinity;
-            while (true) {
-                phi = normal_dist(s2, theta, sigma);
-                g = logistic_dist(s2, beta, a);
-                y0 = phi * g;
-                y1 = y0 * (a * (1 - g) - (s2 - theta) / Math.pow(sigma, 2));
-                y0 = y0 - sd_ratio * max;
-                if (Math.abs(y0) < max * 1e-6) {
-                    break;
-                } else if (y0 > 0) {
-                    lower = s2;
-                } else {
-                    upper = s2;
-                }
-                x_new = s2 - y0 / y1;
-                if (x_new > lower && x_new < upper) {
-                    s2 = x_new;
-                    continue;
-                }
-                if (lower > -Infinity && upper < Infinity) {
-                    x_new = (upper + lower) / 2;
-                } else if (lower === -Infinity) {
-                    x_new = s2 - delta;
-                    delta = delta * 2;
-                } else {
-                    x_new = s2 + delta;
-                    delta = delta * 2;
-                }
-                s2 = x_new;
-            }
-            var postSigma1 = x - s1;
-            var postSigma2 = s2 - x;
-            post_mean = x + Math.sqrt(2 / Math.PI) * (postSigma2 - postSigma1);
-            post_sd = Math.sqrt((Math.pow(postSigma1, 3) + Math.pow(postSigma2, 3)) / (postSigma1 + postSigma2) - 2 * Math.pow(postSigma2 - postSigma1, 2) / Math.PI);
+            }).sort(function(a, b) {
+                return a.key - b.key;
+            }).map(function(p) {
+                var i = p.value;
+                return {
+                    key: 1 / (1 + Math.exp(Math.sqrt(8 / Math.PI) * (i.mean - mean))),
+                    value: i.promptId
+                };
+            }).sort(function(a, b) {
+                return Math.abs(a.key - probSuccess) - Math.abs(b.key - probSuccess);
+            }).slice(0, params.numResults || 10).map(function(p) {
+                var uri = this.sdk.modelManager.idToModel["prompt"][p.value].uri;
+                context[uri] = {
+                    successProbability: p.key
+                };
+                return uri;
+            }.bind(this));
             return {
-                post_mean: post_mean,
-                post_sd: post_sd
+                type: "prompt",
+                recommendations: prompts,
+                context: context
             };
         };
-        KidaptiveIrt.estimate = function(y, beta, theta, sigma, post_mean, post_sd) {
-            return estimate(y || 0, beta || 0, theta || 0, sigma || 0, post_mean || 0, post_sd || 0);
+        var RandomPromptRecommender = function(sdk) {
+            this.sdk = sdk;
         };
-    })();
-    "use strict";
-    var KidaptiveAttemptProcessor = function(sdk) {
-        this.sdk = sdk;
-    };
-    KidaptiveAttemptProcessor.prototype.processAttempt = function(learnerId, attempt) {
-        var item = this.sdk.modelManager.uriToModel["item"][attempt.itemURI];
-        var ability = KidaptiveUtils.copyObject(this.sdk.modelManager.getLocalAbilities(learnerId, item.localDimensionId));
-        if (!this.sdk.trialManager.openTrials[learnerId].dimensionsReset[item.localDimensionId]) {
-            if (ability.standardDeviation < .65) {
-                ability.standardDeviation = .65;
+        RandomPromptRecommender.prototype.getRecommendations = function(params) {
+            params = params || {};
+            if (!params.game) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game is required");
+            } else if (!this.sdk.modelManager.uriToModel["game"][params.game]) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + params.game + " not found");
             }
-            this.sdk.trialManager.resetDimension(learnerId, item.localDimensionId);
-        }
-        var postAbility = KidaptiveIrt.estimate(!!attempt.outcome, item.mean, ability.mean, ability.standardDeviation);
-        ability.mean = postAbility.post_mean;
-        ability.standardDeviation = postAbility.post_sd;
-        ability.timestamp = this.sdk.trialManager.openTrials[learnerId].trialTime;
-        this.sdk.modelManager.setLocalAbility(learnerId, ability);
-    };
-    "use strict";
-    var KidaptiveTrialManager = function(sdk) {
-        this.sdk = sdk;
-        this.openTrials = {};
-    };
-    KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
-        if (this.openTrials[learnerId]) {
-            this.endTrial(learnerId);
-        }
-        var min = 1 << 31;
-        this.openTrials[learnerId] = {
-            trialTime: Date.now(),
-            trialSalt: Math.floor(Math.random() * (-min * 2) + min),
-            dimensionsReset: {}
-        };
-    };
-    KidaptiveTrialManager.prototype.endTrial = function(learnerId) {
-        if (this.openTrials[learnerId]) {
-            Object.keys(this.openTrials[learnerId].dimensionsReset).forEach(function(localDimId) {
-                var latentAbil = KidaptiveUtils.copyObject(this.sdk.modelManager.getLatentAbilities(learnerId, this.sdk.modelManager.idToModel["local-dimension"][localDimId].dimensionId));
-                var localAbil = this.sdk.modelManager.getLocalAbilities(learnerId, localDimId);
-                latentAbil.mean = localAbil.mean;
-                latentAbil.standardDeviation = localAbil.standardDeviation;
-                latentAbil.timestamp = localAbil.timestamp;
-                this.sdk.modelManager.setLatentAbility(learnerId, latentAbil);
+            var prompts = {};
+            this.sdk.modelManager.getModels("item", params).forEach(function(i) {
+                prompts[this.sdk.modelManager.idToModel["prompt"][i.promptId].uri] = true;
             }.bind(this));
-            delete this.openTrials[learnerId];
-        }
-    };
-    KidaptiveTrialManager.prototype.endAllTrials = function() {
-        Object.keys(this.openTrials).forEach(function(learnerId) {
-            this.endTrial(learnerId);
-        }.bind(this));
-    };
-    KidaptiveTrialManager.prototype.resetDimension = function(learnerId, localDimensionId) {
-        this.openTrials[learnerId].dimensionsReset[localDimensionId] = true;
-    };
-    "use strict";
-    var KidaptiveEventManager = function(sdk) {
-        this.sdk = sdk;
-        this.eventSequence = 0;
-        try {
-            this.eventQueue = KidaptiveUtils.localStorageGetItem(this.getEventQueueCacheKey());
-        } catch (e) {
-            this.eventQueue = [];
-        }
-    };
-    KidaptiveEventManager.prototype.reportBehavior = function(eventName, properties) {
-        this.queueEvent(this.createAgentRequest(eventName, "Behavior", properties));
-    };
-    KidaptiveEventManager.prototype.reportEvidence = function(eventName, properties) {
-        this.queueEvent(this.createAgentRequest(eventName, "Result", properties));
-    };
-    KidaptiveEventManager.prototype.queueEvent = function(event) {
-        this.eventQueue.push(event);
-        KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey(), this.eventQueue);
-    };
-    KidaptiveEventManager.prototype.flushEvents = function(callbacks) {
-        if (!callbacks) {
-            callbacks = [];
-        }
-        var user = this.sdk.userManager.currentUser;
-        if (!user) {
-            return KidaptiveUtils.Promise.resolve([]);
-        }
-        var eventQueue = this.eventQueue;
-        var flushResults = KidaptiveUtils.Promise.parallel(eventQueue.map(function(event) {
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.INGESTION, event, {
+            prompts = Object.keys(prompts).map(function(uri) {
+                return {
+                    key: Math.random(),
+                    value: uri
+                };
+            }).sort(function(a, b) {
+                return a.key - b.key;
+            }).slice(0, params.numResults || 10).map(function(p) {
+                return p.value;
+            });
+            return {
+                type: "prompt",
+                recommendations: prompts
+            };
+        };
+        return KidaptiveRecommendationManager;
+    }(kidaptive_error);
+    kidaptive_trial_manager = function(KidaptiveUtils) {
+        var KidaptiveTrialManager = function(sdk) {
+            this.sdk = sdk;
+            this.openTrials = {};
+        };
+        KidaptiveTrialManager.prototype.startTrial = function(learnerId) {
+            if (this.openTrials[learnerId]) {
+                this.endTrial(learnerId);
+            }
+            var min = 1 << 31;
+            this.openTrials[learnerId] = {
+                trialTime: Date.now(),
+                trialSalt: Math.floor(Math.random() * (-min * 2) + min),
+                dimensionsReset: {}
+            };
+        };
+        KidaptiveTrialManager.prototype.endTrial = function(learnerId) {
+            if (this.openTrials[learnerId]) {
+                Object.keys(this.openTrials[learnerId].dimensionsReset).forEach(function(localDimId) {
+                    var latentAbil = KidaptiveUtils.copyObject(this.sdk.modelManager.getLatentAbilities(learnerId, this.sdk.modelManager.idToModel["local-dimension"][localDimId].dimensionId));
+                    var localAbil = this.sdk.modelManager.getLocalAbilities(learnerId, localDimId);
+                    latentAbil.mean = localAbil.mean;
+                    latentAbil.standardDeviation = localAbil.standardDeviation;
+                    latentAbil.timestamp = localAbil.timestamp;
+                    this.sdk.modelManager.setLatentAbility(learnerId, latentAbil);
+                }.bind(this));
+                delete this.openTrials[learnerId];
+            }
+        };
+        KidaptiveTrialManager.prototype.endAllTrials = function() {
+            Object.keys(this.openTrials).forEach(function(learnerId) {
+                this.endTrial(learnerId);
+            }.bind(this));
+        };
+        KidaptiveTrialManager.prototype.resetDimension = function(learnerId, localDimensionId) {
+            this.openTrials[learnerId].dimensionsReset[localDimensionId] = true;
+        };
+        return KidaptiveTrialManager;
+    }(kidaptive_utils);
+    kidaptive_user_manager = function(KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
+        var KidaptiveUserManager = function(sdk) {
+            this.sdk = sdk;
+            this.apiKeyCacheKey = sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.APP).replace(/[.].*/, ".alpApiKey");
+            try {
+                this.apiKey = KidaptiveUtils.getObject(KidaptiveUtils.localStorageGetItem(this.apiKeyCacheKey), [ "apiKey" ]) || sdk.httpClient.apiKey;
+            } catch (e) {
+                this.apiKey = sdk.httpClient.apiKey;
+            }
+        };
+        KidaptiveUserManager.prototype.storeUser = function(user) {
+            if (user.apiKey) {
+                this.apiKey = user.apiKey;
+                KidaptiveUtils.localStorageSetItem(this.apiKeyCacheKey, user);
+                delete user.apiKey;
+            }
+            this.currentUser = user;
+            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.USER), user);
+        };
+        KidaptiveUserManager.prototype.createUser = function(params) {
+            params = KidaptiveUtils.copyObject(params) || {};
+            var format = {
+                email: "",
+                password: "",
+                nickname: ""
+            };
+            KidaptiveUtils.checkObjectFormat(params, format);
+            if (!params.email) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
+            }
+            if (!params.password) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+            }
+            Object.keys(params).forEach(function(key) {
+                if (format[key] === undefined) {
+                    delete params[key];
+                }
+            });
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {
                 noCache: true
+            }).then(function(user) {
+                this.storeUser(user);
+                return user;
+            }.bind(this));
+        };
+        KidaptiveUserManager.prototype.updateUser = function(params) {
+            params = KidaptiveUtils.copyObject(params) || {};
+            var format = {
+                password: "",
+                nickname: "",
+                deviceId: ""
+            };
+            KidaptiveUtils.checkObjectFormat(params, format);
+            Object.keys(params).forEach(function(key) {
+                if (format[key] === undefined) {
+                    delete params[key];
+                }
             });
-        }.bind(this))).then(function(results) {
-            results.forEach(function(r, i) {
-                r.event = KidaptiveUtils.copyObject(eventQueue[i]);
-                if (!r.resolved && (r.error.code === KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR || r.error.code === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR)) {
-                    this.queueEvent(eventQueue[i]);
+            [ "nickname", "deviceId" ].forEach(function(prop) {
+                if (params[prop] === undefined) {
+                    params[prop] = this.currentUser[prop];
                 }
             }.bind(this));
-            return results;
-        }.bind(this));
-        this.eventQueue = [];
-        localStorage.removeItem(this.getEventQueueCacheKey());
-        callbacks.forEach(function(c) {
-            c(flushResults);
-        });
-        return flushResults;
-    };
-    KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
-        return this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.INGESTION).replace(/[.].*/, ".alpEventData");
-    };
-    KidaptiveEventManager.prototype.createAgentRequest = function(name, type, properties) {
-        if (!name) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Event name is required");
-        }
-        KidaptiveUtils.checkObjectFormat(name, "");
-        properties = KidaptiveUtils.copyObject(properties) || {};
-        if (type === "Behavior") {
-            delete properties["attempts"];
-            delete properties["promptAnswers"];
-        }
-        KidaptiveUtils.checkObjectFormat(properties, {
-            learnerId: 0,
-            gameURI: "",
-            promptURI: "",
-            duration: 0,
-            attempts: [ {
-                itemURI: "",
-                outcome: 0,
-                guessingParameter: 0
-            } ],
-            promptAnswers: {},
-            additionalFields: {},
-            tags: {}
-        });
-        var learnerId = properties.learnerId;
-        if (type === "Result" && !learnerId) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
-        }
-        if (learnerId) {
-            this.sdk.checkLearner(learnerId);
-        }
-        var trial = this.sdk.trialManager.openTrials[learnerId] || {};
-        if (type === "Result" && (!trial.trialTime || !trial.trialSalt)) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "Must start a trial for learner " + learnerId + " before reporting evidence");
-        }
-        var gameUri = properties.gameURI;
-        if (gameUri) {
-            if (!this.sdk.modelManager.uriToModel["game"][gameUri]) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + gameUri + " not found");
-            }
-        }
-        var promptUri = properties.promptURI;
-        if (type === "Result" && !promptUri) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "promptURI is required");
-        }
-        if (promptUri) {
-            var prompt = this.sdk.modelManager.uriToModel["prompt"][promptUri];
-            if (!prompt) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " not found");
-            }
-            var promptGameUri = this.sdk.modelManager.idToModel["game"][prompt.gameId].uri;
-            if (gameUri && promptGameUri !== gameUri) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + promptUri + " has no prompt " + promptUri);
-            }
-            if (!gameUri) {
-                gameUri = promptGameUri;
-            }
-        }
-        var duration = properties.duration;
-        if (duration) {
-            if (duration < 0) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Duration must not be negative");
-            }
-        }
-        var attempts = properties.attempts;
-        if (type === "Result") {
-            attempts = properties.attempts || [];
-            var itemUris = this.sdk.modelManager.getModels("item", {
-                prompt: promptUri
-            }).map(function(item) {
-                return item.uri;
-            });
-            attempts.forEach(function(attempt, i) {
-                if (itemUris.indexOf(attempt.itemURI) < 0) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no item " + attempt.itemURI);
-                }
-                if (attempt.outcome === undefined || attempt.outcome < 0 || attempt.outcome > 1) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Outcome in attempt " + i + " must be between 0 and 1 (inclusive)");
-                }
-                if (attempt.guessingParameter < 0 || attempt.guessingParameter > 1) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Guessing parameter in attempt " + i + " must be between 0 and 1 (inclusive)");
-                }
-            });
-        }
-        var promptAnswers;
-        if (type === "Result") {
-            promptAnswers = properties.promptAnswers || {};
-            var categoryUris = this.sdk.modelManager.getModels("prompt-category", {
-                prompt: promptUri
-            }).map(function(pc) {
-                return this.sdk.modelManager.idToModel["category"][pc.categoryId].uri;
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.USER, params, {
+                noCache: true
+            }).then(function(user) {
+                this.storeUser(user);
+                return user;
             }.bind(this));
-            Object.keys(promptAnswers).forEach(function(key) {
-                if (typeof promptAnswers[key] !== "string") {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt answers must be strings");
-                }
-                var i = categoryUris.indexOf(key);
-                if (i < 0) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Prompt " + promptUri + " has no category " + key);
-                } else {
-                    categoryUris.splice(i, 1);
-                }
-            });
-            if (categoryUris.length > 0) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Missing category " + categoryUris[0] + " for prompt " + promptUri);
+        };
+        KidaptiveUserManager.prototype.loginUser = function(params) {
+            params = KidaptiveUtils.copyObject(params) || {};
+            var format = {
+                email: "",
+                password: ""
+            };
+            KidaptiveUtils.checkObjectFormat(params, format);
+            if (!params.email) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
             }
-        }
-        var additionalFields = properties.additionalFields;
-        if (additionalFields) {
-            Object.keys(additionalFields).forEach(function(key) {
-                if (typeof additionalFields[key] !== "string") {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Additional fields must be strings");
+            if (!params.password) {
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
+            }
+            Object.keys(params).forEach(function(key) {
+                if (format[key] === undefined) {
+                    delete params[key];
                 }
             });
-        }
-        var tags = properties.tags;
-        if (tags) {
-            Object.keys(tags).forEach(function(key) {
-                if (typeof tags[key] !== "string") {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Tags must be strings");
-                }
-            });
-        }
-        if (type === "Result" && (KidaptiveUtils.getObject(tags, [ "SKIP_IRT" ]) || "").toLowerCase() !== "true" && (KidaptiveUtils.getObject(tags, [ "SKIP_LEARNER_IRT" ]) || "").toLowerCase() !== "true") {
-            attempts.forEach(this.sdk.attemptProcessor.processAttempt.bind(this.sdk.attemptProcessor, learnerId));
-        }
-        var userId = this.sdk.anonymousSession ? 0 : this.sdk.userManager.currentUser.id;
-        return {
-            appInfo: {
-                uri: this.sdk.appInfo.uri,
-                version: this.sdk.appInfo.version,
-                build: this.sdk.appInfo.build
-            },
-            deviceInfo: {
-                deviceType: KidaptiveUtils.getObject(window, [ "navigator", "userAgent" ]),
-                language: KidaptiveUtils.getObject(window, [ "navigator", "language" ])
-            },
-            events: [ {
-                version: KidaptiveConstants.ALP_EVENT_VERSION,
-                type: type,
-                name: name,
-                userId: userId,
-                learnerId: learnerId,
-                gameURI: gameUri,
-                promptURI: promptUri,
-                trialTime: trial.trialTime,
-                trialSalt: trial.trialSalt,
-                eventTime: Date.now(),
-                eventSequence: ++this.eventSequence,
-                duration: duration,
-                attempts: attempts,
-                promptAnswers: promptAnswers,
-                additionalFields: additionalFields,
-                tags: tags
-            } ]
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGIN, params, {
+                noCache: true
+            }).then(function(user) {
+                this.storeUser(user);
+                return user;
+            }.bind(this));
         };
-    };
-    "use strict";
-    var KidaptiveRecommendationManager = function(sdk) {
-        this.sdk = sdk;
-        this.recommenders = {};
-        this.ODRec = new OptimalDifficultyRecommender(sdk);
-        this.RPRec = new RandomPromptRecommender(sdk);
-    };
-    KidaptiveRecommendationManager.checkRecommender = function(rec) {
-        if (!rec || typeof rec.getRecommendations !== "function") {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Recommender must have function 'getRecommendations(params)'");
-        }
-    };
-    KidaptiveRecommendationManager.prototype.registerRecommender = function(key, rec) {
-        KidaptiveRecommendationManager.checkRecommender(rec);
-        this.recommenders[key] = rec;
-    };
-    KidaptiveRecommendationManager.prototype.unregisterRecommender = function(key) {
-        delete this.recommenders[key];
-    };
-    KidaptiveRecommendationManager.prototype.getRecommendations = function(key, params) {
-        var rec = this.recommenders[key];
-        if (!rec) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "No recommender registered for key " + key);
-        }
-        KidaptiveRecommendationManager.checkRecommender(rec);
-        return rec.getRecommendations(params);
-    };
-    var OptimalDifficultyRecommender = function(sdk) {
-        this.sdk = sdk;
-    };
-    OptimalDifficultyRecommender.prototype.getRecommendations = function(params) {
-        params = params || {};
-        if (!params.learnerId) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "learnerId is required");
-        } else if (!this.sdk.learnerManager.idToLearner[params.learnerId]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + params.learnerId + " not found");
-        }
-        if (!params.game) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game is required");
-        } else if (!this.sdk.modelManager.uriToModel["game"][params.game]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + params.game + " not found");
-        }
-        var localDim = this.sdk.modelManager.uriToModel["local-dimension"][params["local-dimension"]];
-        if (!params["local-dimension"]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "local-dimension is required");
-        } else if (!localDim) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Local dimension " + params["local-dimension"] + " not found");
-        }
-        var probSuccess = params.successProbability || .7;
-        var mean = this.sdk.modelManager.getLocalAbilities(params.learnerId, localDim.id).mean;
-        var context = {};
-        var prompts = this.sdk.modelManager.getModels("item", params).map(function(i) {
-            return {
-                key: Math.random(),
-                value: i
-            };
-        }).sort(function(a, b) {
-            return a.key - b.key;
-        }).map(function(p) {
-            var i = p.value;
-            return {
-                key: 1 / (1 + Math.exp(Math.sqrt(8 / Math.PI) * (i.mean - mean))),
-                value: i.promptId
-            };
-        }).sort(function(a, b) {
-            return Math.abs(a.key - probSuccess) - Math.abs(b.key - probSuccess);
-        }).slice(0, params.numResults || 10).map(function(p) {
-            var uri = this.sdk.modelManager.idToModel["prompt"][p.value].uri;
-            context[uri] = {
-                successProbability: p.key
-            };
-            return uri;
-        }.bind(this));
-        return {
-            type: "prompt",
-            recommendations: prompts,
-            context: context
+        KidaptiveUserManager.prototype.refreshUser = function() {
+            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.USER).then(function(user) {
+                this.currentUser = user;
+                return user;
+            }.bind(this));
         };
-    };
-    var RandomPromptRecommender = function(sdk) {
-        this.sdk = sdk;
-    };
-    RandomPromptRecommender.prototype.getRecommendations = function(params) {
-        params = params || {};
-        if (!params.game) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game is required");
-        } else if (!this.sdk.modelManager.uriToModel["game"][params.game]) {
-            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Game " + params.game + " not found");
-        }
-        var prompts = {};
-        this.sdk.modelManager.getModels("item", params).forEach(function(i) {
-            prompts[this.sdk.modelManager.idToModel["prompt"][i.promptId].uri] = true;
-        }.bind(this));
-        prompts = Object.keys(prompts).map(function(uri) {
-            return {
-                key: Math.random(),
-                value: uri
-            };
-        }).sort(function(a, b) {
-            return a.key - b.key;
-        }).slice(0, params.numResults || 10).map(function(p) {
-            return p.value;
-        });
-        return {
-            type: "prompt",
-            recommendations: prompts
+        KidaptiveUserManager.prototype.logoutUser = function() {
+            this.currentUser = undefined;
+            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {
+                noCache: true
+            }).then(function() {
+                this.apiKey = this.sdk.httpClient.apiKey;
+                localStorage.removeItem(this.apiKeyCacheKey);
+            }.bind(this), function(error) {
+                this.apiKey = this.sdk.httpClient.apiKey;
+                localStorage.removeItem(this.apiKeyCacheKey);
+                throw error;
+            }.bind(this));
         };
-    };
-    "use strict";
-    (function(exports) {
+        return KidaptiveUserManager;
+    }(kidaptive_constants, kidaptive_error, kidaptive_utils);
+    kidaptive_sdk = function(KidaptiveAttemptProcessor, KidaptiveConstants, KidaptiveError, KidaptiveEventManager, KidaptiveHttpClient, KidaptiveLearnerManager, KidaptiveModelManager, KidaptiveRecommendationManager, KidaptiveTrialManager, KidaptiveUserManager, KidaptiveUtils) {
+        var KidaptiveSdk = {};
+        try {
+            KidaptiveSdk = KidaptiveSdkGlobal;
+        } catch (e) {}
         var operationQueue = KidaptiveUtils.Promise.resolve();
         var sdk = undefined;
         var defaultFlushInterval;
@@ -8058,9 +8095,9 @@
             } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
         };
         var autoFlush = function() {
-            window.clearTimeout(flushTimeoutId);
+            clearTimeout(flushTimeoutId);
             if (!flushing && flushInterval > 0) {
-                flushTimeoutId = window.setTimeout(function() {
+                flushTimeoutId = setTimeout(function() {
                     flushing = true;
                     flushEvents(sdk.options.autoFlushCallbacks).then(function() {
                         flushing = false;
@@ -8090,7 +8127,7 @@
         var returnResults = function(results) {
             return results;
         };
-        var KidaptiveSdk = function(apiKey, appVersion, options) {
+        var KidaptiveSdkClass = function(apiKey, appVersion, options) {
             return KidaptiveUtils.Promise(function(resolve, reject) {
                 apiKey = KidaptiveUtils.copyObject(apiKey);
                 if (!apiKey || KidaptiveUtils.checkObjectFormat(apiKey, "")) {
@@ -8133,45 +8170,45 @@
                     sdk = this;
                     this.httpClient.sdk = this;
                     defaultFlushInterval = options.flushInterval === undefined ? 6e4 : options.flushInterval;
-                    exports.startAutoFlush();
+                    KidaptiveSdk.startAutoFlush();
                     return refreshUserData().catch(function() {});
                 }.bind(this)).then(function() {
                     resolve(this);
                 }.bind(this), reject);
             }.bind(this));
         };
-        KidaptiveSdk.prototype.checkOidc = function() {
+        KidaptiveSdkClass.prototype.checkOidc = function() {
             if (!this.options.noOidc) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in OIDC context");
             }
         };
-        KidaptiveSdk.prototype.checkUser = function() {
+        KidaptiveSdkClass.prototype.checkUser = function() {
             if (!this.userManager.currentUser) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "User not logged in");
             }
         };
-        KidaptiveSdk.prototype.checkLearner = function(learnerId) {
+        KidaptiveSdkClass.prototype.checkLearner = function(learnerId) {
             if (!this.learnerManager.idToLearner[learnerId]) {
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Learner " + learnerId + " not found");
             }
         };
-        exports.init = function(apiKey, appVersion, options) {
+        KidaptiveSdk.init = function(apiKey, appVersion, options) {
             return addToQueue(function() {
                 if (!sdk) {
-                    return new KidaptiveSdk(apiKey, appVersion, options).then(function() {
-                        return exports;
+                    return new KidaptiveSdkClass(apiKey, appVersion, options).then(function() {
+                        return KidaptiveSdk;
                     });
                 } else if (apiKey || appVersion || options) {
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "SDK already initialized");
                 }
-                return exports;
+                return KidaptiveSdk;
             });
         };
-        exports.getAppInfo = function() {
+        KidaptiveSdk.getAppInfo = function() {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.appInfo);
         };
-        exports.startAnonymousSession = function() {
+        KidaptiveSdk.startAnonymousSession = function() {
             return addToQueue(function() {
                 sdkInitFilter();
                 return logout().catch(function() {}).then(function() {
@@ -8182,11 +8219,11 @@
                 });
             });
         };
-        exports.isAnonymousSession = function() {
+        KidaptiveSdk.isAnonymousSession = function() {
             sdkInitFilter();
             return sdk.anonymousSession;
         };
-        exports.refresh = function() {
+        KidaptiveSdk.refresh = function() {
             return addToQueue(function() {
                 sdkInitFilter();
                 if (sdk.anonymousSession) {
@@ -8195,17 +8232,17 @@
                 return refreshUserData();
             });
         };
-        exports.getCurrentUser = function() {
+        KidaptiveSdk.getCurrentUser = function() {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.userManager.currentUser);
         };
-        exports.logoutUser = function() {
+        KidaptiveSdk.logoutUser = function() {
             return addToQueue(function() {
                 sdkInitFilter();
                 return logout();
             });
         };
-        exports.loginUser = function(params) {
+        KidaptiveSdk.loginUser = function(params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8218,7 +8255,7 @@
                 });
             });
         };
-        exports.createUser = function(params) {
+        KidaptiveSdk.createUser = function(params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8231,7 +8268,7 @@
                 });
             });
         };
-        exports.updateUser = function(params) {
+        KidaptiveSdk.updateUser = function(params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8243,7 +8280,7 @@
                 });
             });
         };
-        exports.createLearner = function(params) {
+        KidaptiveSdk.createLearner = function(params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8255,7 +8292,7 @@
                 });
             });
         };
-        exports.updateLearner = function(learnerId, params) {
+        KidaptiveSdk.updateLearner = function(learnerId, params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8268,7 +8305,7 @@
                 });
             });
         };
-        exports.deleteLearner = function(learnerId) {
+        KidaptiveSdk.deleteLearner = function(learnerId) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
@@ -8281,31 +8318,31 @@
                 });
             });
         };
-        exports.getLearnerById = function(id) {
+        KidaptiveSdk.getLearnerById = function(id) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.learnerManager.idToLearner[id]);
         };
-        exports.getLearnerByProviderId = function(providerId) {
+        KidaptiveSdk.getLearnerByProviderId = function(providerId) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.learnerManager.providerIdToLearner[providerId]);
         };
-        exports.getLearnerList = function() {
+        KidaptiveSdk.getLearnerList = function() {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.learnerManager.getLearnerList());
         };
-        exports.getModels = function(type, conditions) {
+        KidaptiveSdk.getModels = function(type, conditions) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.modelManager.getModels(type, conditions));
         };
-        exports.getModelById = function(type, id) {
+        KidaptiveSdk.getModelById = function(type, id) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.idToModel, [ type, id ]));
         };
-        exports.getModelByUri = function(type, uri) {
+        KidaptiveSdk.getModelByUri = function(type, uri) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(KidaptiveUtils.getObject(sdk.modelManager.uriToModel, [ type, uri ]));
         };
-        exports.getLatentAbilities = function(learnerId, uri) {
+        KidaptiveSdk.getLatentAbilities = function(learnerId, uri) {
             sdkInitFilter();
             sdk.checkLearner(learnerId);
             var dimId;
@@ -8317,7 +8354,7 @@
             }
             return KidaptiveUtils.copyObject(sdk.modelManager.getLatentAbilities(learnerId, dimId));
         };
-        exports.getLocalAbilities = function(learnerId, uri) {
+        KidaptiveSdk.getLocalAbilities = function(learnerId, uri) {
             sdkInitFilter();
             sdk.checkLearner(learnerId);
             var dimId;
@@ -8329,25 +8366,25 @@
             }
             return KidaptiveUtils.copyObject(sdk.modelManager.getLocalAbilities(learnerId, dimId));
         };
-        exports.startTrial = function(learnerId) {
+        KidaptiveSdk.startTrial = function(learnerId) {
             sdkInitFilter();
             sdk.checkLearner(learnerId);
             sdk.trialManager.startTrial(learnerId);
         };
-        exports.endTrial = function(learnerId) {
+        KidaptiveSdk.endTrial = function(learnerId) {
             sdkInitFilter();
             sdk.trialManager.endTrial(learnerId);
         };
-        exports.endAllTrials = function() {
+        KidaptiveSdk.endAllTrials = function() {
             sdkInitFilter();
             sdk.trialManager.endAllTrials();
         };
-        exports.reportBehavior = function(eventName, properties) {
+        KidaptiveSdk.reportBehavior = function(eventName, properties) {
             sdkInitFilter();
             sdk.checkUser();
             sdk.eventManager.reportBehavior(eventName, properties);
         };
-        exports.reportEvidence = function(eventName, properties) {
+        KidaptiveSdk.reportEvidence = function(eventName, properties) {
             sdkInitFilter();
             if (!sdk.anonymousSession) {
                 sdk.checkUser();
@@ -8356,10 +8393,10 @@
                 sdk.eventManager.createAgentRequest(eventName, "Result", properties);
             }
         };
-        exports.flushEvents = function() {
+        KidaptiveSdk.flushEvents = function() {
             return flushEvents();
         };
-        exports.startAutoFlush = function(interval) {
+        KidaptiveSdk.startAutoFlush = function(interval) {
             sdkInitFilter();
             KidaptiveUtils.checkObjectFormat(interval, 0);
             if (interval === undefined) {
@@ -8368,41 +8405,43 @@
             flushInterval = interval;
             autoFlush();
         };
-        exports.stopAutoFlush = function() {
-            exports.startAutoFlush(0);
+        KidaptiveSdk.stopAutoFlush = function() {
+            KidaptiveSdk.startAutoFlush(0);
         };
-        exports.registerRecommender = function(key, rec) {
+        KidaptiveSdk.registerRecommender = function(key, rec) {
             sdkInitFilter();
             sdk.recManager.registerRecommender(key, rec);
         };
-        exports.unregisterRecommender = function(key) {
+        KidaptiveSdk.unregisterRecommender = function(key) {
             sdkInitFilter();
             sdk.recManager.unregisterRecommender(key);
         };
-        exports.getRecommendations = function(key, params) {
+        KidaptiveSdk.getRecommendations = function(key, params) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.recManager.getRecommendations(key, params));
         };
-        exports.getRandomRecommendations = function(params) {
+        KidaptiveSdk.getRandomRecommendations = function(params) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.recManager.RPRec.getRecommendations(params));
         };
-        exports.getOptimalDifficultyRecommendations = function(params) {
+        KidaptiveSdk.getOptimalDifficultyRecommendations = function(params) {
             sdkInitFilter();
             return KidaptiveUtils.copyObject(sdk.recManager.ODRec.getRecommendations(params));
         };
-        exports.KidaptiveError = KidaptiveError;
-        exports.KidaptiveConstants = KidaptiveConstants;
-        exports.KidaptiveUtils = KidaptiveUtils;
-        exports.destroy = function() {
+        KidaptiveSdk.KidaptiveError = KidaptiveError;
+        KidaptiveSdk.KidaptiveConstants = KidaptiveConstants;
+        KidaptiveSdk.KidaptiveUtils = KidaptiveUtils;
+        KidaptiveSdk.destroy = function() {
             addToQueue(function() {
                 sdk.trialManager.endAllTrials();
-                exports.stopAutoFlush();
+                KidaptiveSdk.stopAutoFlush();
             });
             flushEvents(sdk.options.autoFlushCallbacks);
             return addToQueue(function() {
                 sdk = undefined;
             });
         };
-    })(exports);
-})(typeof KidaptiveSdk == "undefined" ? KidaptiveSdk = {} : KidaptiveSdk);
+        return KidaptiveSdk;
+    }(kidaptive_attempt_processor, kidaptive_constants, kidaptive_error, kidaptive_event_manager, kidaptive_http_client, kidaptive_learner_manager, kidaptive_model_manager, kidaptive_recommendation_manager, kidaptive_trial_manager, kidaptive_user_manager, kidaptive_utils);
+    return KidaptiveSdkGlobal;
+});
