@@ -129,13 +129,10 @@ define([
                         if (!(con instanceof Array)) {
                             con = [con];
                         }
-                        con = con.map(function(uri) {
-                            var id = KidaptiveUtils.getObject(this.uriToModel, [parent, uri, 'id']);
-                            return id ? id.toString() : id;
-                        }.bind(this));
                         prop.forEach(function(id) {
-                            shouldReturn = shouldReturn && (con.indexOf(id) !== -1);
-                        });
+                            var uri = KidaptiveUtils.getObject(this.idToModel, [parent, id, 'uri']);
+                            shouldReturn = shouldReturn && con.indexOf(uri) !== -1;
+                        }.bind(this));
                     }
                 }
             }.bind(this));
