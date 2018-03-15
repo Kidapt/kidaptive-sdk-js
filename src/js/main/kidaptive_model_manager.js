@@ -33,6 +33,19 @@ define([
         'prompt-category': ['prompt', 'category', 'instance']
     };
 
+    KidaptiveModelManager.modelOrder = []; //order of model processing to process parents before children
+
+    //build model order based on modelParents
+    var determineModelOrder = function(modelTypes) {
+        modelTypes.forEach(function(type) {
+            determineModelOrder(KidaptiveModelManager.modelParents[type]);
+            if (KidaptiveModelManager.modelOrder.indexOf(type) === -1) {
+                KidaptiveModelManager.modelOrder.push(type);
+            }
+        });
+    }
+    determineModelOrder(Object.keys(KidaptiveModelManager.modelParents));
+
     //App Models
     KidaptiveModelManager.getModelParents = function(type) {
         var allParents = {};
@@ -48,14 +61,14 @@ define([
         return Object.keys(allParents);
     };
 
-    KidaptiveModelManager.buildModelIndex = function(type, id, idToModel) {
+    KidaptiveModelManager.buildModelIndex = function(type, id, idToModel, modelIndex) {
         var o = KidaptiveUtils.getObject(idToModel, [type, id]);
         var index = {};
 
         if (o) {
             KidaptiveUtils.putObject(index, [type, id], true);
-            KidaptiveModelManager.modelParents[type].forEach(function (p) {
-                var parentIndex = KidaptiveModelManager.buildModelIndex(p, o[KidaptiveUtils.toCamelCase(p, '-') + 'Id'], idToModel);
+            KidaptiveModelManager.modelParents[type].forEach(function (parentType) {
+                var parentIndex = KidaptiveUtils.getObject(modelIndex, [parentType, o[KidaptiveUtils.toCamelCase(parentType, '-') + 'Id']]) || {};
                 Object.keys(parentIndex).forEach(function (type) {
                     parentIndex[type].forEach(function (id) {
                         KidaptiveUtils.putObject(index, [type, id], true);
@@ -71,15 +84,14 @@ define([
     };
 
     KidaptiveModelManager.prototype.refreshAppModels = function() {
-        var modelList = Object.keys(KidaptiveModelManager.modelParents);
-        return KidaptiveUtils.Promise.parallel(modelList.map(function(model) {
+        return KidaptiveUtils.Promise.parallel(KidaptiveModelManager.modelOrder.map(function(model) {
             return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, 'GET', '/' + model);
         }.bind(this))).then(function(results) {
             var uriToModel = {};
             var idToModel = {};
             for (var i = 0; i < results.length; i++) {
                 if (results[i].resolved) {
-                    var model = modelList[i];
+                    var model = KidaptiveModelManager.modelOrder[i];
                     var uriMap = {};
                     var idMap = {};
                     results[i].value.forEach(function(o) {
@@ -97,7 +109,7 @@ define([
             //build index
             Object.keys(idToModel).forEach(function(model) {
                 Object.keys(idToModel[model]).forEach(function(id) {
-                    KidaptiveUtils.putObject(modelIndex, [model, id], KidaptiveModelManager.buildModelIndex(model, id, idToModel));
+                    KidaptiveUtils.putObject(modelIndex, [model, id], KidaptiveModelManager.buildModelIndex(model, id, idToModel, modelIndex));
                 });
             });
 
