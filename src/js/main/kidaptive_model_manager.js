@@ -66,20 +66,14 @@ define([
         var index = {};
 
         if (o) {
-            KidaptiveUtils.putObject(index, [type, id], true);
+            KidaptiveUtils.putObject(index, [type], [id]);
             KidaptiveModelManager.modelParents[type].forEach(function (parentType) {
                 var parentIndex = KidaptiveUtils.getObject(modelIndex, [parentType, o[KidaptiveUtils.toCamelCase(parentType, '-') + 'Id']]) || {};
                 Object.keys(parentIndex).forEach(function (type) {
-                    parentIndex[type].forEach(function (id) {
-                        KidaptiveUtils.putObject(index, [type, id], true);
-                    });
+                    KidaptiveUtils.putObject(index, [type], parentIndex[type]);
                 });
             });
         }
-
-        Object.keys(index).forEach(function(type) {
-            index[type] = Object.keys(index[type]);
-        });
         return index;
     };
 
