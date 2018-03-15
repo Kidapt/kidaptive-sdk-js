@@ -7531,6 +7531,16 @@
             instance: [ "sub-category" ],
             "prompt-category": [ "prompt", "category", "instance" ]
         };
+        KidaptiveModelManager.modelOrder = [];
+        var determineModelOrder = function(modelTypes) {
+            modelTypes.forEach(function(type) {
+                determineModelOrder(KidaptiveModelManager.modelParents[type]);
+                if (KidaptiveModelManager.modelOrder.indexOf(type) === -1) {
+                    KidaptiveModelManager.modelOrder.push(type);
+                }
+            });
+        };
+        determineModelOrder(Object.keys(KidaptiveModelManager.modelParents));
         KidaptiveModelManager.getModelParents = function(type) {
             var allParents = {};
             var parents = KidaptiveModelManager.modelParents[type];
@@ -7544,35 +7554,30 @@
             }
             return Object.keys(allParents);
         };
-        KidaptiveModelManager.buildModelIndex = function(type, id, idToModel) {
+        KidaptiveModelManager.buildModelIndex = function(type, id, idToModel, modelIndex) {
             var o = KidaptiveUtils.getObject(idToModel, [ type, id ]);
             var index = {};
             if (o) {
-                KidaptiveUtils.putObject(index, [ type, id ], true);
-                KidaptiveModelManager.modelParents[type].forEach(function(p) {
-                    var parentIndex = KidaptiveModelManager.buildModelIndex(p, o[KidaptiveUtils.toCamelCase(p, "-") + "Id"], idToModel);
+                KidaptiveUtils.putObject(index, [ type ], [ id ]);
+                KidaptiveModelManager.modelParents[type].forEach(function(parentType) {
+                    var parentIndex = KidaptiveUtils.getObject(modelIndex, [ parentType, o[KidaptiveUtils.toCamelCase(parentType, "-") + "Id"] ]) || {};
                     Object.keys(parentIndex).forEach(function(type) {
-                        parentIndex[type].forEach(function(id) {
-                            KidaptiveUtils.putObject(index, [ type, id ], true);
-                        });
+                        KidaptiveUtils.putObject(index, [ type ], parentIndex[type]);
                     });
                 });
             }
-            Object.keys(index).forEach(function(type) {
-                index[type] = Object.keys(index[type]);
-            });
             return index;
         };
         KidaptiveModelManager.prototype.refreshAppModels = function() {
-            var modelList = Object.keys(KidaptiveModelManager.modelParents);
-            return KidaptiveUtils.Promise.parallel(modelList.map(function(model) {
+            return KidaptiveUtils.Promise.parallel(KidaptiveModelManager.modelOrder.map(function(model) {
                 return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, "GET", "/" + model);
             }.bind(this))).then(function(results) {
                 var uriToModel = {};
                 var idToModel = {};
+                var modelIndex = {};
                 for (var i = 0; i < results.length; i++) {
                     if (results[i].resolved) {
-                        var model = modelList[i];
+                        var model = KidaptiveModelManager.modelOrder[i];
                         var uriMap = {};
                         var idMap = {};
                         results[i].value.forEach(function(o) {
@@ -7581,16 +7586,13 @@
                         });
                         uriToModel[model] = uriMap;
                         idToModel[model] = idMap;
+                        Object.keys(idToModel[model]).forEach(function(id) {
+                            KidaptiveUtils.putObject(modelIndex, [ model, id ], KidaptiveModelManager.buildModelIndex(model, id, idToModel, modelIndex));
+                        });
                     } else {
                         throw results[i].error;
                     }
                 }
-                var modelIndex = {};
-                Object.keys(idToModel).forEach(function(model) {
-                    Object.keys(idToModel[model]).forEach(function(id) {
-                        KidaptiveUtils.putObject(modelIndex, [ model, id ], KidaptiveModelManager.buildModelIndex(model, id, idToModel));
-                    });
-                });
                 this.uriToModel = uriToModel;
                 this.idToModel = idToModel;
                 this.modelIndex = modelIndex;
