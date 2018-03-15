@@ -83,6 +83,7 @@ define([
         }.bind(this))).then(function(results) {
             var uriToModel = {};
             var idToModel = {};
+            var modelIndex = {};
             for (var i = 0; i < results.length; i++) {
                 if (results[i].resolved) {
                     var model = KidaptiveModelManager.modelOrder[i];
@@ -94,18 +95,13 @@ define([
                     });
                     uriToModel[model] = uriMap;
                     idToModel[model] = idMap;
+                    Object.keys(idToModel[model]).forEach(function(id) {
+                        KidaptiveUtils.putObject(modelIndex, [model, id], KidaptiveModelManager.buildModelIndex(model, id, idToModel, modelIndex));
+                    });
                 } else {
                     throw results[i].error;
                 }
             }
-
-            var modelIndex = {};
-            //build index
-            Object.keys(idToModel).forEach(function(model) {
-                Object.keys(idToModel[model]).forEach(function(id) {
-                    KidaptiveUtils.putObject(modelIndex, [model, id], KidaptiveModelManager.buildModelIndex(model, id, idToModel, modelIndex));
-                });
-            });
 
             this.uriToModel = uriToModel;
             this.idToModel = idToModel;
