@@ -1,5 +1,6 @@
 node_modules/
-bower_components/
-.idea/
-src/js/main/irt/irt.js
+nohup.out
 npm-debug.log
+src/js/main/irt/irt.js
+test/compiled_tests.js
+.idea/

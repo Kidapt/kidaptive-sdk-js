@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Mocha Spec Runner</title>
+    <script src="../node_modules/mocha/mocha.js"></script>
     <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
 </head>
 <body>
     <div id="mocha"></div>
-    <script src="../node_modules/requirejs/require.js" data-main="spec_runner.js"></script>
+    <script>
+        mocha.setup('bdd');
+    </script>
+    <script src="compiled_tests.js"></script>
 </body>
 </html>
