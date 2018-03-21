@@ -2,7 +2,7 @@
  * Created by cameronperry on 2017-11-07.
  */
 'use strict';
-import KidaptiveSdk from '../../src/js/main/kidaptive_sdk';
+import KidaptiveSdk from '../../src/kidaptive_sdk';
 import should from 'should';
 
 describe('KidaptiveSdk Unit Tests', function() {

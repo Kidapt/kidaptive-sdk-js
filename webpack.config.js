@@ -1,6 +1,6 @@
 var config = {
     entry: {
-        'kidaptive_sdk': __dirname + '/src/js/main/kidaptive_sdk.js'
+        'kidaptive_sdk': __dirname + '/src/kidaptive_sdk.js'
     },
     module: {
         rules: [

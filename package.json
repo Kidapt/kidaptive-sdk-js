@@ -10,7 +10,7 @@
     "postversion": "git push --follow-tags kidapt master",
 
     "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js;",
-    "build:irt": "cd src/js/main/irt && (make clean && make)",
+    "build:irt": "cd src/irt && (make clean && make)",
     "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",
     "build:webpack": "webpack",
     "test:build": "webpack --config webpack.test.config.js",

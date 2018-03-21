@@ -2,9 +2,9 @@
  * Created by solomonliu on 2017-06-01.
  */
 'use strict';
-import KidaptiveHttpClient from '../../src/js/main/kidaptive_http_client';
-import KidaptiveConstants from '../../src/js/main/kidaptive_constants';
-import KidaptiveUtils from '../../src/js/main/kidaptive_utils';
+import KidaptiveHttpClient from '../../src/kidaptive_http_client';
+import KidaptiveConstants from '../../src/kidaptive_constants';
+import KidaptiveUtils from '../../src/kidaptive_utils';
 import should from 'should';
 import sinon from 'sinon';
 

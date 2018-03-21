@@ -1,6 +1,6 @@
 node_modules/
 nohup.out
 npm-debug.log
-src/js/main/irt/irt.js
+src/irt/irt.js
 test/compiled_tests.js
 .idea/
