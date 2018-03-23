@@ -1,6 +1,6 @@
 {
   "name": "kidaptive-sdk-js",
-  "version": "0.2.17",
+  "version": "0.3.0",
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
