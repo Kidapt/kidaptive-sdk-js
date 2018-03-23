@@ -5,10 +5,9 @@
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
     "build": "npm install && npm run build:irt && npm run build:webpack && npm run build:minify && npm run build:beautify",
-    "test": "npm run test:build && npm run test:server && npm run test:phantomjs && npm run test:cleanup",
+    "test": "npm install && npm run build:irt && npm run test:build && npm run test:server && npm run test:phantomjs && npm run test:cleanup",
     "version": "npm run build && git add -A",
     "postversion": "git push --follow-tags kidapt master",
-
     "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js;",
     "build:irt": "cd src/irt && (make clean && make)",
     "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",

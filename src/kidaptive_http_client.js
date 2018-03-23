@@ -74,17 +74,17 @@ KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options)
         }, function(error) {
             if (error && error.status === 400) {
                 localStorage.removeItem(cacheKey);
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, error.result && error.result.text);
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, error.response && error.response.text);
             } else if (error && error.status === 401) {
                 //unauthorized. delete cached data
                 KidaptiveHttpClient.deleteUserData();
                 if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
                     KidaptiveHttpClient.deleteAppData();
                 }
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, error.result && error.result.text);
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, error.response && error.response.text);
             } else if (error.status) {
                 localStorage.removeItem(cacheKey);
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, error.result && error.result.text);
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, error.response && error.response.text);
             } else {
                 try {
                     return KidaptiveUtils.localStorageGetItem(cacheKey);
@@ -124,6 +124,7 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
         "api-key": KidaptiveHttpClient.isUserEndpoint(endpoint) ? this.sdk.userManager.apiKey : this.apiKey
     };
 
+    //TODO xhrFields.withCredentials is always set so remove this from cache calculation on next major release
     settings.xhrFields = {
         withCredentials: true
     };
@@ -135,6 +136,7 @@ KidaptiveHttpClient.prototype.getCacheKey = function(method, endpoint, params, s
         settings.data = params;
     } else if (settings.method === 'POST') {
         settings.contentType = "application/json";
+        //TODO change this to settings.data = params and allow http library to serialize
         settings.data = JSON.stringify(params);
     }
 
