@@ -4,13 +4,18 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
-    "build:irt": "cd src/js/main/irt && (make clean; make)",
-    "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js",
-    "build:debug": "r.js -o build.js && npm run build:beautify",
-    "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",
-    "build": "npm install && npm run build:irt && npm run build:debug && npm run build:minify",
+    "build": "npm install && npm run build:irt && npm run build:webpack && npm run build:minify && npm run build:beautify",
+    "test": "npm install && npm run build:irt && npm run test:build && npm run test:server && npm run test:phantomjs && npm run test:cleanup",
     "version": "npm run build && git add -A",
-    "postversion": "git push --follow-tags kidapt master"
+    "postversion": "git push --follow-tags kidapt master",
+    "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js;",
+    "build:irt": "cd src/irt && (make clean && make)",
+    "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",
+    "build:webpack": "webpack",
+    "test:build": "webpack --config webpack.test.config.js",
+    "test:cleanup": "rm test/compiled_tests.js && rm nohup.out",
+    "test:phantomjs": "phantomjs ./node_modules/mocha-phantomjs-core/mocha-phantomjs-core.js http://localhost:8080/test/index.html",
+    "test:server": "nohup node test/server.js &"
   },
   "repository": {
     "type": "git",
@@ -29,16 +34,23 @@
   },
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js#readme",
   "dependencies": {
-    "jquery": "3.2.1",
-    "sjcl": "1.0.7"
+    "js-sha256": "0.9.0",
+    "q": "1.5.1",
+    "superagent": "1.8.2",
+    "superagent-q": "0.0.3"
   },
   "devDependencies": {
-    "amdclean": "2.7.0",
+    "babel-core": "6.26.0",
+    "babel-loader": "7.1.4",
+    "babel-preset-es2015": "6.24.1",
+    "express": "4.16.2",
     "mocha": "4.0.1",
+    "mocha-phantomjs-core": "2.1.2",
     "phantomjs": "2.1.7",
-    "requirejs": "2.3.3",
     "should": "13.1.3",
-    "sinon": "2.3.2",
-    "uglify-js": "3.0.28"
+    "sinon": "4.2.1",
+    "uglify-es": "3.3.7",
+    "webpack": "4.1.1",
+    "webpack-cli": "2.0.12"
   }
 }
