@@ -152,7 +152,7 @@ define([
         if (!learnerId) {
             return KidaptiveUtils.Promise.parallel(
                 Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                    return this.refreshLatentAbilities.bind(this, learner);
+                    return this.refreshLatentAbilities.bind(this, parseInt(learner));
                 }.bind(this))
             );
         } else {
@@ -163,7 +163,10 @@ define([
                     try {
                         var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
                         if (stored) {
-                            this.latentAbilities[learnerId] = stored;
+                        this.latentAbilities[learnerId] = {};
+                        stored.forEach(function(ability) {
+                            this.latentAbilities[learnerId][ability.dimensionId] = ability;
+                        }.bind(this));
                         }
                     } catch (e) {}
                 }
@@ -180,7 +183,7 @@ define([
         if (!learnerId) {
             return KidaptiveUtils.Promise.parallel(
                 Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                    return this.refreshLocalAbilities.bind(this, learner);
+                    return this.refreshLocalAbilities.bind(this, parseInt(learner));
                 }.bind(this))
             );
         } else {
@@ -191,7 +194,10 @@ define([
                     try {
                         var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
                         if (stored) {
-                            this.localAbilities[learnerId] = stored;
+                        this.localAbilities[learnerId] = {};
+                        stored.forEach(function(ability) {
+                            this.localAbilities[learnerId][ability.localDimensionId] = ability;
+                        }.bind(this));
                         }
                     } catch (e) {}
                 }
