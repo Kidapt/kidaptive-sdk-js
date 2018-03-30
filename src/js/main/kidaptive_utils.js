@@ -295,5 +295,12 @@ define([
         }
     };
 
+    KidaptiveUtils.hasStoredAnonymousSession = function() {
+        try {
+            return KidaptiveUtils.localStorageGetItem('anonymousSession.alpUserData');
+        } catch (e) {}
+        return false;
+    }
+
     return KidaptiveUtils;
 });

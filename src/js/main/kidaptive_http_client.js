@@ -68,7 +68,9 @@ define([
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
                 } else if (xhr.status === 401) {
                     //unauthorized. delete cached data
-                    KidaptiveHttpClient.deleteUserData();
+                    if (!KidaptiveUtils.hasStoredAnonymousSession()) {
+                        KidaptiveHttpClient.deleteUserData();
+                    }
                     if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
                         KidaptiveHttpClient.deleteAppData();
                     }

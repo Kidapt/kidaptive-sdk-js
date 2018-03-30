@@ -77,10 +77,13 @@ define([
                 return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
             }
         }).then(function() {
-            sdk.trialManager.endAllTrials();
-            sdk.modelManager.clearLearnerModels();
-            sdk.learnerManager.clearLearnerList();
-            KidaptiveHttpClient.deleteUserData();
+            if (!authError || !KidaptiveUtils.hasStoredAnonymousSession()) {
+                sdk.trialManager.endAllTrials();
+                sdk.modelManager.clearLearnerModels();
+                sdk.learnerManager.clearLearnerList();
+                KidaptiveHttpClient.deleteUserData();
+            }
+
             if (sdk.anonymousSession) {
                 sdk.anonymousSession = false;
             } else {
@@ -117,6 +120,12 @@ define([
             //TODO: decide whether insights refresh should be included
         ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
     };
+
+    var setAnonymousSession = function() {
+        sdk.learnerManager.idToLearner[-1] = {id:-1};
+        sdk.anonymousSession = true;
+        KidaptiveUtils.localStorageSetItem('anonymousSession.alpUserData', true);
+    }
 
     var autoFlush = function() {
         clearTimeout(flushTimeoutId);
@@ -207,7 +216,13 @@ define([
                 this.httpClient.sdk = this;
                 defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
                 KidaptiveSdk.startAutoFlush();
-                return refreshUserData().catch(function(){}); //user data update shouldn't have to complete to initialize sdk
+                return refreshUserData().catch(function(){
+                    if (KidaptiveUtils.hasStoredAnonymousSession()) {
+                        setAnonymousSession();
+                        sdk.modelManager.getStoredLatentAbilities(-1);
+                        sdk.modelManager.getStoredLocalAbilities(-1);
+                    }
+                }); //user data update shouldn't have to complete to initialize sdk
             }.bind(this)).then(function() {
                 resolve(this);
             }.bind(this), reject);
@@ -255,8 +270,7 @@ define([
         return addToQueue(function() {
             sdkInitFilter();
             return logout().catch(function(){}).then(function(){
-                sdk.learnerManager.idToLearner[-1] = {id:-1};
-                sdk.anonymousSession = true;
+                setAnonymousSession();
             });
         });
     };

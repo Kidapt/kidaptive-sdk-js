@@ -146,6 +146,17 @@ define([
         });
     };
 
+    KidaptiveModelManager.prototype.getStoredLatentAbilities = function(learnerId) {
+        try {
+            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
+            if (stored) {
+            this.latentAbilities[learnerId] = {};
+            stored.forEach(function(ability) {
+                this.latentAbilities[learnerId][ability.dimensionId] = ability;
+            }.bind(this));
+            }
+        } catch (e) {}
+    };
 
     //Learner Models
     KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
@@ -160,23 +171,26 @@ define([
                 //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
                 //abilities from overwriting more recent locally stored abilities.
                 if (!this.latentAbilities[learnerId]) {
-                    try {
-                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
-                        if (stored) {
-                        this.latentAbilities[learnerId] = {};
-                        stored.forEach(function(ability) {
-                            this.latentAbilities[learnerId][ability.dimensionId] = ability;
-                        }.bind(this));
-                        }
-                    } catch (e) {}
+                    this.getStoredLatentAbilities(learnerId);
                 }
-
                 abilities.forEach(function(ability) {
                     this.setLatentAbility(learnerId, ability, true);
                 }.bind(this));
                 return this.latentAbilities;
             }.bind(this));
         }
+    };
+
+    KidaptiveModelManager.prototype.getStoredLocalAbilities = function(learnerId) {
+        try {
+            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
+            if (stored) {
+            this.localAbilities[learnerId] = {};
+            stored.forEach(function(ability) {
+                this.localAbilities[learnerId][ability.localDimensionId] = ability;
+            }.bind(this));
+            }
+        } catch (e) {}
     };
 
     KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
@@ -191,17 +205,8 @@ define([
                 //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
                 //abilities from overwriting more recent locally stored abilities.
                 if (!this.localAbilities[learnerId]) {
-                    try {
-                        var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
-                        if (stored) {
-                        this.localAbilities[learnerId] = {};
-                        stored.forEach(function(ability) {
-                            this.localAbilities[learnerId][ability.localDimensionId] = ability;
-                        }.bind(this));
-                        }
-                    } catch (e) {}
+                    this.getStoredLocalAbilities(learnerId);
                 }
-
                 abilities.forEach(function(ability) {
                     this.setLocalAbility(learnerId, ability, true);
                 }.bind(this));
