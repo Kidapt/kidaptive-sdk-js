@@ -7637,7 +7637,7 @@
         KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             if (!learnerId) {
                 return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                    return this.refreshLatentAbilities.bind(this, learner);
+                    return this.refreshLatentAbilities.bind(this, parseInt(learner));
                 }.bind(this)));
             } else {
                 return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
@@ -7651,7 +7651,10 @@
                                 learnerId: learnerId
                             }));
                             if (stored) {
-                                this.latentAbilities[learnerId] = stored;
+                                this.latentAbilities[learnerId] = {};
+                                stored.forEach(function(ability) {
+                                    this.latentAbilities[learnerId][ability.dimensionId] = ability;
+                                }.bind(this));
                             }
                         } catch (e) {}
                     }
@@ -7665,7 +7668,7 @@
         KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             if (!learnerId) {
                 return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
-                    return this.refreshLocalAbilities.bind(this, learner);
+                    return this.refreshLocalAbilities.bind(this, parseInt(learner));
                 }.bind(this)));
             } else {
                 return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
@@ -7679,7 +7682,10 @@
                                 learnerId: learnerId
                             }));
                             if (stored) {
-                                this.localAbilities[learnerId] = stored;
+                                this.localAbilities[learnerId] = {};
+                                stored.forEach(function(ability) {
+                                    this.localAbilities[learnerId][ability.localDimensionId] = ability;
+                                }.bind(this));
                             }
                         } catch (e) {}
                     }
