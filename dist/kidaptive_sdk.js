@@ -6162,6 +6162,12 @@
                 throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Expected " + typeof format);
             }
         };
+        KidaptiveUtils.hasStoredAnonymousSession = function() {
+            try {
+                return KidaptiveUtils.localStorageGetItem("anonymousSession.alpUserData");
+            } catch (e) {}
+            return false;
+        };
         return KidaptiveUtils;
     }(jquery, kidaptive_error);
     kidaptive_attempt_processor = function(KidaptiveIrt, KidaptiveUtils) {
@@ -7362,8 +7368,11 @@
                         localStorage.removeItem(cacheKey);
                         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
                     } else if (xhr.status === 401) {
-                        KidaptiveHttpClient.deleteUserData();
-                        if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
+                        var appEndpoint = KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0;
+                        if (!KidaptiveUtils.hasStoredAnonymousSession() || appEndpoint) {
+                            KidaptiveHttpClient.deleteUserData();
+                        }
+                        if (appEndpoint) {
                             KidaptiveHttpClient.deleteAppData();
                         }
                         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
@@ -7634,6 +7643,19 @@
                 return o !== undefined;
             });
         };
+        KidaptiveModelManager.prototype.getStoredLatentAbilities = function(learnerId) {
+            try {
+                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                    learnerId: learnerId
+                }));
+                if (stored) {
+                    this.latentAbilities[learnerId] = {};
+                    stored.forEach(function(ability) {
+                        this.latentAbilities[learnerId][ability.dimensionId] = ability;
+                    }.bind(this));
+                }
+            } catch (e) {}
+        };
         KidaptiveModelManager.prototype.refreshLatentAbilities = function(learnerId) {
             if (!learnerId) {
                 return KidaptiveUtils.Promise.parallel(Object.keys(this.sdk.learnerManager.idToLearner).map(function(learner) {
@@ -7646,17 +7668,7 @@
                     noCache: true
                 }).then(function(abilities) {
                     if (!this.latentAbilities[learnerId]) {
-                        try {
-                            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                                learnerId: learnerId
-                            }));
-                            if (stored) {
-                                this.latentAbilities[learnerId] = {};
-                                stored.forEach(function(ability) {
-                                    this.latentAbilities[learnerId][ability.dimensionId] = ability;
-                                }.bind(this));
-                            }
-                        } catch (e) {}
+                        this.getStoredLatentAbilities(learnerId);
                     }
                     abilities.forEach(function(ability) {
                         this.setLatentAbility(learnerId, ability, true);
@@ -7664,6 +7676,19 @@
                     return this.latentAbilities;
                 }.bind(this));
             }
+        };
+        KidaptiveModelManager.prototype.getStoredLocalAbilities = function(learnerId) {
+            try {
+                var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                    learnerId: learnerId
+                }));
+                if (stored) {
+                    this.localAbilities[learnerId] = {};
+                    stored.forEach(function(ability) {
+                        this.localAbilities[learnerId][ability.localDimensionId] = ability;
+                    }.bind(this));
+                }
+            } catch (e) {}
         };
         KidaptiveModelManager.prototype.refreshLocalAbilities = function(learnerId) {
             if (!learnerId) {
@@ -7677,17 +7702,7 @@
                     noCache: true
                 }).then(function(abilities) {
                     if (!this.localAbilities[learnerId]) {
-                        try {
-                            var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                                learnerId: learnerId
-                            }));
-                            if (stored) {
-                                this.localAbilities[learnerId] = {};
-                                stored.forEach(function(ability) {
-                                    this.localAbilities[learnerId][ability.localDimensionId] = ability;
-                                }.bind(this));
-                            }
-                        } catch (e) {}
+                        this.getStoredLocalAbilities(learnerId);
                     }
                     abilities.forEach(function(ability) {
                         this.setLocalAbility(learnerId, ability, true);
@@ -8065,12 +8080,16 @@
                     return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
                 }
             }).then(function() {
-                sdk.trialManager.endAllTrials();
-                sdk.modelManager.clearLearnerModels();
-                sdk.learnerManager.clearLearnerList();
-                KidaptiveHttpClient.deleteUserData();
+                if (!authError || !KidaptiveUtils.hasStoredAnonymousSession()) {
+                    sdk.trialManager.endAllTrials();
+                    sdk.modelManager.clearLearnerModels();
+                    sdk.learnerManager.clearLearnerList();
+                    KidaptiveHttpClient.deleteUserData();
+                }
                 if (sdk.anonymousSession) {
-                    sdk.anonymousSession = false;
+                    if (!authError) {
+                        sdk.anonymousSession = false;
+                    }
                 } else {
                     return sdk.userManager.logoutUser();
                 }
@@ -8098,6 +8117,13 @@
                     });
                 });
             } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
+        };
+        var setAnonymousSession = function() {
+            sdk.learnerManager.idToLearner[-1] = {
+                id: -1
+            };
+            sdk.anonymousSession = true;
+            KidaptiveUtils.localStorageSetItem("anonymousSession.alpUserData", true);
         };
         var autoFlush = function() {
             clearTimeout(flushTimeoutId);
@@ -8176,7 +8202,13 @@
                     this.httpClient.sdk = this;
                     defaultFlushInterval = options.flushInterval === undefined ? 6e4 : options.flushInterval;
                     KidaptiveSdk.startAutoFlush();
-                    return refreshUserData().catch(function() {});
+                    return refreshUserData().catch(function() {
+                        if (KidaptiveUtils.hasStoredAnonymousSession()) {
+                            setAnonymousSession();
+                            sdk.modelManager.getStoredLatentAbilities(-1);
+                            sdk.modelManager.getStoredLocalAbilities(-1);
+                        }
+                    });
                 }.bind(this)).then(function() {
                     resolve(this);
                 }.bind(this), reject);
@@ -8217,10 +8249,7 @@
             return addToQueue(function() {
                 sdkInitFilter();
                 return logout().catch(function() {}).then(function() {
-                    sdk.learnerManager.idToLearner[-1] = {
-                        id: -1
-                    };
-                    sdk.anonymousSession = true;
+                    setAnonymousSession();
                 });
             });
         };
