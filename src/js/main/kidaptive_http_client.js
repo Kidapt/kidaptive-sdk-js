@@ -68,8 +68,11 @@ define([
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
                 } else if (xhr.status === 401) {
                     //unauthorized. delete cached data
-                    KidaptiveHttpClient.deleteUserData();
-                    if (KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0) {
+                    var appEndpoint = KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0;
+                    if (!KidaptiveUtils.hasStoredAnonymousSession() || appEndpoint) {
+                        KidaptiveHttpClient.deleteUserData();
+                    }
+                    if (appEndpoint) {
                         KidaptiveHttpClient.deleteAppData();
                     }
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
