@@ -85,7 +85,9 @@ define([
             }
 
             if (sdk.anonymousSession) {
-                sdk.anonymousSession = false;
+                if (!authError) {
+                    sdk.anonymousSession = false;
+                }
             } else {
                 return sdk.userManager.logoutUser();
             }

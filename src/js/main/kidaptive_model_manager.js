@@ -150,10 +150,10 @@ define([
         try {
             var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}));
             if (stored) {
-            this.latentAbilities[learnerId] = {};
-            stored.forEach(function(ability) {
-                this.latentAbilities[learnerId][ability.dimensionId] = ability;
-            }.bind(this));
+                this.latentAbilities[learnerId] = {};
+                stored.forEach(function(ability) {
+                    this.latentAbilities[learnerId][ability.dimensionId] = ability;
+                }.bind(this));
             }
         } catch (e) {}
     };
@@ -185,10 +185,10 @@ define([
         try {
             var stored = KidaptiveUtils.localStorageGetItem(this.sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:learnerId}));
             if (stored) {
-            this.localAbilities[learnerId] = {};
-            stored.forEach(function(ability) {
-                this.localAbilities[learnerId][ability.localDimensionId] = ability;
-            }.bind(this));
+                this.localAbilities[learnerId] = {};
+                stored.forEach(function(ability) {
+                    this.localAbilities[learnerId][ability.localDimensionId] = ability;
+                }.bind(this));
             }
         } catch (e) {}
     };
