@@ -4524,7 +4524,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "0.2.19";
+                    return "1.0.0";
                 }
             }, {
                 key: "destroy",
