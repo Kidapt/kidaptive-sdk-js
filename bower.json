@@ -3,6 +3,7 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "authors": [
+    "Cameron Perry <dev@cameronperry.com>",
     "Solomon Liu <sliu198@gmail.com>"
   ],
   "license": "ISC",
@@ -15,8 +16,6 @@
   "homepage": "https://github.com/Kidapt/kidaptive-sdk-js",
   "ignore": [
     "**/.*",
-    "/src",
-    "/test",
-    "/*.json"
+    "/test"
   ]
 }

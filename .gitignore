@@ -1,5 +1,6 @@
 node_modules/
-bower_components/
 .idea/
-src/js/main/irt/irt.js
+nohup.out
 npm-debug.log
+.DS_Store
+test/compiled_tests.js
