@@ -32,6 +32,22 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Checks to see if the SDK is set to the specified auth mode.
+   * This also requires that the SDK is initialized.
+   * If it isn't initialized, or isn't the correct auth mode, an error is thrown.
+   * 
+   * @param {string} targetAuthMode
+   *   The target auth mode to check against
+   */
+  checkAuthMode(targetAuthMode) {
+    this.checkInitialized();
+    const options = State.get('options') || {};
+    if (options.authMode !== targetAuthMode) {
+      throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'SDK not configured to authMode ' + targetAuthMode);
+    }
+  }
+
+  /**
    * Checks to see if the SDK is configured to display log messages of that level
    * 
    * @param {string} targetLoggingLevel

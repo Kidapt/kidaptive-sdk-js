@@ -62,6 +62,41 @@ describe('KidaptiveSdk Utils Unit Tests', () => {
       });
     });
 
+    describe('checkAuthMode', () => {
+      it('checkAuthMode without init throws Error', () => {
+        Should.throws(() => { 
+          Utils.checkAuthMode(Constants.DEFAULT.AUTH_MODE); 
+        }, Error);
+      });
+      it('init default authMode then checkAuthMode with default does not throw Error', () => {
+        State.set('initialized', true);
+        State.set('options', {authMode: Constants.DEFAULT.AUTH_MODE});
+        Should.doesNotThrow(() => {
+          Utils.checkTier(Constants.DEFAULT.AUTH_MODE);
+        }, Error);
+        State.clear();
+      });
+      const authModes = ['client', 's2s'];
+      authModes.forEach(configuredAuthMode => {
+        authModes.forEach(requiredAuthMode => {
+          it('init authMode ' + configuredAuthMode + ' checkAuthMode(' + requiredAuthMode + ') ' + ((requiredAuthMode > configuredAuthMode) ? 'throws error' : 'does not throw error'), () => {
+            State.set('initialized', true);
+            State.set('options', {authMode: configuredAuthMode});
+            if (requiredAuthMode !== configuredAuthMode) {
+              Should.throws(() => {
+                Utils.checkAuthMode(requiredAuthMode);
+              }, Error);
+            } else {
+              Should.doesNotThrow(() =>{
+                Utils.checkAuthMode(requiredAuthMode);
+              }, Error);
+            }
+            State.clear();
+          });
+        });
+      });
+    });
+
     describe('checkLoggingLevel', () => {
       it('Default logging level', () => {
         Should(Utils.checkLoggingLevel(Constants.DEFAULT.LOGGING_LEVEL)).equal(true);

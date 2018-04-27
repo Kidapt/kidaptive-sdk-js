@@ -96,6 +96,7 @@ Option | Type | Required | Default | Description
 --- | --- | --- | --- | ---
 environment | string | true |  | Values can be `dev`, `prod`, or `custom`
 tier | number | false | 1 | Sets up the SDK to have the desired level of functionality. Values can be `1`, `2`, or `3`
+authMode | string | false | client | Defines the authentication mode to be used. Values can be `client` or `server` (server to server).
 baseUrl | string | false |  | This property is only used and required when environment is set to `custom`. This allows for sending events to a different host when using a proxy.
 appUri | string | false | | The appUri reported to the Kidaptive API with events.
 version | string | false |  | The version reported to the Kidaptive API with events.
@@ -119,7 +120,7 @@ console.log(sdkVersion);
 
 #### KidaptiveSdk.destroy()
 
-Notifies the SDK to uninitialize. The return value is a [Promise] which resolves when the SDK is uninitialized. The shutdown process includes stopping the auto flush, flushing all events, and finally uninitializing itself.
+Notifies the SDK to uninitialize. The return value is a [Promise] which resolves when the SDK is uninitialized. The shutdown process includes stopping the auto flush, flushing all events, clearing all state, and finally uninitializing itself.
 
 ```javascript
 KidaptiveSdk.destroy().then(function() {

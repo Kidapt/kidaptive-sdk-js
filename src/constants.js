@@ -2,7 +2,8 @@ export default {
   DEFAULT: {
     AUTO_FLUSH_INTERVAL: 60000,
     LOGGING_LEVEL: 'all',
-    TIER: 1
+    TIER: 1,
+    AUTH_MODE: 'client'
   },
 
   ENDPOINT: {
