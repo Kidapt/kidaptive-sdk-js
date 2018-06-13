@@ -1,3 +1,8 @@
+import Constants from './constants';
+import Error from './error';
+import EventManager from './event-manager';
+import HttpClient from './http-client';
+import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
 
@@ -5,6 +10,8 @@ class KidaptiveSdkLearnerManager {
 
   /**
    * Set the user object that contains the user metadata
+   * For client based auth, the object in the parameter can only set the providerUserId.
+   * For server based auth, the object in the parameter must have all properties.
    * 
    * @param {object} userObject
    *   The metadata object containing apiKey, user, and learners
@@ -12,25 +19,104 @@ class KidaptiveSdkLearnerManager {
    * @return
    *   A promise that resolves when the user has been set
    */
-  setUser(userObject) {
-    Utils.checkInitialized();
+  setUser(userObject = {}) {
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(1);
+      const options = State.get('options') || {};
 
-    //TODO VALIDATE PROVIDER USER ID
+      //if client level auth
+      if (options.authMode === 'client') {
 
-    const options = State.get('options') || {};
-    if (options.authMode === 's2s') {
-      //TODO VALIDATE ENTIRE USER OBJECT (apiKey, user, learners[learner])
-    }
+        //validate providerUserId
+        if (userObject.providerUserId == null) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'providerUserId is required');
+        }
+        if (!Utils.isString(userObject.providerUserId)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'providerUserId must be a string');
+        }
 
-    //TODO CLEAR PREVIOUS LEARNER DATA
-    //TODO STORE USER INFO
+        //if an apiKey is passed in the SDK is likely configured to the wrong auth mode
+        if (userObject.apiKey != null) {
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser apiKey not supported when the SDK authMode is server');
+        }
+
+        //flush events before changing user
+        return EventManager.flushEventQueue().then(() => {
+
+          //send providerUserId to learner session endpoint to create user
+          return HttpClient.request(
+            'POST', 
+            Constants.ENDPOINT.LEARNER_SESSION, 
+            {providerUserId: userObject.providerUserId}, 
+            {noCache: true}
+          ).then((userObjectResponse) => {
+
+            //set the state
+            State.set('user', userObjectResponse);
+            State.set('learner', undefined);
+          });
+        });
+      }
+
+      //if server level auth
+      if (options.authMode === 'server') {
+
+        //validate apiKey
+        if (userObject.apiKey == null) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. ApiKey is required');
+        }
+        if (!Utils.isString(userObject.apiKey)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. ApiKey must be a string');
+        }
+
+        //validate user ID
+        if (userObject.id == null) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. User ID is required');
+        }
+        if (!Utils.isNumber(userObject.id)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. User ID must be a number');
+        }
+
+        //validate learners
+        if (!Utils.isArray(userObject.learners)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learners must be an array');
+        }
+
+        //validate learner IDs
+        userObject.learners.forEach((learner) => {
+          if (!Utils.isObject(learner)) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner must be an object');
+          }
+          if (learner.id == null) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ID is required');
+          }
+          if (!Utils.isNumber(learner.id)) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ID must be a number');
+          }
+          if (learner.providerId == null) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ProviderID is required');
+          }
+          if (!Utils.isString(learner.providerId)) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ProviderID must be a string');
+          }
+        });
+
+        //flush events before changing user
+        return EventManager.flushEventQueue().then(() => {
+          
+          //set the state
+          State.set('user', userObject);
+          State.set('learner', undefined);
+        });
+      }
+    });
   }
 
   /**
    * Sets the active learner by the Provider Learner ID.
    * For client based auth, this will send a request to the server to set the learner.
-   * For S2S based auth, this requires that setUser is called first.
-   * For S2S based auth, this will validate against the learners provided in setUser.
+   * For server based auth, this requires that setUser is called first.
+   * For server based auth, this will validate against the learners provided in setUser.
    * 
    * @param {string} providerLearnerId
    *   The provider learnr ID to set as the active learner
@@ -38,21 +124,54 @@ class KidaptiveSdkLearnerManager {
    * @return
    *   A promise that resolves when the learner has been activated
    */
-  setActiveLearner(providerLearnerId) {
-    Utils.checkInitialized();
-   
-    const options = State.get('options') || {};
-    if (options.authMode === 'client') {
-      //TODO SEND API CALL
-      //TODO STORE PROVIDER LEARNER ID
-    }
+  selectActiveLearner(providerLearnerId) {
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(1);
+      const options = State.get('options') || {};
+      const user = State.get('user');
 
-    if (options.authMode === 's2s') {
-      //TODO REQUIRE SET USER CALLED FIRST
-      //TODO VALIDATE AGAINST LEARNERS FROM SET USER
-      //TODO STORE PROVIDER LEARNER ID
-    }
+      //validate providerLearnerId
+      if (providerLearnerId == null) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'providerLearnerId is required');
+      }
+      if (!Utils.isString(providerLearnerId)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'providerLearnerId must be a string');
+      }
+     
+      //if client level auth
+      if (options.authMode === 'client') {
 
+        //send providerLearnerID and providerUserId learner session endpoint to create user and learner
+        return HttpClient.request(
+          'POST', 
+          Constants.ENDPOINT.LEARNER_SESSION, 
+          {providerLearnerId, providerUserId: user && user.providerId}, 
+          {noCache: true}
+        ).then((userObjectResponse) => {
+          //set the state
+          State.set('user', userObjectResponse);
+          State.set('learner', this.getLearnerList().find(learner => learner.providerId === providerLearnerId));
+        });
+      }
+
+      //if server level auth
+      if (options.authMode === 'server') {
+
+        //setUser must be called before selecting an active learner
+        if (!user) {  
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'KidaptiveSdk.leanerManager.setUser must be called before setting an active learner when using server authentication');
+        }
+
+        //validate that the providerLearnerId exists for that user
+        const activeLearner = this.getLearnerList().find(learner => learner.providerId === providerLearnerId);
+        if (!activeLearner) {
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'A learner with that providerLearnerId does not exist');
+        }
+
+        //set the state
+        State.set('learner', activeLearner);
+      }
+    });
   }
 
   /**
@@ -62,71 +181,100 @@ class KidaptiveSdkLearnerManager {
    *   A promise that resolves when the learner has been cleared
    */
   clearActiveLearner() {
-    Utils.checkInitialized();
-    
-    //TODO CLEAR PROVIDER LEARNER ID
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(1);
+
+      //set the state
+      State.set('learner', undefined);
+    });
   }
 
   /**
    * Clears the user and learner information and logs the user out.
-   * For S2S based auth, this will send a logout request to the server.
+   * For server based auth, this will send a logout request to the server.
    * 
    * @return
    *   A promise that resolves when the user has been logged out
    */
   logout() {
-    Utils.checkInitialized();
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(1);
+      const options = State.get('options') || {};
 
-    //TODO CLEAR LEARNER DATA
-    //TODO CLEAR USER DATA
+      //if client level auth
+      if (options.authMode === 'client') {
 
-    const options = State.get('options') || {};
-    if (options.authMode === 's2s') {
-      //TODO SEND API LOGOUT
-    }
+        //flush event queue before logging user out
+        return EventManager.flushEventQueue().then(() => {
 
+          //set the state
+          State.set('learner', undefined);
+          State.set('user', undefined);
+        });
+      }
+
+      //if server level auth and a user is logged in
+      if (options.authMode === 'server' && State.get('user')) {
+
+        //flush event queue before logging user out
+        return EventManager.flushEventQueue().then(() => {
+
+          //log the user out
+          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
+            
+            //set the state
+            State.set('learner', undefined);
+            State.set('user', undefined);
+          });
+        });
+      }
+    });
   }
 
   /**
    * Gets the current user.
-   * For S2S based auth only.
-   * Gets the user object from the object provided to the the setUser method.
+   * In server based auth, it returns the user object provided in the setUser method
+   * In client based auth, it returns the user object from the Kidaptive API
    * 
    * @return
    *   The user object. If no user is defined, then undefined is returned.
    */
   getUser() {
-    Utils.checkAuthMode('s2s');
-    
-    //TODO GET USER OBJECT, OR UNDEFINED
+    Utils.checkTier(1);
+
+    //get the state
+    return State.get('user') || undefined;
   }
 
   /**
    * Gets the active learner
-   * For S2S based auth only.
-   * Gets the active learner object from the object provided to the the setUser method.
+   * In server based auth, it returns the relevant learner object provided in the setUser method
+   * In client based auth, it returns the relevant learner object from the Kidaptive API
    * 
    * @return
    *   The learner object. If no active learner is defined, then undefined is returned.
    */
   getActiveLearner() {
-    Utils.checkAuthMode('s2s');
-    
-    //TODO GET ACTIVE LEARNER OBJECT, OR UNDEFINED
+    Utils.checkTier(1);
+
+    //get the state
+    return State.get('learner') || undefined;
   }
 
   /**
    * Gets the learner list
-   * For S2S based auth only.
-   * Gets the learner list array from the object provided to the the setUser method.
+   * In server based auth, it returns the learner list provided in the setUser method
+   * In client based auth, it returns the learner list from the Kidaptive API
    * 
    * @return
    *   The learner array. If no learner list is defined, an empty array is returned.
    */
   getLearnerList() {
-    Utils.checkAuthMode('s2s');
-    
-    //TODO GET ACTIVE LEARNER LIST ARRAY, OR UNDEFINED
+    Utils.checkTier(1);
+
+    //get the state
+    const userObject = State.get('user') || {};
+    return userObject.learners || [];
   }
 
 }

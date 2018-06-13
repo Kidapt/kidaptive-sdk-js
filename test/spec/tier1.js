@@ -1,6 +1,7 @@
 'use strict';
 import KidaptiveSdk from '../../src/index';
 import EventManager from '../../src/event-manager';
+import LearnerManager from '../../src/learner-manager';
 import State from '../../src/state';
 import Utils from '../../src/utils';
 import Should from 'should';
@@ -18,6 +19,29 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
     afterEach(() => {
       spyCheckTier.restore();
     });
+/*
+    it('KidaptiveSdk.learnerManager.setUser()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.selectActiveLearner()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.clearActiveLearner()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.logout()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.getUser()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.getActiveLearner()', () => {
+
+    });
+    it('KidaptiveSdk.learnerManager.getLearnerList()', () => {
+
+    });
+*/
     it('KidaptiveSdk.eventManager.reportSimpleEvent()', () => {
       State.set('initialized', true);
       State.set('options', {tier: 0});

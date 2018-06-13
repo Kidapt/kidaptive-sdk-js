@@ -7,7 +7,9 @@ export default {
   },
 
   ENDPOINT: {
-    INGESTION:'/ingestion'
+    INGESTION:'/ingestion',
+    LEARNER_SESSION:'/learner/client-session',
+    LOGOUT:'/user/logout'
   },
 
   HOST: {
@@ -16,6 +18,7 @@ export default {
   },
 
   USER_ENDPOINTS: [
-    'INGESTION'
+    'INGESTION',
+    'LOGOUT'
   ]
 };

@@ -175,11 +175,28 @@ class KidaptiveSdk {
         EventManager.flushEventQueue();
       }
     }).then(() => {
-      //resolve destroy promise once state is reset
-      return OperationManager.addToQueue(() => {
-        State.clear();
-        State.set('initialized', false);
-      });
+
+      //if a user session is active with server authmode, call logout
+      if (State.get('options').authMode === 'server' && State.get('options').tier >= 1 && LearnerManager.getUser()) {
+        return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
+
+          //resolve destroy promise once state is reset
+          return OperationManager.addToQueue(() => {
+            State.clear();
+            State.set('initialized', false);
+          });
+        });
+
+      //if no active user, or authMode set to client, just reset state      
+      } else {
+        //resolve destroy promise once state is reset
+        return OperationManager.addToQueue(() => {
+          State.clear();
+          State.set('initialized', false);
+        });
+      }
+
+      
     });
   }
 
