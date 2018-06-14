@@ -19,29 +19,89 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
     afterEach(() => {
       spyCheckTier.restore();
     });
-/*
     it('KidaptiveSdk.learnerManager.setUser()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      return Should(KidaptiveSdk.learnerManager.setUser({providerUserId: 'userId'})).rejected().then(() => {
+        State.set('options', {tier: 1});
+        return Should(KidaptiveSdk.learnerManager.setUser({providerUserId: 'userId'})).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
     });
     it('KidaptiveSdk.learnerManager.selectActiveLearner()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      return Should(KidaptiveSdk.learnerManager.selectActiveLearner('learnerId')).rejected().then(() => {
+        State.set('options', {tier: 1});
+        return Should(KidaptiveSdk.learnerManager.selectActiveLearner('learnerId')).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
     });
     it('KidaptiveSdk.learnerManager.clearActiveLearner()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      return Should(KidaptiveSdk.learnerManager.clearActiveLearner()).rejected().then(() => {
+        State.set('options', {tier: 1});
+        return Should(KidaptiveSdk.learnerManager.clearActiveLearner()).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
     });
     it('KidaptiveSdk.learnerManager.logout()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      return Should(KidaptiveSdk.learnerManager.logout()).rejected().then(() => {
+        State.set('options', {tier: 1});
+        return Should(KidaptiveSdk.learnerManager.logout()).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
     });
     it('KidaptiveSdk.learnerManager.getUser()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      Should.throws(() => { 
+        KidaptiveSdk.learnerManager.getUser()
+      }, Error);
+      State.set('options', {tier: 1});
+      Should.doesNotThrow(() => { 
+         KidaptiveSdk.learnerManager.getUser()
+      }, Error);
+      Should(spyCheckTier.callCount).equal(2);
+      Should(spyCheckTier.alwaysCalledWith(1)).true();
     });
     it('KidaptiveSdk.learnerManager.getActiveLearner()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      Should.throws(() => { 
+        KidaptiveSdk.learnerManager.getActiveLearner()
+      }, Error);
+      State.set('options', {tier: 1});
+      Should.doesNotThrow(() => { 
+         KidaptiveSdk.learnerManager.getActiveLearner()
+      }, Error);
+      Should(spyCheckTier.callCount).equal(2);
+      Should(spyCheckTier.alwaysCalledWith(1)).true();
     });
     it('KidaptiveSdk.learnerManager.getLearnerList()', () => {
-
+      State.set('initialized', true);
+      State.set('options', {tier: 0});
+      Should.throws(() => { 
+        KidaptiveSdk.learnerManager.getLearnerList()
+      }, Error);
+      State.set('options', {tier: 1});
+      Should.doesNotThrow(() => { 
+         KidaptiveSdk.learnerManager.getLearnerList()
+      }, Error);
+      Should(spyCheckTier.callCount).equal(2);
+      Should(spyCheckTier.alwaysCalledWith(1)).true();
     });
-*/
     it('KidaptiveSdk.eventManager.reportSimpleEvent()', () => {
       State.set('initialized', true);
       State.set('options', {tier: 0});
