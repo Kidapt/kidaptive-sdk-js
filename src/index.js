@@ -168,38 +168,23 @@ class KidaptiveSdk {
   destroy() {
     return OperationManager.addToQueue(() => {
       Utils.checkInitialized();
+      
+    }).then(() => {
 
+      //flush event and logout
       if (State.get('options').tier >= 1) {
         EventManager.stopAutoFlush();
-        //this will be added to queue ahead of state reset
-        EventManager.flushEventQueue();
+        return LearnerManager.logout();
       }
     }).then(() => {
 
-      //if a user session is active with server authmode, call logout
-      if (State.get('options').authMode === 'server' && State.get('options').tier >= 1 && LearnerManager.getUser()) {
-        return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
-
-          //resolve destroy promise once state is reset
-          return OperationManager.addToQueue(() => {
-            State.clear();
-            State.set('initialized', false);
-          });
-        });
-
-      //if no active user, or authMode set to client, just reset state      
-      } else {
-        //resolve destroy promise once state is reset
-        return OperationManager.addToQueue(() => {
-          State.clear();
-          State.set('initialized', false);
-        });
-      }
-
-      
+      //resolve destroy promise once state is reset
+      return OperationManager.addToQueue(() => {
+        State.clear();
+        State.set('initialized', false);
+      });
     });
   }
-
 }
 
 export default new KidaptiveSdk();

@@ -180,8 +180,10 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
       server.respondImmediately = true;
       State.set('apiKey', 'testApiKey');
       State.set('initialized', true);
-      options = {tier: 1, environment: 'dev', appUri: 'testAppUri', version: '1.0.0', build: '1.0.0.100'};
+      options = {tier: 1, authMode: 'client', environment: 'dev', appUri: 'testAppUri', version: '1.0.0', build: '1.0.0.100'};
       State.set('options', options);
+      State.set('user', {id: 'userAlpId'});
+      State.set('learner', {id: 'learnerAlpId'});
       return EventManager.flushEventQueue();
     });
     beforeEach(() => {
@@ -206,6 +208,8 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         Should(parsed.appInfo.uri).equal('testAppUri');
         Should(parsed.appInfo.version).equal('1.0.0');
         Should(parsed.appInfo.build).equal('1.0.0.100');
+        Should(parsed.learnerInfo.userId).equal('userAlpId');
+        Should(parsed.learnerInfo.learnerId).equal('learnerAlpId');
         Should(parsed.deviceInfo).Object();
         if (parsed.deviceInfo.deviceType) {
           Should(parsed.deviceInfo.deviceType).String();
@@ -215,7 +219,7 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         }
       })
     });
-    it('events are grouped by app/device info', () => {
+    it('events are grouped by learner/app/device info', () => {
       return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
         return Should(EventManager.reportRawEvent('{"name":"eventName"}')).resolved();
       }).then(() => {
@@ -255,9 +259,51 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         Should(JSON.parse(server.requests[2].requestBody).events[0].name).equal('eventName3');
         Should(JSON.parse(server.requests[3].requestBody).events).length(1);
         Should(JSON.parse(server.requests[3].requestBody).events[0].name).equal('eventName4');
-      })
+      });
     });
-    //TODO FUTURE: CHECK GROUPING BY USER
+    it('separate events by different user/learner', () => {
+      State.set('user', {id:'userAlpId'});
+      State.set('learner', {id:'learnerAlpId'});
+      return Should(EventManager.reportSimpleEvent('eventName1', {})).resolved().then(() => {
+        State.set('user', {id:'userAlpId2'});
+        return Should(EventManager.reportSimpleEvent('eventName2', {})).resolved();
+      }).then(() => {
+        State.set('learner', {id:'learnerAlpId2'});
+        return Should(EventManager.reportSimpleEvent('eventName3', {})).resolved();
+      }).then(() => {
+        State.set('learner', {id:'learnerAlpId3'});
+        return Should(EventManager.reportSimpleEvent('eventName4', {})).resolved();
+      }).then(() => {
+        return Should(EventManager.flushEventQueue()).resolved();
+      }).then(result => {
+        Should(server.requests).length(4);
+        Should(JSON.parse(server.requests[0].requestBody).events).length(1);
+        Should(JSON.parse(server.requests[0].requestBody).events[0].name).equal('eventName1');
+        Should(JSON.parse(server.requests[1].requestBody).events).length(1);
+        Should(JSON.parse(server.requests[1].requestBody).events[0].name).equal('eventName2');
+        Should(JSON.parse(server.requests[2].requestBody).events).length(1);
+        Should(JSON.parse(server.requests[2].requestBody).events[0].name).equal('eventName3');
+        Should(JSON.parse(server.requests[3].requestBody).events).length(1);
+        Should(JSON.parse(server.requests[3].requestBody).events[0].name).equal('eventName4');
+      });
+    });
+    it('event requires user to be specified when using authMode:server', () => {
+      options.authMode = 'server';
+      State.set('options', options);
+      State.set('user', undefined);
+      return Should(EventManager.reportSimpleEvent('eventName', {})).rejected().then(() => {
+        State.set('user', {id:'userAlpId'});
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved();
+      }).then(() => {
+        options.authMode = 'client';
+        State.set('options', options);
+        State.set('user', undefined);
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved();
+      }).then(() => {
+        State.set('user', {id:'userAlpId'});
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved();
+      });
+    });
   });
 
   describe('flushEventQueue', () => {

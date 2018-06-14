@@ -199,35 +199,26 @@ class KidaptiveSdkLearnerManager {
   logout() {
     return OperationManager.addToQueue(() => {
       Utils.checkTier(1);
-      const options = State.get('options') || {};
 
-      //if client level auth
-      if (options.authMode === 'client') {
+      //flush event queue before logging user out
+      EventManager.flushEventQueue();
+    }).then(() => {
 
-        //flush event queue before logging user out
-        return EventManager.flushEventQueue().then(() => {
+      //log the user out if authMode server
+      return OperationManager.addToQueue(() => {
+        const options = State.get('options') || {};
 
-          //set the state
-          State.set('learner', undefined);
-          State.set('user', undefined);
-        });
-      }
+        if (options.authMode === 'server' && State.get('user')) {
+          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true});
+        }
+      });
+    }).then(() => {
 
-      //if server level auth and a user is logged in
-      if (options.authMode === 'server' && State.get('user')) {
-
-        //flush event queue before logging user out
-        return EventManager.flushEventQueue().then(() => {
-
-          //log the user out
-          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
-            
-            //set the state
-            State.set('learner', undefined);
-            State.set('user', undefined);
-          });
-        });
-      }
+      //resolve destroy promise once state is reset
+      return OperationManager.addToQueue(() => {
+        State.set('learner', undefined);
+        State.set('user', undefined);
+      });
     });
   }
 
