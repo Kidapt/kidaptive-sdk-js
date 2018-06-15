@@ -40,22 +40,15 @@ class KidaptiveSdkLearnerManager {
           throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser apiKey not supported when the SDK authMode is server');
         }
 
-        //flush events before changing user
-        return EventManager.flushEventQueue().then(() => {
+        //if a providerId is passed in the SDK is likely configured to the wrong auth mode
+        if (userObject.providerId != null) {
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser providerId not supported when the SDK authMode is server');
+        }
 
-          //send providerUserId to learner session endpoint to create user
-          return HttpClient.request(
-            'POST', 
-            Constants.ENDPOINT.LEARNER_SESSION, 
-            {providerUserId: userObject.providerUserId}, 
-            {noCache: true}
-          ).then((userObjectResponse) => {
-
-            //set the state
-            State.set('user', userObjectResponse);
-            State.set('learner', undefined);
-          });
-        });
+        //if an id is passed in the SDK is likely configured to the wrong auth mode
+        if (userObject.id != null) {
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser id not supported when the SDK authMode is server');
+        }
       }
 
       //if server level auth
@@ -100,6 +93,32 @@ class KidaptiveSdkLearnerManager {
             throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ProviderID must be a string');
           }
         });
+      }
+    }).then(() => {
+      const options = State.get('options') || {};
+
+      //if client level auth
+      if (options.authMode === 'client') {
+        //flush events before changing user
+        return EventManager.flushEventQueue().then(() => {
+
+          //send providerUserId to learner session endpoint to create user
+          return HttpClient.request(
+            'POST', 
+            Constants.ENDPOINT.CLIENT_SESSION, 
+            {providerUserId: userObject.providerUserId}, 
+            {noCache: true}
+          ).then((userObjectResponse) => {
+
+            //set the state
+            State.set('user', userObjectResponse);
+            State.set('learner', undefined);
+          });
+        });
+      }
+
+      //if server level auth
+      if (options.authMode === 'server') {
 
         //flush events before changing user
         return EventManager.flushEventQueue().then(() => {
@@ -144,7 +163,7 @@ class KidaptiveSdkLearnerManager {
         //send providerLearnerID and providerUserId learner session endpoint to create user and learner
         return HttpClient.request(
           'POST', 
-          Constants.ENDPOINT.LEARNER_SESSION, 
+          Constants.ENDPOINT.CLIENT_SESSION, 
           {providerLearnerId, providerUserId: user && user.providerId}, 
           {noCache: true}
         ).then((userObjectResponse) => {
@@ -209,7 +228,10 @@ class KidaptiveSdkLearnerManager {
         const options = State.get('options') || {};
 
         if (options.authMode === 'server' && State.get('user')) {
-          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true});
+          //wrap logout call to prevent error from breaking logout chain
+          OperationManager.addToQueue(() => {
+            return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true});
+          });
         }
       });
     }).then(() => {
@@ -265,7 +287,7 @@ class KidaptiveSdkLearnerManager {
 
     //get the state
     const userObject = State.get('user') || {};
-    return userObject.learners || [];
+    return Utils.isArray(userObject.learners) ? userObject.learners : [];
   }
 
 }

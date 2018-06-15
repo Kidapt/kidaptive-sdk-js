@@ -8,7 +8,7 @@ export default {
 
   ENDPOINT: {
     INGESTION:'/ingestion',
-    LEARNER_SESSION:'/learner/client-session',
+    CLIENT_SESSION:'/learner/client-session',
     LOGOUT:'/user/logout'
   },
 

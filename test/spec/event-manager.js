@@ -9,7 +9,7 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
   before(() => {
     State.set('apiKey', 'testApiKey');
     State.set('initialized', true);
-    State.set('options', {tier: 1, environment: 'dev', autoFlushInterval: 0, loggingLevel: 'none'});
+    State.set('options', {tier: 1, authMode: 'client', environment: 'dev', autoFlushInterval: 0, loggingLevel: 'none'});
   });
   after(() => {
     State.clear();
