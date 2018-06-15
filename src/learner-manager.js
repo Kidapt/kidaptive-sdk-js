@@ -169,7 +169,7 @@ class KidaptiveSdkLearnerManager {
         ).then((userObjectResponse) => {
           //set the state
           State.set('user', userObjectResponse);
-          State.set('learner', this.getLearnerList().find(learner => learner.providerId === providerLearnerId));
+          State.set('learner', Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId)));
         });
       }
 
@@ -182,7 +182,7 @@ class KidaptiveSdkLearnerManager {
         }
 
         //validate that the providerLearnerId exists for that user
-        const activeLearner = this.getLearnerList().find(learner => learner.providerId === providerLearnerId);
+        let activeLearner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
         if (!activeLearner) {
           throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'A learner with that providerLearnerId does not exist');
         }

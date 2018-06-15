@@ -363,6 +363,30 @@ describe('KidaptiveSdk Utils Unit Tests', () => {
       });
     });
 
+    describe('findItem', () => {
+      const testObject = [{a:1, b:3},{a:2, b:6},{a:3, b:9}];
+      it('Nothing', () => {
+        Should(Utils.findItem(testObject, item => {
+          return false;
+        })).equal(undefined);
+      });
+      it('First Element', () => {
+        Should(Utils.findItem(testObject, item => {
+          return true
+        })).deepEqual({a:1, b:3});
+      });
+      it('Middle element', () => {
+        Should(Utils.findItem(testObject, item => {
+          return item.a === 2;
+        })).deepEqual({a:2, b:6});
+      });
+      it('Last Element', () => {
+        Should(Utils.findItem(testObject, item => {
+          return item.a === 3;
+        })).deepEqual({a:3, b:9});
+      });
+    });
+
     describe('findItemIndex', () => {
       const testObject = [undefined, 2, 3, 4, 5, 6, null];
       it('Nothing', () => {

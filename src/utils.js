@@ -90,6 +90,27 @@ class KidaptiveSdkUtils {
    *   The evaluation function that should return truthy value for the item in question
    * 
    * @return
+   *   The matched item, or undefined if there is no match
+   */
+  findItem(array, evaluate) {
+    for (let index = 0; index < array.length; index++) {
+      if (evaluate(array[index])) {
+        return array[index];
+      } 
+    }
+    return;
+  }
+
+  /**
+   * Finds the first item in an array that matches the expression
+   * 
+   * @param {array} array
+   *   The array of items to search
+   *
+   * @param {function} evaluate
+   *   The evaluation function that should return truthy value for the item in question
+   * 
+   * @return
    *   The matched item's index, or -1 if there is no match
    */
   findItemIndex(array, evaluate) {
