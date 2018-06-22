@@ -168,21 +168,17 @@ class KidaptiveSdk {
   destroy() {
     return OperationManager.addToQueue(() => {
       Utils.checkInitialized();
-      
-    }).then(() => {
-
-      //flush event and logout
+     
       if (State.get('options').tier >= 1) {
         EventManager.stopAutoFlush();
-        return LearnerManager.logout();
+        return LearnerManager.logout().then(() => {
+          State.clear();
+          State.set('initialized', false);
+        });
       }
-    }).then(() => {
-
-      //resolve destroy promise once state is reset
-      return OperationManager.addToQueue(() => {
-        State.clear();
-        State.set('initialized', false);
-      });
+      
+      State.clear();
+      State.set('initialized', false);
     });
   }
 }

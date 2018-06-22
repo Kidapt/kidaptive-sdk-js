@@ -2,6 +2,7 @@
 import KidaptiveSdk from '../../src/index';
 import EventManager from '../../src/event-manager';
 import LearnerManager from '../../src/learner-manager';
+import OperationManager from '../../src/operation-manager';
 import State from '../../src/state';
 import Utils from '../../src/utils';
 import Should from 'should';
@@ -10,7 +11,7 @@ import Sinon from 'sinon';
 describe('KidaptiveSdk Tier 1 Unit Tests', () => {
   describe('requires KidaptiveSdk to be configured to at least tier 1', () => {
     let spyCheckTier;
-    before(() => {
+    beforeEach(() => {
       spyCheckTier = Sinon.spy(Utils, 'checkTier');
     });
     after(() => {
@@ -22,11 +23,15 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
     it('KidaptiveSdk.learnerManager.setUser()', () => {
       State.set('initialized', true);
       State.set('options', {tier: 0});
+      const flushEventQueueStub = Sinon.stub(EventManager, 'flushEventQueue').callsFake(() => {
+        return OperationManager.addToQueue(() => {});
+      });
       return Should(KidaptiveSdk.learnerManager.setUser({providerUserId: 'userId'})).rejected().then(() => {
         State.set('options', {tier: 1});
         return Should(KidaptiveSdk.learnerManager.setUser({providerUserId: 'userId'})).resolved().then(() => {
           Should(spyCheckTier.callCount).equal(2);
           Should(spyCheckTier.alwaysCalledWith(1)).true();
+          flushEventQueueStub.restore();
         });
       });
     });
@@ -55,11 +60,15 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
     it('KidaptiveSdk.learnerManager.logout()', () => {
       State.set('initialized', true);
       State.set('options', {tier: 0});
+      const flushEventQueueStub = Sinon.stub(EventManager, 'flushEventQueue').callsFake(() => {
+        return OperationManager.addToQueue(() => {});
+      });
       return Should(KidaptiveSdk.learnerManager.logout()).rejected().then(() => {
         State.set('options', {tier: 1});
         return Should(KidaptiveSdk.learnerManager.logout()).resolved().then(() => {
           Should(spyCheckTier.callCount).equal(2);
           Should(spyCheckTier.alwaysCalledWith(1)).true();
+          flushEventQueueStub.restore();
         });
       });
     });
@@ -129,6 +138,7 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, 'ok']);
       State.set('options', {tier: 0});
       return Should(KidaptiveSdk.eventManager.flushEventQueue()).rejected().then(() => {
+      console.log(spyCheckTier.callCount);
         State.set('options', {tier: 1});
         return Should(KidaptiveSdk.eventManager.flushEventQueue()).resolved().then(() => {
           Should(spyCheckTier.callCount).equal(2);

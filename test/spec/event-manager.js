@@ -253,25 +253,38 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         Should(server.requests).length(4);
         Should(JSON.parse(server.requests[0].requestBody).events).length(1);
         Should(JSON.parse(server.requests[0].requestBody).events[0].name).equal('eventName1');
+        Should(JSON.parse(server.requests[0].requestBody).appInfo.uri).equal('testAppUri');
+        Should(JSON.parse(server.requests[0].requestBody).appInfo.version).equal('1.0.0');
+        Should(JSON.parse(server.requests[0].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[1].requestBody).events).length(1);
         Should(JSON.parse(server.requests[1].requestBody).events[0].name).equal('eventName2');
+        Should(JSON.parse(server.requests[1].requestBody).appInfo.uri).equal('differentAppUri');
+        Should(JSON.parse(server.requests[1].requestBody).appInfo.version).equal('1.0.0');
+        Should(JSON.parse(server.requests[1].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[2].requestBody).events).length(1);
         Should(JSON.parse(server.requests[2].requestBody).events[0].name).equal('eventName3');
+        Should(JSON.parse(server.requests[2].requestBody).appInfo.uri).equal('testAppUri');
+        Should(JSON.parse(server.requests[2].requestBody).appInfo.version).equal('1.0.1');
+        Should(JSON.parse(server.requests[2].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[3].requestBody).events).length(1);
         Should(JSON.parse(server.requests[3].requestBody).events[0].name).equal('eventName4');
+        Should(JSON.parse(server.requests[3].requestBody).appInfo.uri).equal('testAppUri');
+        Should(JSON.parse(server.requests[3].requestBody).appInfo.version).equal('1.0.0');
+        Should(JSON.parse(server.requests[3].requestBody).appInfo.build).equal('1.0.0.101');
       });
     });
     it('separate events by different user/learner', () => {
       State.set('user', {id:'userAlpId'});
       State.set('learner', {id:'learnerAlpId'});
       return Should(EventManager.reportSimpleEvent('eventName1', {})).resolved().then(() => {
-        State.set('user', {id:'userAlpId2'});
+        State.set('learner', undefined);
         return Should(EventManager.reportSimpleEvent('eventName2', {})).resolved();
       }).then(() => {
-        State.set('learner', {id:'learnerAlpId2'});
+        State.set('user', {id:'userAlpId2'});
+        State.set('learner', {id:'learnerAlpId'});
         return Should(EventManager.reportSimpleEvent('eventName3', {})).resolved();
       }).then(() => {
-        State.set('learner', {id:'learnerAlpId3'});
+        State.set('learner', {id:'learnerAlpId2'});
         return Should(EventManager.reportSimpleEvent('eventName4', {})).resolved();
       }).then(() => {
         return Should(EventManager.flushEventQueue()).resolved();
@@ -279,12 +292,20 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         Should(server.requests).length(4);
         Should(JSON.parse(server.requests[0].requestBody).events).length(1);
         Should(JSON.parse(server.requests[0].requestBody).events[0].name).equal('eventName1');
+        Should(JSON.parse(server.requests[0].requestBody).learnerInfo.userId).equal('userAlpId')
+        Should(JSON.parse(server.requests[0].requestBody).learnerInfo.learnerId).equal('learnerAlpId')
         Should(JSON.parse(server.requests[1].requestBody).events).length(1);
         Should(JSON.parse(server.requests[1].requestBody).events[0].name).equal('eventName2');
+        Should(JSON.parse(server.requests[1].requestBody).learnerInfo.userId).equal('userAlpId')
+        Should(JSON.parse(server.requests[1].requestBody).learnerInfo.learnerId).equal(undefined)
         Should(JSON.parse(server.requests[2].requestBody).events).length(1);
         Should(JSON.parse(server.requests[2].requestBody).events[0].name).equal('eventName3');
+        Should(JSON.parse(server.requests[2].requestBody).learnerInfo.userId).equal('userAlpId2')
+        Should(JSON.parse(server.requests[2].requestBody).learnerInfo.learnerId).equal('learnerAlpId')
         Should(JSON.parse(server.requests[3].requestBody).events).length(1);
         Should(JSON.parse(server.requests[3].requestBody).events[0].name).equal('eventName4');
+        Should(JSON.parse(server.requests[3].requestBody).learnerInfo.userId).equal('userAlpId2')
+        Should(JSON.parse(server.requests[3].requestBody).learnerInfo.learnerId).equal('learnerAlpId2')
       });
     });
     it('event requires user to be specified when using authMode:server', () => {

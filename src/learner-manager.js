@@ -53,54 +53,53 @@ class KidaptiveSdkLearnerManager {
 
       //if server level auth
       if (options.authMode === 'server') {
+        const commonParamError = 'Invalid object passed to setUser. Please ensure SDK authmode is correct and the object being passed to setUser is correct.';
 
         //validate apiKey
         if (userObject.apiKey == null) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. ApiKey is required');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' ApiKey is required');
         }
         if (!Utils.isString(userObject.apiKey)) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. ApiKey must be a string');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' ApiKey must be a string');
         }
 
         //validate user ID
         if (userObject.id == null) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. User ID is required');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' User ID is required');
         }
         if (!Utils.isNumber(userObject.id)) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. User ID must be a number');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' User ID must be a number');
         }
 
         //validate learners
         if (!Utils.isArray(userObject.learners)) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learners must be an array');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learners must be an array');
         }
 
         //validate learner IDs
         userObject.learners.forEach((learner) => {
           if (!Utils.isObject(learner)) {
-            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner must be an object');
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learner must be an object');
           }
           if (learner.id == null) {
-            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ID is required');
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learner ID is required');
           }
           if (!Utils.isNumber(learner.id)) {
-            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ID must be a number');
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learner ID must be a number');
           }
           if (learner.providerId == null) {
-            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ProviderID is required');
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learner ProviderID is required');
           }
           if (!Utils.isString(learner.providerId)) {
-            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid object passed to setUser. Please insure SDK authmode is correct and object being passed to setUser is correct. Learner ProviderID must be a string');
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, commonParamError + ' Learner ProviderID must be a string');
           }
         });
       }
-    }).then(() => {
-      const options = State.get('options') || {};
 
-      //if client level auth
-      if (options.authMode === 'client') {
-        //flush events before changing user
-        return EventManager.flushEventQueue().then(() => {
+      //flush events before changing user
+      return EventManager.flushEventQueue().then(() => {
+        //if client level auth
+        if (options.authMode === 'client') {
 
           //send providerUserId to learner session endpoint to create user
           return HttpClient.request(
@@ -114,20 +113,16 @@ class KidaptiveSdkLearnerManager {
             State.set('user', userObjectResponse);
             State.set('learner', undefined);
           });
-        });
-      }
+        }
 
-      //if server level auth
-      if (options.authMode === 'server') {
+        //if server level auth
+        if (options.authMode === 'server') {
 
-        //flush events before changing user
-        return EventManager.flushEventQueue().then(() => {
-          
           //set the state
           State.set('user', userObject);
           State.set('learner', undefined);
-        });
-      }
+        }
+      });
     });
   }
 
@@ -220,24 +215,25 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(1);
 
       //flush event queue before logging user out
-      EventManager.flushEventQueue();
-    }).then(() => {
-
-      //log the user out if authMode server
-      return OperationManager.addToQueue(() => {
+      return EventManager.flushEventQueue().then(() => {
         const options = State.get('options') || {};
 
         if (options.authMode === 'server' && State.get('user')) {
           //wrap logout call to prevent error from breaking logout chain
-          OperationManager.addToQueue(() => {
-            return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true});
+          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
+
+            //reset state
+            State.set('learner', undefined);
+            State.set('user', undefined);
+          }, () => {
+
+            //reset state
+            State.set('learner', undefined);
+            State.set('user', undefined);
           });
         }
-      });
-    }).then(() => {
 
-      //resolve destroy promise once state is reset
-      return OperationManager.addToQueue(() => {
+        //reset state
         State.set('learner', undefined);
         State.set('user', undefined);
       });
