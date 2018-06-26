@@ -219,19 +219,10 @@ class KidaptiveSdkLearnerManager {
         const options = State.get('options') || {};
 
         if (options.authMode === 'server' && State.get('user')) {
-          //wrap logout call to prevent error from breaking logout chain
-          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {
-
-            //reset state
-            State.set('learner', undefined);
-            State.set('user', undefined);
-          }, () => {
-
-            //reset state
-            State.set('learner', undefined);
-            State.set('user', undefined);
-          });
+          //catch logout error to prevent breaking logout chain
+          return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {}, () => {});
         }
+      }).then(() => {
 
         //reset state
         State.set('learner', undefined);

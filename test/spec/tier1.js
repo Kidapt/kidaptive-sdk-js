@@ -138,7 +138,6 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, 'ok']);
       State.set('options', {tier: 0});
       return Should(KidaptiveSdk.eventManager.flushEventQueue()).rejected().then(() => {
-      console.log(spyCheckTier.callCount);
         State.set('options', {tier: 1});
         return Should(KidaptiveSdk.eventManager.flushEventQueue()).resolved().then(() => {
           Should(spyCheckTier.callCount).equal(2);
