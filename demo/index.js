@@ -31,7 +31,7 @@ log('SDK Version: ' + KidaptiveSdk.getSdkVersion());
 log('--- KidaptiveSDK initialization started');
 KidaptiveSdk.init(apiKey, options).then(function() {
   log('SUCCESS: Initialization complete');
-  return KidaptiveSdk.learnerManager.selectActiveUser('providerUserId100');
+  return KidaptiveSdk.learnerManager.selectActiveLearner('providerLearnerId100');
 }, function() {
   error('ERROR: Initialization error!');
 }).then(function() {
