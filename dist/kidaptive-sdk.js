@@ -45,19 +45,8 @@
             return Object.prototype.hasOwnProperty.call(object, property);
         };
         __webpack_require__.p = "";
-        return __webpack_require__(__webpack_require__.s = 28);
-    }([ function(module, exports) {
-        var g;
-        g = function() {
-            return this;
-        }();
-        try {
-            g = g || Function("return this")() || (1, eval)("this");
-        } catch (e) {
-            if (typeof window === "object") g = window;
-        }
-        module.exports = g;
-    }, function(module, exports, __webpack_require__) {
+        return __webpack_require__(__webpack_require__.s = 29);
+    }([ function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: true
@@ -78,15 +67,15 @@
                 return Constructor;
             };
         }();
-        var _constants = __webpack_require__(5);
+        var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(4);
+        var _error = __webpack_require__(3);
         var _error2 = _interopRequireDefault(_error);
-        var _state = __webpack_require__(3);
+        var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
-        var _lodash = __webpack_require__(25);
+        var _lodash = __webpack_require__(28);
         var _lodash2 = _interopRequireDefault(_lodash);
-        var _jsonStableStringify = __webpack_require__(24);
+        var _jsonStableStringify = __webpack_require__(27);
         var _jsonStableStringify2 = _interopRequireDefault(_jsonStableStringify);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
@@ -119,6 +108,15 @@
                     }
                 }
             }, {
+                key: "checkAuthMode",
+                value: function checkAuthMode(targetAuthMode) {
+                    this.checkInitialized();
+                    var options = _state2.default.get("options") || {};
+                    if (options.authMode !== targetAuthMode) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "SDK not configured to authMode " + targetAuthMode);
+                    }
+                }
+            }, {
                 key: "checkLoggingLevel",
                 value: function checkLoggingLevel(targetLoggingLevel) {
                     var loggingLevelValues = {
@@ -134,6 +132,16 @@
                 key: "copyObject",
                 value: function copyObject(value) {
                     return (0, _lodash2.default)(value);
+                }
+            }, {
+                key: "findItem",
+                value: function findItem(array, evaluate) {
+                    for (var index = 0; index < array.length; index++) {
+                        if (evaluate(array[index])) {
+                            return array[index];
+                        }
+                    }
+                    return;
                 }
             }, {
                 key: "findItemIndex",
@@ -217,6 +225,120 @@
             return KidaptiveSdkUtils;
         }();
         exports.default = new KidaptiveSdkUtils();
+    }, function(module, exports) {
+        var g;
+        g = function() {
+            return this;
+        }();
+        try {
+            g = g || Function("return this")() || (1, eval)("this");
+        } catch (e) {
+            if (typeof window === "object") g = window;
+        }
+        module.exports = g;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var _state = void 0;
+        var KidaptiveSdkState = function() {
+            function KidaptiveSdkState() {
+                _classCallCheck(this, KidaptiveSdkState);
+                _state = {};
+            }
+            _createClass(KidaptiveSdkState, [ {
+                key: "get",
+                value: function get(property) {
+                    return _utils2.default.copyObject(_state[property]);
+                }
+            }, {
+                key: "set",
+                value: function set(property, value) {
+                    _state[property] = _utils2.default.copyObject(value);
+                }
+            }, {
+                key: "clear",
+                value: function clear() {
+                    _state = {};
+                }
+            } ]);
+            return KidaptiveSdkState;
+        }();
+        exports.default = new KidaptiveSdkState();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkError = function KidaptiveSdkError(type, message) {
+            _classCallCheck(this, KidaptiveSdkError);
+            return new Error("KidaptiveError (" + type + ") " + message);
+        };
+        KidaptiveSdkError.ERROR_CODES = {
+            GENERIC_ERROR: "GENERIC_ERROR",
+            INVALID_PARAMETER: "INVALID_PARAMETER",
+            ILLEGAL_STATE: "ILLEGAL_STATE",
+            API_KEY_ERROR: "API_KEY_ERROR",
+            WEB_API_ERROR: "WEB_API_ERROR"
+        };
+        exports.default = KidaptiveSdkError;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        exports.default = {
+            DEFAULT: {
+                AUTO_FLUSH_INTERVAL: 6e4,
+                LOGGING_LEVEL: "all",
+                TIER: 1,
+                AUTH_MODE: "client"
+            },
+            ENDPOINT: {
+                INGESTION: "/ingestion",
+                CLIENT_SESSION: "/learner/client-session",
+                LOGOUT: "/user/logout"
+            },
+            HOST: {
+                PROD: "https://service.kidaptive.com/v3",
+                DEV: "https://develop.kidaptive.com/v3"
+            },
+            USER_ENDPOINTS: [ "INGESTION", "LOGOUT" ]
+        };
     }, function(module, exports, __webpack_require__) {
         (function(process, setImmediate) {
             (function(definition) {
@@ -1402,7 +1524,7 @@
                 var qEndingLine = captureLine();
                 return Q;
             });
-        }).call(this, __webpack_require__(6), __webpack_require__(17).setImmediate);
+        }).call(this, __webpack_require__(7), __webpack_require__(20).setImmediate);
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -1424,8 +1546,10 @@
                 return Constructor;
             };
         }();
-        var _utils = __webpack_require__(1);
+        var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(5);
+        var _q2 = _interopRequireDefault(_q);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
                 default: obj
@@ -1436,73 +1560,37 @@
                 throw new TypeError("Cannot call a class as a function");
             }
         }
-        var _state = void 0;
-        var KidaptiveSdkState = function() {
-            function KidaptiveSdkState() {
-                _classCallCheck(this, KidaptiveSdkState);
-                _state = {};
+        var KidaptiveSdkOperationManager = function() {
+            function KidaptiveSdkOperationManager() {
+                _classCallCheck(this, KidaptiveSdkOperationManager);
+                this.executing = false;
+                this.operationQueue = (0, _q2.default)(true);
             }
-            _createClass(KidaptiveSdkState, [ {
-                key: "get",
-                value: function get(property) {
-                    return _utils2.default.copyObject(_state[property]);
-                }
-            }, {
-                key: "set",
-                value: function set(property, value) {
-                    _state[property] = _utils2.default.copyObject(value);
-                }
-            }, {
-                key: "clear",
-                value: function clear() {
-                    _state = {};
+            _createClass(KidaptiveSdkOperationManager, [ {
+                key: "addToQueue",
+                value: function addToQueue(action) {
+                    var _this = this;
+                    if (this.executing) {
+                        return _q2.default.fcall(action);
+                    }
+                    var actionPromise = this.operationQueue.then(function() {
+                        _this.executing = true;
+                        return _q2.default.fcall(action);
+                    });
+                    this.operationQueue = actionPromise.then(function() {
+                        _this.executing = false;
+                    }, function(error) {
+                        _this.executing = false;
+                        if (_utils2.default.checkLoggingLevel("all") && console && console.error) {
+                            console.error(error);
+                        }
+                    });
+                    return actionPromise;
                 }
             } ]);
-            return KidaptiveSdkState;
+            return KidaptiveSdkOperationManager;
         }();
-        exports.default = new KidaptiveSdkState();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkError = function KidaptiveSdkError(type, message) {
-            _classCallCheck(this, KidaptiveSdkError);
-            return new Error("KidaptiveError (" + type + ") " + message);
-        };
-        KidaptiveSdkError.ERROR_CODES = {
-            GENERIC_ERROR: "GENERIC_ERROR",
-            INVALID_PARAMETER: "INVALID_PARAMETER",
-            ILLEGAL_STATE: "ILLEGAL_STATE",
-            API_KEY_ERROR: "API_KEY_ERROR",
-            WEB_API_ERROR: "WEB_API_ERROR"
-        };
-        exports.default = KidaptiveSdkError;
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        exports.default = {
-            DEFAULT: {
-                AUTO_FLUSH_INTERVAL: 6e4,
-                LOGGING_LEVEL: "all",
-                TIER: 1
-            },
-            ENDPOINT: {
-                INGESTION: "/ingestion"
-            },
-            HOST: {
-                PROD: "https://service.kidaptive.com/v3",
-                DEV: "https://develop.kidaptive.com/v3"
-            },
-            USER_ENDPOINTS: [ "INGESTION" ]
-        };
+        exports.default = new KidaptiveSdkOperationManager();
     }, function(module, exports) {
         var process = module.exports = {};
         var cachedSetTimeout;
@@ -1659,61 +1747,6 @@
         process.umask = function() {
             return 0;
         };
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
-        var _utils = __webpack_require__(1);
-        var _utils2 = _interopRequireDefault(_utils);
-        var _q = __webpack_require__(2);
-        var _q2 = _interopRequireDefault(_q);
-        function _interopRequireDefault(obj) {
-            return obj && obj.__esModule ? obj : {
-                default: obj
-            };
-        }
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkOperationManager = function() {
-            function KidaptiveSdkOperationManager() {
-                _classCallCheck(this, KidaptiveSdkOperationManager);
-                this.operationQueue = (0, _q2.default)(true);
-            }
-            _createClass(KidaptiveSdkOperationManager, [ {
-                key: "addToQueue",
-                value: function addToQueue(action) {
-                    var actionPromise = this.operationQueue.then(action);
-                    this.operationQueue = actionPromise.then(function() {}, function(error) {
-                        if (_utils2.default.checkLoggingLevel("all") && console && console.error) {
-                            console.error(error);
-                        }
-                    });
-                    return actionPromise;
-                }
-            } ]);
-            return KidaptiveSdkOperationManager;
-        }();
-        exports.default = new KidaptiveSdkOperationManager();
     }, function(module, exports) {
         function isObject(obj) {
             return null != obj && "object" == typeof obj;
@@ -1741,6 +1774,589 @@
             }
             return module;
         };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(3);
+        var _error2 = _interopRequireDefault(_error);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _base = __webpack_require__(23);
+        var _base2 = _interopRequireDefault(_base);
+        var _jsSha = __webpack_require__(22);
+        var _jsSha2 = _interopRequireDefault(_jsSha);
+        var _q = __webpack_require__(5);
+        var _q2 = _interopRequireDefault(_q);
+        var _superagentQ = __webpack_require__(18);
+        var _superagentQ2 = _interopRequireDefault(_superagentQ);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkHttpClient = function() {
+            function KidaptiveSdkHttpClient() {
+                _classCallCheck(this, KidaptiveSdkHttpClient);
+            }
+            _createClass(KidaptiveSdkHttpClient, [ {
+                key: "request",
+                value: function request(method, endpoint, data) {
+                    var _this = this;
+                    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+                    return _q2.default.fcall(function() {
+                        var settings = _this.getRequestSettings(method, endpoint, data);
+                        var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
+                        request.withCredentials();
+                        if (settings.method === "POST") {
+                            request.send(settings.data);
+                        } else {
+                            request.query(settings.data);
+                        }
+                        if (settings.contentType) {
+                            request.set("Content-Type", settings.contentType);
+                        }
+                        request.set("api-key", settings.apiKey);
+                        return request.end().then(function(result) {
+                            return result.body;
+                        }, function(error) {
+                            var parseError = error.parse && "Cannot parse response" || "";
+                            var status = error && (error.status || error.statusCode);
+                            var errorMessage = error.response && error.response.text || parseError;
+                            if (status === 400) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorMessage);
+                            } else if (status === 401) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.API_KEY_ERROR, errorMessage);
+                            } else if (status && (status < 200 || status >= 300)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.WEB_API_ERROR, errorMessage);
+                            } else {
+                                throw new _error2.default(_error2.default.ERROR_CODES.GENERIC_ERROR, "HTTP Client Error" + (errorMessage ? ": " + errorMessage : ""));
+                            }
+                        });
+                    });
+                }
+            }, {
+                key: "getCacheKey",
+                value: function getCacheKey(settings) {
+                    return _base2.default.encode(String.fromCharCode.apply(undefined, _jsSha2.default.array(_utils2.default.toJson(settings)))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? ".alpUserData" : ".alpAppData");
+                }
+            }, {
+                key: "getRequestSettings",
+                value: function getRequestSettings(method, endpoint, data) {
+                    var apiKey = _state2.default.get("apiKey");
+                    var user = _state2.default.get("user");
+                    if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey) {
+                        apiKey = user.apiKey;
+                    }
+                    var settings = {
+                        method: method,
+                        host: KidaptiveSdkHttpClient.getHost(),
+                        apiKey: apiKey,
+                        endpoint: endpoint,
+                        data: data
+                    };
+                    if (method === "POST") {
+                        settings.contentType = "application/json";
+                    }
+                    return settings;
+                }
+            } ], [ {
+                key: "getHost",
+                value: function getHost() {
+                    var options = _state2.default.get("options") || {};
+                    if (options.environment === "prod") {
+                        return _constants2.default.HOST.PROD;
+                    }
+                    if (options.environment === "dev") {
+                        return _constants2.default.HOST.DEV;
+                    }
+                    if (options.environment === "custom") {
+                        return options.baseUrl;
+                    }
+                }
+            }, {
+                key: "isUserEndpoint",
+                value: function isUserEndpoint(endpoint) {
+                    return _utils2.default.findItemIndex(_constants2.default.USER_ENDPOINTS, function(item) {
+                        return _constants2.default.ENDPOINT[item] === endpoint;
+                    }) !== -1;
+                }
+            } ]);
+            return KidaptiveSdkHttpClient;
+        }();
+        exports.default = new KidaptiveSdkHttpClient();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(3);
+        var _error2 = _interopRequireDefault(_error);
+        var _httpClient = __webpack_require__(10);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _operationManager = __webpack_require__(6);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(5);
+        var _q2 = _interopRequireDefault(_q);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var _autoFlushTimeout = null;
+        var _eventQueue = [];
+        var KidaptiveSdkEventManager = function() {
+            function KidaptiveSdkEventManager() {
+                _classCallCheck(this, KidaptiveSdkEventManager);
+            }
+            _createClass(KidaptiveSdkEventManager, [ {
+                key: "reportSimpleEvent",
+                value: function reportSimpleEvent(eventName, eventFields) {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        if (eventName == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName is required");
+                        }
+                        if (!_utils2.default.isString(eventName)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName must be a string");
+                        }
+                        eventFields = eventFields == null ? {} : eventFields;
+                        if (!_utils2.default.isObject(eventFields)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventFields must be an object");
+                        }
+                        eventFields = _utils2.default.copyObject(eventFields);
+                        Object.keys(eventFields).forEach(function(key) {
+                            var value = eventFields[key];
+                            if (value !== null && !_utils2.default.isBoolean(value) && !_utils2.default.isNumber(value) && !_utils2.default.isString(value)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventField values must be a boolean, null, number, or string");
+                            }
+                            var newValue = value === null ? null : value.toString();
+                            if (_utils2.default.isNumber(value) && newValue.indexOf("e") !== -1) {
+                                if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                    console.log("Warning: Numeric value with large number of significant digits was converted to scientific notation.");
+                                }
+                            }
+                            eventFields[key] = newValue;
+                        });
+                        var event = {
+                            name: eventName,
+                            additionalFields: _utils2.default.copyObject(eventFields)
+                        };
+                        KidaptiveSdkEventManager.addToEventQueue(event);
+                    });
+                }
+            }, {
+                key: "reportRawEvent",
+                value: function reportRawEvent(rawEvent) {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        rawEvent = _utils2.default.copyObject(rawEvent);
+                        if (rawEvent == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent is required");
+                        }
+                        if (!_utils2.default.isString(rawEvent)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent must be a string");
+                        }
+                        KidaptiveSdkEventManager.addToEventQueue(rawEvent);
+                    });
+                }
+            }, {
+                key: "flushEventQueue",
+                value: function flushEventQueue() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var eventQueue = KidaptiveSdkEventManager.getEventQueue();
+                        if (eventQueue.length) {
+                            var requests = [];
+                            eventQueue.forEach(function(event) {
+                                requests.push(_httpClient2.default.request("POST", _constants2.default.ENDPOINT.INGESTION, event, {
+                                    noCache: true
+                                }));
+                            });
+                            eventQueue = [];
+                            KidaptiveSdkEventManager.setEventQueue(eventQueue);
+                            return _q2.default.allSettled(requests);
+                        } else {
+                            return _q2.default.fcall(function() {
+                                return [];
+                            });
+                        }
+                    });
+                }
+            }, {
+                key: "startAutoFlush",
+                value: function startAutoFlush() {
+                    var _this = this;
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        clearTimeout(_autoFlushTimeout);
+                        var options = _state2.default.get("options") || {};
+                        if (options.autoFlushInterval) {
+                            _autoFlushTimeout = setTimeout(function() {
+                                _this.flushEventQueue().then(function(results) {
+                                    var options = _state2.default.get("options") || {};
+                                    if (options.autoFlushCallback) {
+                                        options.autoFlushCallback.forEach(function(callback) {
+                                            callback(results);
+                                        });
+                                    }
+                                    _this.startAutoFlush();
+                                });
+                            }, options.autoFlushInterval);
+                        } else {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: ALP SDK autoFlushInterval is configured to 0. Auto flush is disabled.");
+                            }
+                        }
+                    });
+                }
+            }, {
+                key: "stopAutoFlush",
+                value: function stopAutoFlush() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        clearTimeout(_autoFlushTimeout);
+                        _autoFlushTimeout = null;
+                    });
+                }
+            } ], [ {
+                key: "addToEventQueue",
+                value: function addToEventQueue(event) {
+                    var options = _state2.default.get("options") || {};
+                    if (options.authMode === "server" && !_state2.default.get("user")) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication");
+                    }
+                    var appInfo = {
+                        uri: options.appUri,
+                        version: options.version,
+                        build: options.build
+                    };
+                    var deviceInfo = {
+                        deviceType: window && window.navigator && window.navigator.userAgent,
+                        language: window && window.navigator && window.navigator.language
+                    };
+                    var user = _state2.default.get("user");
+                    var learner = _state2.default.get("learner");
+                    var learnerInfo = {
+                        userId: user && user.id,
+                        learnerId: learner && learner.id
+                    };
+                    var eventQueue = KidaptiveSdkEventManager.getEventQueue();
+                    var itemIndex = _utils2.default.findItemIndex(eventQueue, function(item) {
+                        return item.appInfo.uri === appInfo.uri && item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language && item.learnerInfo.userId === learnerInfo.userId && item.learnerInfo.learnerId === learnerInfo.learnerId;
+                    });
+                    if (itemIndex !== -1) {
+                        eventQueue[itemIndex].events.push(event);
+                    } else {
+                        eventQueue.push({
+                            learnerInfo: learnerInfo,
+                            appInfo: appInfo,
+                            deviceInfo: deviceInfo,
+                            events: [ event ]
+                        });
+                    }
+                    KidaptiveSdkEventManager.setEventQueue(eventQueue);
+                }
+            }, {
+                key: "getEventQueue",
+                value: function getEventQueue() {
+                    var result = void 0;
+                    try {
+                        result = _utils2.default.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
+                    } catch (e) {
+                        result = _utils2.default.copyObject(_eventQueue);
+                    }
+                    if (!(result instanceof Array)) {
+                        result = [];
+                    }
+                    return result;
+                }
+            }, {
+                key: "setEventQueue",
+                value: function setEventQueue(eventQueue) {
+                    eventQueue = _utils2.default.copyObject(eventQueue);
+                    _eventQueue = eventQueue;
+                    _utils2.default.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
+                }
+            }, {
+                key: "getEventQueueCacheKey",
+                value: function getEventQueueCacheKey() {
+                    var settings = _httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION);
+                    return _httpClient2.default.getCacheKey(settings).replace(/[.].*/, ".alpEventData");
+                }
+            } ]);
+            return KidaptiveSdkEventManager;
+        }();
+        exports.default = new KidaptiveSdkEventManager();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(3);
+        var _error2 = _interopRequireDefault(_error);
+        var _eventManager = __webpack_require__(11);
+        var _eventManager2 = _interopRequireDefault(_eventManager);
+        var _httpClient = __webpack_require__(10);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _operationManager = __webpack_require__(6);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkLearnerManager = function() {
+            function KidaptiveSdkLearnerManager() {
+                _classCallCheck(this, KidaptiveSdkLearnerManager);
+            }
+            _createClass(KidaptiveSdkLearnerManager, [ {
+                key: "setUser",
+                value: function setUser() {
+                    var userObject = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var options = _state2.default.get("options") || {};
+                        if (options.authMode === "client") {
+                            if (userObject.providerUserId == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId is required");
+                            }
+                            if (!_utils2.default.isString(userObject.providerUserId)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId must be a string");
+                            }
+                            if (userObject.apiKey != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser apiKey not supported when the SDK authMode is server");
+                            }
+                            if (userObject.providerId != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser providerId not supported when the SDK authMode is server");
+                            }
+                            if (userObject.id != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser id not supported when the SDK authMode is server");
+                            }
+                        }
+                        if (options.authMode === "server") {
+                            var commonParamError = "Invalid object passed to setUser. Please ensure SDK authmode is correct and the object being passed to setUser is correct.";
+                            if (userObject.apiKey == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey is required");
+                            }
+                            if (!_utils2.default.isString(userObject.apiKey)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey must be a string");
+                            }
+                            if (userObject.id == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID is required");
+                            }
+                            if (!_utils2.default.isNumber(userObject.id)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID must be a number");
+                            }
+                            if (!_utils2.default.isArray(userObject.learners)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learners must be an array");
+                            }
+                            userObject.learners.forEach(function(learner) {
+                                if (!_utils2.default.isObject(learner)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner must be an object");
+                                }
+                                if (learner.id == null) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID is required");
+                                }
+                                if (!_utils2.default.isNumber(learner.id)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID must be a number");
+                                }
+                                if (learner.providerId == null) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID is required");
+                                }
+                                if (!_utils2.default.isString(learner.providerId)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID must be a string");
+                                }
+                            });
+                        }
+                        return _eventManager2.default.flushEventQueue().then(function() {
+                            if (options.authMode === "client") {
+                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
+                                    providerUserId: userObject.providerUserId
+                                }, {
+                                    noCache: true
+                                }).then(function(userObjectResponse) {
+                                    _state2.default.set("user", userObjectResponse);
+                                    _state2.default.set("learner", undefined);
+                                });
+                            }
+                            if (options.authMode === "server") {
+                                _state2.default.set("user", userObject);
+                                _state2.default.set("learner", undefined);
+                            }
+                        });
+                    });
+                }
+            }, {
+                key: "selectActiveLearner",
+                value: function selectActiveLearner(providerLearnerId) {
+                    var _this = this;
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var options = _state2.default.get("options") || {};
+                        var user = _state2.default.get("user");
+                        if (providerLearnerId == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId is required");
+                        }
+                        if (!_utils2.default.isString(providerLearnerId)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId must be a string");
+                        }
+                        if (options.authMode === "client") {
+                            return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
+                                providerLearnerId: providerLearnerId,
+                                providerUserId: user && user.providerId
+                            }, {
+                                noCache: true
+                            }).then(function(userObjectResponse) {
+                                _state2.default.set("user", userObjectResponse);
+                                _state2.default.set("learner", _utils2.default.findItem(_this.getLearnerList(), function(learner) {
+                                    return learner.providerId === providerLearnerId;
+                                }));
+                            });
+                        }
+                        if (options.authMode === "server") {
+                            if (!user) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before setting an active learner when using server authentication");
+                            }
+                            var activeLearner = _utils2.default.findItem(_this.getLearnerList(), function(learner) {
+                                return learner.providerId === providerLearnerId;
+                            });
+                            if (!activeLearner) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "A learner with that providerLearnerId does not exist");
+                            }
+                            _state2.default.set("learner", activeLearner);
+                        }
+                    });
+                }
+            }, {
+                key: "clearActiveLearner",
+                value: function clearActiveLearner() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        _state2.default.set("learner", undefined);
+                    });
+                }
+            }, {
+                key: "logout",
+                value: function logout() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        return _eventManager2.default.flushEventQueue().then(function() {
+                            var options = _state2.default.get("options") || {};
+                            if (options.authMode === "server" && _state2.default.get("user")) {
+                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.LOGOUT, undefined, {
+                                    noCache: true
+                                }).then(function() {}, function() {});
+                            }
+                        }).then(function() {
+                            _state2.default.set("learner", undefined);
+                            _state2.default.set("user", undefined);
+                        });
+                    });
+                }
+            }, {
+                key: "getUser",
+                value: function getUser() {
+                    _utils2.default.checkTier(1);
+                    return _state2.default.get("user") || undefined;
+                }
+            }, {
+                key: "getActiveLearner",
+                value: function getActiveLearner() {
+                    _utils2.default.checkTier(1);
+                    return _state2.default.get("learner") || undefined;
+                }
+            }, {
+                key: "getLearnerList",
+                value: function getLearnerList() {
+                    _utils2.default.checkTier(1);
+                    var userObject = _state2.default.get("user") || {};
+                    return _utils2.default.isArray(userObject.learners) ? userObject.learners : [];
+                }
+            } ]);
+            return KidaptiveSdkLearnerManager;
+        }();
+        exports.default = new KidaptiveSdkLearnerManager();
     }, function(module, exports) {
         function request(RequestConstructor, method, url) {
             if ("function" == typeof url) {
@@ -1878,9 +2494,9 @@
             return !!this.listeners(event).length;
         };
     }, function(module, exports, __webpack_require__) {
-        var Emitter = __webpack_require__(13);
-        var reduce = __webpack_require__(12);
-        var requestBase = __webpack_require__(11);
+        var Emitter = __webpack_require__(16);
+        var reduce = __webpack_require__(15);
+        var requestBase = __webpack_require__(14);
         var isObject = __webpack_require__(8);
         var root;
         if (typeof window !== "undefined") {
@@ -1903,7 +2519,7 @@
                 return false;
             }
         }
-        var request = module.exports = __webpack_require__(10).bind(null, Request);
+        var request = module.exports = __webpack_require__(13).bind(null, Request);
         request.getXHR = function() {
             if (root.XMLHttpRequest && (!root.location || "file:" != root.location.protocol || !root.ActiveXObject)) {
                 return new XMLHttpRequest();
@@ -2328,8 +2944,8 @@
             return req;
         };
     }, function(module, exports, __webpack_require__) {
-        var Q = __webpack_require__(2);
-        var superagent = __webpack_require__(14);
+        var Q = __webpack_require__(5);
+        var superagent = __webpack_require__(17);
         function wrap(item) {
             return function() {
                 var agent = item.apply(superagent, arguments);
@@ -2506,7 +3122,7 @@
                 attachTo.setImmediate = setImmediate;
                 attachTo.clearImmediate = clearImmediate;
             })(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self);
-        }).call(this, __webpack_require__(0), __webpack_require__(6));
+        }).call(this, __webpack_require__(1), __webpack_require__(7));
     }, function(module, exports, __webpack_require__) {
         (function(global) {
             var apply = Function.prototype.apply;
@@ -2546,10 +3162,10 @@
                     }, msecs);
                 }
             };
-            __webpack_require__(16);
+            __webpack_require__(19);
             exports.setImmediate = typeof self !== "undefined" && self.setImmediate || typeof global !== "undefined" && global.setImmediate || this && this.setImmediate;
             exports.clearImmediate = typeof self !== "undefined" && self.clearImmediate || typeof global !== "undefined" && global.clearImmediate || this && this.clearImmediate;
-        }).call(this, __webpack_require__(0));
+        }).call(this, __webpack_require__(1));
     }, function(module, exports) {
         (function(__webpack_amd_options__) {
             module.exports = __webpack_amd_options__;
@@ -2573,7 +3189,7 @@
                     root = self;
                 }
                 var COMMON_JS = !root.JS_SHA256_NO_COMMON_JS && typeof module === "object" && module.exports;
-                var AMD = "function" === "function" && __webpack_require__(18);
+                var AMD = "function" === "function" && __webpack_require__(21);
                 var ARRAY_BUFFER = !root.JS_SHA256_NO_ARRAY_BUFFER && typeof ArrayBuffer !== "undefined";
                 var HEX_CHARS = "0123456789abcdef".split("");
                 var EXTRA = [ -2147483648, 8388608, 32768, 128 ];
@@ -2966,7 +3582,7 @@
                     }
                 }
             })();
-        }).call(this, __webpack_require__(6), __webpack_require__(0));
+        }).call(this, __webpack_require__(7), __webpack_require__(1));
     }, function(module, exports, __webpack_require__) {
         (function(module, global) {
             var __WEBPACK_AMD_DEFINE_RESULT__;
@@ -3056,7 +3672,7 @@
                     var key;
                 }
             })(this);
-        }).call(this, __webpack_require__(9)(module), __webpack_require__(0));
+        }).call(this, __webpack_require__(9)(module), __webpack_require__(1));
     }, function(module, exports) {
         var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, gap, indent, meta = {
             "\b": "\\b",
@@ -3366,10 +3982,10 @@
             }, "") : result;
         };
     }, function(module, exports, __webpack_require__) {
-        exports.parse = __webpack_require__(22);
-        exports.stringify = __webpack_require__(21);
+        exports.parse = __webpack_require__(25);
+        exports.stringify = __webpack_require__(24);
     }, function(module, exports, __webpack_require__) {
-        var json = typeof JSON !== "undefined" ? JSON : __webpack_require__(23);
+        var json = typeof JSON !== "undefined" ? JSON : __webpack_require__(26);
         module.exports = function(obj, opts) {
             if (!opts) opts = {};
             if (typeof opts === "function") opts = {
@@ -4031,7 +4647,7 @@
                 return false;
             }
             module.exports = cloneDeep;
-        }).call(this, __webpack_require__(0), __webpack_require__(9)(module));
+        }).call(this, __webpack_require__(1), __webpack_require__(9)(module));
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -4053,369 +4669,19 @@
                 return Constructor;
             };
         }();
-        var _constants = __webpack_require__(5);
+        var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(4);
+        var _error = __webpack_require__(3);
         var _error2 = _interopRequireDefault(_error);
-        var _state = __webpack_require__(3);
-        var _state2 = _interopRequireDefault(_state);
-        var _utils = __webpack_require__(1);
-        var _utils2 = _interopRequireDefault(_utils);
-        var _base = __webpack_require__(20);
-        var _base2 = _interopRequireDefault(_base);
-        var _jsSha = __webpack_require__(19);
-        var _jsSha2 = _interopRequireDefault(_jsSha);
-        var _q = __webpack_require__(2);
-        var _q2 = _interopRequireDefault(_q);
-        var _superagentQ = __webpack_require__(15);
-        var _superagentQ2 = _interopRequireDefault(_superagentQ);
-        function _interopRequireDefault(obj) {
-            return obj && obj.__esModule ? obj : {
-                default: obj
-            };
-        }
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkHttpClient = function() {
-            function KidaptiveSdkHttpClient() {
-                _classCallCheck(this, KidaptiveSdkHttpClient);
-            }
-            _createClass(KidaptiveSdkHttpClient, [ {
-                key: "request",
-                value: function request(method, endpoint, data) {
-                    var _this = this;
-                    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-                    return _q2.default.fcall(function() {
-                        var settings = _this.getRequestSettings(method, endpoint, data);
-                        var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
-                        request.withCredentials();
-                        if (settings.method === "POST") {
-                            request.send(settings.data);
-                        } else {
-                            request.query(settings.data);
-                        }
-                        if (settings.contentType) {
-                            request.set("Content-Type", settings.contentType);
-                        }
-                        request.set("api-key", settings.apiKey);
-                        return request.end().then(function(result) {
-                            return result.body;
-                        }, function(error) {
-                            var parseError = error.parse && "Cannot parse response" || "";
-                            var status = error && (error.status || error.statusCode);
-                            var errorMessage = error.response && error.response.text || parseError;
-                            if (status === 400) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorMessage);
-                            } else if (status === 401) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.API_KEY_ERROR, errorMessage);
-                            } else if (status && (status < 200 || status >= 300)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.WEB_API_ERROR, errorMessage);
-                            } else {
-                                throw new _error2.default(_error2.default.ERROR_CODES.GENERIC_ERROR, "HTTP Client Error" + (errorMessage ? ": " + errorMessage : ""));
-                            }
-                        });
-                    });
-                }
-            }, {
-                key: "getCacheKey",
-                value: function getCacheKey(settings) {
-                    return _base2.default.encode(String.fromCharCode.apply(undefined, _jsSha2.default.array(_utils2.default.toJson(settings)))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? ".alpUserData" : ".alpAppData");
-                }
-            }, {
-                key: "getRequestSettings",
-                value: function getRequestSettings(method, endpoint, data) {
-                    var settings = {
-                        method: method,
-                        host: KidaptiveSdkHttpClient.getHost(),
-                        apiKey: _state2.default.get("apiKey"),
-                        endpoint: endpoint,
-                        data: data
-                    };
-                    if (method === "POST") {
-                        settings.contentType = "application/json";
-                    }
-                    return settings;
-                }
-            } ], [ {
-                key: "getHost",
-                value: function getHost() {
-                    var options = _state2.default.get("options") || {};
-                    if (options.environment === "prod") {
-                        return _constants2.default.HOST.PROD;
-                    }
-                    if (options.environment === "dev") {
-                        return _constants2.default.HOST.DEV;
-                    }
-                    if (options.environment === "custom") {
-                        return options.baseUrl;
-                    }
-                }
-            }, {
-                key: "isUserEndpoint",
-                value: function isUserEndpoint(endpoint) {
-                    return _utils2.default.findItemIndex(_constants2.default.USER_ENDPOINTS, function(item) {
-                        return _constants2.default.ENDPOINT[item] === endpoint;
-                    }) !== -1;
-                }
-            } ]);
-            return KidaptiveSdkHttpClient;
-        }();
-        exports.default = new KidaptiveSdkHttpClient();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
-        var _constants = __webpack_require__(5);
-        var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(4);
-        var _error2 = _interopRequireDefault(_error);
-        var _httpClient = __webpack_require__(26);
-        var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _operationManager = __webpack_require__(7);
-        var _operationManager2 = _interopRequireDefault(_operationManager);
-        var _state = __webpack_require__(3);
-        var _state2 = _interopRequireDefault(_state);
-        var _utils = __webpack_require__(1);
-        var _utils2 = _interopRequireDefault(_utils);
-        var _q = __webpack_require__(2);
-        var _q2 = _interopRequireDefault(_q);
-        function _interopRequireDefault(obj) {
-            return obj && obj.__esModule ? obj : {
-                default: obj
-            };
-        }
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var _autoFlushTimeout = null;
-        var _eventQueue = [];
-        var KidaptiveSdkEventManager = function() {
-            function KidaptiveSdkEventManager() {
-                _classCallCheck(this, KidaptiveSdkEventManager);
-            }
-            _createClass(KidaptiveSdkEventManager, [ {
-                key: "reportSimpleEvent",
-                value: function reportSimpleEvent(eventName, eventFields) {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        if (eventName == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName is required");
-                        }
-                        if (!_utils2.default.isString(eventName)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName must be a string");
-                        }
-                        eventFields = eventFields == null ? {} : eventFields;
-                        if (!_utils2.default.isObject(eventFields)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventFields must be an object");
-                        }
-                        eventFields = _utils2.default.copyObject(eventFields);
-                        Object.keys(eventFields).forEach(function(key) {
-                            var value = eventFields[key];
-                            if (value !== null && !_utils2.default.isBoolean(value) && !_utils2.default.isNumber(value) && !_utils2.default.isString(value)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventField values must be a boolean, null, number, or string");
-                            }
-                            var newValue = value === null ? null : value.toString();
-                            if (_utils2.default.isNumber(value) && newValue.indexOf("e") !== -1) {
-                                if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                                    console.log("Warning: Numeric value with large number of significant digits was converted to scientific notation.");
-                                }
-                            }
-                            eventFields[key] = newValue;
-                        });
-                        var event = {
-                            name: eventName,
-                            additionalFields: _utils2.default.copyObject(eventFields)
-                        };
-                        KidaptiveSdkEventManager.addToEventQueue(event);
-                    });
-                }
-            }, {
-                key: "reportRawEvent",
-                value: function reportRawEvent(rawEvent) {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        rawEvent = _utils2.default.copyObject(rawEvent);
-                        if (rawEvent == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent is required");
-                        }
-                        if (!_utils2.default.isString(rawEvent)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent must be a string");
-                        }
-                        KidaptiveSdkEventManager.addToEventQueue(rawEvent);
-                    });
-                }
-            }, {
-                key: "flushEventQueue",
-                value: function flushEventQueue() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        var eventQueue = KidaptiveSdkEventManager.getEventQueue();
-                        if (eventQueue.length) {
-                            var requests = [];
-                            eventQueue.forEach(function(event) {
-                                requests.push(_httpClient2.default.request("POST", _constants2.default.ENDPOINT.INGESTION, event, {
-                                    noCache: true
-                                }));
-                            });
-                            eventQueue = [];
-                            KidaptiveSdkEventManager.setEventQueue(eventQueue);
-                            return _q2.default.allSettled(requests);
-                        } else {
-                            return _q2.default.fcall(function() {
-                                return [];
-                            });
-                        }
-                    });
-                }
-            }, {
-                key: "startAutoFlush",
-                value: function startAutoFlush() {
-                    var _this = this;
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        clearTimeout(_autoFlushTimeout);
-                        var options = _state2.default.get("options") || {};
-                        if (options.autoFlushInterval) {
-                            _autoFlushTimeout = setTimeout(function() {
-                                _this.flushEventQueue().then(function(results) {
-                                    var options = _state2.default.get("options") || {};
-                                    if (options.autoFlushCallback) {
-                                        options.autoFlushCallback.forEach(function(callback) {
-                                            callback(results);
-                                        });
-                                    }
-                                    _this.startAutoFlush();
-                                });
-                            }, options.autoFlushInterval);
-                        } else {
-                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                                console.log("Warning: ALP SDK autoFlushInterval is configured to 0. Auto flush is disabled.");
-                            }
-                        }
-                    });
-                }
-            }, {
-                key: "stopAutoFlush",
-                value: function stopAutoFlush() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        clearTimeout(_autoFlushTimeout);
-                        _autoFlushTimeout = null;
-                    });
-                }
-            } ], [ {
-                key: "addToEventQueue",
-                value: function addToEventQueue(event) {
-                    var options = _state2.default.get("options") || {};
-                    var appInfo = {
-                        uri: options.appUri,
-                        version: options.version,
-                        build: options.build
-                    };
-                    var deviceInfo = {
-                        deviceType: window && window.navigator && window.navigator.userAgent,
-                        language: window && window.navigator && window.navigator.language
-                    };
-                    var eventQueue = KidaptiveSdkEventManager.getEventQueue();
-                    var itemIndex = _utils2.default.findItemIndex(eventQueue, function(item) {
-                        return item.appInfo.uri === appInfo.uri && item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language;
-                    });
-                    if (itemIndex !== -1) {
-                        eventQueue[itemIndex].events.push(event);
-                    } else {
-                        eventQueue.push({
-                            appInfo: appInfo,
-                            deviceInfo: deviceInfo,
-                            events: [ event ]
-                        });
-                    }
-                    KidaptiveSdkEventManager.setEventQueue(eventQueue);
-                }
-            }, {
-                key: "getEventQueue",
-                value: function getEventQueue() {
-                    var result = void 0;
-                    try {
-                        result = _utils2.default.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
-                    } catch (e) {
-                        result = _utils2.default.copyObject(_eventQueue);
-                    }
-                    if (!(result instanceof Array)) {
-                        result = [];
-                    }
-                    return result;
-                }
-            }, {
-                key: "setEventQueue",
-                value: function setEventQueue(eventQueue) {
-                    eventQueue = _utils2.default.copyObject(eventQueue);
-                    _eventQueue = eventQueue;
-                    _utils2.default.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
-                }
-            }, {
-                key: "getEventQueueCacheKey",
-                value: function getEventQueueCacheKey() {
-                    var settings = _httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION);
-                    return _httpClient2.default.getCacheKey(settings).replace(/[.].*/, ".alpEventData");
-                }
-            } ]);
-            return KidaptiveSdkEventManager;
-        }();
-        exports.default = new KidaptiveSdkEventManager();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
-        var _constants = __webpack_require__(5);
-        var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(4);
-        var _error2 = _interopRequireDefault(_error);
-        var _eventManager = __webpack_require__(27);
+        var _eventManager = __webpack_require__(11);
         var _eventManager2 = _interopRequireDefault(_eventManager);
-        var _operationManager = __webpack_require__(7);
+        var _learnerManager = __webpack_require__(12);
+        var _learnerManager2 = _interopRequireDefault(_learnerManager);
+        var _operationManager = __webpack_require__(6);
         var _operationManager2 = _interopRequireDefault(_operationManager);
-        var _state = __webpack_require__(3);
+        var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
-        var _utils = __webpack_require__(1);
+        var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
@@ -4433,6 +4699,7 @@
                 _state2.default.clear();
                 _state2.default.set("initialized", false);
                 this.eventManager = _eventManager2.default;
+                this.learnerManager = _learnerManager2.default;
             }
             _createClass(KidaptiveSdk, [ {
                 key: "init",
@@ -4448,6 +4715,7 @@
                             options.autoFlushCallback = [ options.autoFlushCallback ];
                         }
                         options.tier = options.tier == null ? _constants2.default.DEFAULT.TIER : options.tier;
+                        options.authMode = options.authMode == null ? _constants2.default.DEFAULT.AUTH_MODE : options.authMode;
                         options.autoFlushInterval = options.autoFlushInterval == null ? _constants2.default.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
                         options.loggingLevel = options.loggingLevel == null ? _constants2.default.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
                         if (apiKey == null) {
@@ -4474,10 +4742,16 @@
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "BaseUrl option must be a string");
                         }
                         if (!_utils2.default.isNumber(options.tier)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Tier option must be a string");
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Tier option must be a number");
                         }
                         if ([ 1 ].indexOf(options.tier) === -1) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Tier option is not an accepted value");
+                        }
+                        if (!_utils2.default.isString(options.authMode)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AuthMode option must be a string");
+                        }
+                        if ([ "client", "server" ].indexOf(options.authMode) === -1) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AuthMode option is not an accepted value");
                         }
                         if (options.appUri != null) {
                             if (!_utils2.default.isString(options.appUri)) {
@@ -4495,7 +4769,7 @@
                             }
                         }
                         if (!_utils2.default.isNumber(options.autoFlushInterval)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AutoFlushInterval option must be a string");
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AutoFlushInterval option must be a number");
                         }
                         if (options.autoFlushInterval < 0) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AutoFlushInterval option is not an accepted value");
@@ -4524,7 +4798,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.0.0";
+                    return "1.0.1";
                 }
             }, {
                 key: "destroy",
@@ -4533,13 +4807,13 @@
                         _utils2.default.checkInitialized();
                         if (_state2.default.get("options").tier >= 1) {
                             _eventManager2.default.stopAutoFlush();
-                            _eventManager2.default.flushEventQueue();
+                            return _learnerManager2.default.logout().then(function() {
+                                _state2.default.clear();
+                                _state2.default.set("initialized", false);
+                            });
                         }
-                    }).then(function() {
-                        return _operationManager2.default.addToQueue(function() {
-                            _state2.default.clear();
-                            _state2.default.set("initialized", false);
-                        });
+                        _state2.default.clear();
+                        _state2.default.set("initialized", false);
                     });
                 }
             } ]);
