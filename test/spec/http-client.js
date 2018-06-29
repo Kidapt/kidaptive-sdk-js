@@ -32,9 +32,20 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('API Key Settings are Correct', () => {
       const testApiKey = 'testApiKey';
-      State.set('apiKey', testApiKey)
+      State.set('apiKey', testApiKey);
       Should(HttpClient.getRequestSettings().apiKey).equal(testApiKey);
       State.clear();
+    });
+    it('API Key replaced with User API Key (if defined) on User Endpoints', () => {
+      const testApiKey = 'testApiKey';
+      const userApiKey = 'userApiKey';
+      State.set('apiKey', testApiKey);
+      Should(HttpClient.getRequestSettings().apiKey).equal(testApiKey);
+      Should(HttpClient.getRequestSettings('POST', Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]]).apiKey).equal(testApiKey);
+      State.set('user', {apiKey: userApiKey});
+      Should(HttpClient.getRequestSettings().apiKey).equal(testApiKey);
+      Should(HttpClient.getRequestSettings('POST', Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]]).apiKey).equal(userApiKey);
+      State.clear();      
     });
     it('Dev Settings are Correct', () => {
       State.set('options', {environment: 'dev'});

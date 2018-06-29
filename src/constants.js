@@ -2,11 +2,14 @@ export default {
   DEFAULT: {
     AUTO_FLUSH_INTERVAL: 60000,
     LOGGING_LEVEL: 'all',
-    TIER: 1
+    TIER: 1,
+    AUTH_MODE: 'client'
   },
 
   ENDPOINT: {
-    INGESTION:'/ingestion'
+    INGESTION:'/ingestion',
+    CLIENT_SESSION:'/learner/client-session',
+    LOGOUT:'/user/logout'
   },
 
   HOST: {
@@ -15,6 +18,7 @@ export default {
   },
 
   USER_ENDPOINTS: [
-    'INGESTION'
+    'INGESTION',
+    'LOGOUT'
   ]
 };

@@ -39,6 +39,7 @@ describe('KidaptiveSdk Core Unit Tests', () => {
       options = {
         environment: 'dev',
         tier: 1,
+        authMode: 'client',
         baseUrl: 'http://baseUrl',
         appUri: '/app/uri',
         version: '1.0.0',
@@ -250,6 +251,58 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           return Should(KidaptiveSdk.init(apiKey, options)).rejected();
         }).then(() => { 
           options.tier = 1;
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }); 
+      });
+      it('authMode is optional', () => {
+        options.authMode = undefined
+        return Should(KidaptiveSdk.init(apiKey, options)).resolved().then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }).then(() => { 
+          options.authMode = null;
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }); 
+      });
+      it('authMode must be a string if defined', () => {
+        options.authMode = true;
+        return Should(KidaptiveSdk.init(apiKey, options)).rejected().then(() => { 
+          options.authMode = false;
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = 1;
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = {};
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = [];
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = () => {};
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = 'client';
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }); 
+      });
+      it('authMode must be client or server', () => {
+        options.authMode = '';
+        return Should(KidaptiveSdk.init(apiKey, options)).rejected().then(() => { 
+          options.authMode = 'random value';
+          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
+        }).then(() => { 
+          options.authMode = 'client';
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }).then(() => { 
+          options.authMode = 'server';
           return Should(KidaptiveSdk.init(apiKey, options)).resolved();
         }).then(() => { 
           return Should(KidaptiveSdk.destroy()).resolved();
@@ -540,6 +593,7 @@ describe('KidaptiveSdk Core Unit Tests', () => {
       return Should(KidaptiveSdk.init(apiKey, {environment: 'dev'})).resolved().then(() => {
         const setOptions = State.get('options') || {};
         Should(setOptions.tier).equal(Constants.DEFAULT.TIER);
+        Should(setOptions.authMode).equal(Constants.DEFAULT.AUTH_MODE);
         Should(setOptions.autoFlushInterval).equal(Constants.DEFAULT.AUTO_FLUSH_INTERVAL);
         Should(setOptions.loggingLevel).equal(Constants.DEFAULT.LOGGING_LEVEL);
         return Should(KidaptiveSdk.destroy()).resolved();

@@ -166,6 +166,10 @@ class KidaptiveSdkEventManager {
    */
   static addToEventQueue(event) {
     const options = State.get('options') || {};
+    if (options.authMode === 'server' && !State.get('user')) {
+      throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication');
+    }
+    
     const appInfo = {
       uri: options.appUri,
       version: options.version,
@@ -175,21 +179,29 @@ class KidaptiveSdkEventManager {
       deviceType: window && window.navigator && window.navigator.userAgent,
       language: window && window.navigator && window.navigator.language
     };
+    const user = State.get('user');
+    const learner = State.get('learner');
+    const learnerInfo = {
+      userId: user && user.id,
+      learnerId: learner && learner.id
+    }
 
     let eventQueue = KidaptiveSdkEventManager.getEventQueue();
-    //TODO FUTURE: CHECK USER
     const itemIndex = Utils.findItemIndex(eventQueue, item =>
       item.appInfo.uri === appInfo.uri &&
       item.appInfo.version === appInfo.version &&
       item.appInfo.build === appInfo.build &&
       item.deviceInfo.deviceType === deviceInfo.deviceType &&
-      item.deviceInfo.language === deviceInfo.language
+      item.deviceInfo.language === deviceInfo.language &&
+      item.learnerInfo.userId === learnerInfo.userId &&
+      item.learnerInfo.learnerId === learnerInfo.learnerId
     );
 
     if (itemIndex !== -1) {
       eventQueue[itemIndex].events.push(event);
     } else {
       eventQueue.push({
+        learnerInfo,
         appInfo,
         deviceInfo,
         events: [event]

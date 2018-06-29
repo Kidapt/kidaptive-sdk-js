@@ -9,6 +9,7 @@ import OperationManager from './spec/operation-manager.js';
 import Utils from './spec/utils.js';
 import HttpClient from './spec/http-client.js';
 import EventManager from './spec/event-manager.js';
+import LearnerManager from './spec/learner-manager.js';
 import Core from './spec/core.js';
 import Tier1 from './spec/tier1.js';
 

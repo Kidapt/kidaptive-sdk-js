@@ -1,6 +1,7 @@
 import Constants from './constants';
 import Error from './error';
 import EventManager from './event-manager';
+import LearnerManager from './learner-manager';
 import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
@@ -10,6 +11,7 @@ class KidaptiveSdk {
     State.clear();
     State.set('initialized', false);
     this.eventManager = EventManager;
+    this.learnerManager = LearnerManager;
   }
 
   /**
@@ -41,6 +43,7 @@ class KidaptiveSdk {
 
       //set default options by checking for undefined or null with == null
       options.tier = options.tier == null ? Constants.DEFAULT.TIER : options.tier;
+      options.authMode = options.authMode == null ? Constants.DEFAULT.AUTH_MODE : options.authMode;
       options.autoFlushInterval = options.autoFlushInterval == null ? Constants.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
       options.loggingLevel = options.loggingLevel == null ? Constants.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
 
@@ -75,10 +78,18 @@ class KidaptiveSdk {
 
       //validate tier
       if (!Utils.isNumber(options.tier)) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option must be a string');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option must be a number');
       }
       if ([1].indexOf(options.tier) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option is not an accepted value');
+      }
+
+      //validate authMode
+      if (!Utils.isString(options.authMode)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AuthMode option must be a string');
+      }
+      if (['client', 'server'].indexOf(options.authMode) === -1) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AuthMode option is not an accepted value');
       }
 
       //validate appUri
@@ -104,7 +115,7 @@ class KidaptiveSdk {
 
       //validate autoFlushInterval
       if (!Utils.isNumber(options.autoFlushInterval)) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AutoFlushInterval option must be a string');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AutoFlushInterval option must be a number');
       }
       if (options.autoFlushInterval < 0) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AutoFlushInterval option is not an accepted value');
@@ -157,21 +168,19 @@ class KidaptiveSdk {
   destroy() {
     return OperationManager.addToQueue(() => {
       Utils.checkInitialized();
-
+     
       if (State.get('options').tier >= 1) {
         EventManager.stopAutoFlush();
-        //this will be added to queue ahead of state reset
-        EventManager.flushEventQueue();
+        return LearnerManager.logout().then(() => {
+          State.clear();
+          State.set('initialized', false);
+        });
       }
-    }).then(() => {
-      //resolve destroy promise once state is reset
-      return OperationManager.addToQueue(() => {
-        State.clear();
-        State.set('initialized', false);
-      });
+      
+      State.clear();
+      State.set('initialized', false);
     });
   }
-
 }
 
 export default new KidaptiveSdk();

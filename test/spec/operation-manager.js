@@ -2,6 +2,7 @@
 import Error from '../../src/error';
 import OperationManager from '../../src/operation-manager';
 import Should from 'should';
+import Q from 'q';
 
 describe('KidaptiveSdk Operation Manager Unit Tests',  () => {
   it('Queue Should Resolve', () => {
@@ -58,13 +59,28 @@ describe('KidaptiveSdk Operation Manager Unit Tests',  () => {
     OperationManager.addToQueue(() => {
       testVar.push(1);
       OperationManager.addToQueue(() => {
-        testVar.push(3);
-        Should(testVar).deepEqual([1, 2, 3]);
-      }).then(done).catch(done);
+        testVar.push(2);
+      })
     });
     OperationManager.addToQueue(() => {
-      testVar.push(2);
+      testVar.push(3);
+      Should(testVar).deepEqual([1, 2, 3]);
+    }).then(done).catch(done);;
+  });
+  it('Queue Properly Waits', () =>  {
+    const testVar = [];
+    OperationManager.addToQueue(() => {
+      const deferred = Q.defer();
+      setTimeout(() => {
+        testVar.push(1);
+        deferred.resolve();
+      }, 100);
+      return deferred.promise;
     });
+    return Should(OperationManager.addToQueue(() => {
+      testVar.push(2);
+      Should(testVar).deepEqual([1, 2]);
+    })).resolved();
   });
   it('Queue Complex Chaining', () => {
     const testVar = [];
@@ -74,6 +90,27 @@ describe('KidaptiveSdk Operation Manager Unit Tests',  () => {
         testVar.push(2);
       })
     }).then(() => {
+      return OperationManager.addToQueue(() => {
+        testVar.push(3);
+        Should(testVar).deepEqual([1, 2, 3]);
+      });
+    });
+  });
+  it('Inner Operation Manager Calls Resolve', () => {
+    const testVar = [];
+    return Should(OperationManager.addToQueue(() => {
+      return Should(OperationManager.addToQueue(() => {
+        return true;
+      })).resolvedWith(true);
+    })).resolvedWith(true);
+  });
+  it('Queue Simplified Chaining', () => {
+    const testVar = [];
+    return OperationManager.addToQueue(() => {
+      testVar.push(1);
+      OperationManager.addToQueue(() => {
+        testVar.push(2);
+      })
       return OperationManager.addToQueue(() => {
         testVar.push(3);
         Should(testVar).deepEqual([1, 2, 3]);

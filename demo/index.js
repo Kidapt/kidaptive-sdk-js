@@ -31,12 +31,17 @@ log('SDK Version: ' + KidaptiveSdk.getSdkVersion());
 log('--- KidaptiveSDK initialization started');
 KidaptiveSdk.init(apiKey, options).then(function() {
   log('SUCCESS: Initialization complete');
+  return KidaptiveSdk.learnerManager.selectActiveLearner('providerLearnerId100');
 }, function() {
   error('ERROR: Initialization error!');
+}).then(function() {
+  log('SUCCESS: Learner selected');
+}, function() {
+  error('ERROR: Learner selection error!');
 });
 
 //SETUP EVENTS REPORTERS
-document.getElementById('reportSimpleEvent').addEventListener("click", function() {
+document.getElementById('reportSimpleEvent').addEventListener('click', function() {
   var eventName = 'Click Event';
   var event = {
     time: (new Date()).getTime()
@@ -50,7 +55,7 @@ document.getElementById('reportSimpleEvent').addEventListener("click", function(
   });
 });
 
-document.getElementById('reportRawEvent').addEventListener("click", function() {
+document.getElementById('reportRawEvent').addEventListener('click', function() {
   var rawEvent = 'ClickEvent?time=' + (new Date()).getTime();
   log('--- Report raw event');
   log(rawEvent);
@@ -61,7 +66,7 @@ document.getElementById('reportRawEvent').addEventListener("click", function() {
   });
 });
 
-document.getElementById('flushEventQueue').addEventListener("click", function() {
+document.getElementById('flushEventQueue').addEventListener('click', function() {
   log('--- Manually flush event queue');
   KidaptiveSdk.eventManager.flushEventQueue().then(function(results) {
     log('SUCCESS: Flush event queue complete');

@@ -93,10 +93,15 @@ class KidaptiveSdkHttpClient {
    *   Returns the settings object used to generate a cache key and to submit a request
    */
   getRequestSettings(method, endpoint, data) {
+      let apiKey = State.get('apiKey');
+      const user = State.get('user');
+      if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey) {
+        apiKey = user.apiKey;
+      }
       const settings = {
         method,
         host: KidaptiveSdkHttpClient.getHost(),
-        apiKey: State.get('apiKey'),
+        apiKey,
         endpoint,
         data
       };
