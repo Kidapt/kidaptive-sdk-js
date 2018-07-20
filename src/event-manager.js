@@ -56,8 +56,12 @@ class KidaptiveSdkEventManager {
         eventFields[key] = newValue;
       });
 
+      const user = State.get('user');
+      const learner = State.get('learner');
       const event = {
         name: eventName,
+        userId: user && user.id,
+        learnerId: learner && learner.id,
         additionalFields: Utils.copyObject(eventFields)
       };
 
@@ -86,7 +90,16 @@ class KidaptiveSdkEventManager {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'RawEvent must be a string');
       }
 
-      KidaptiveSdkEventManager.addToEventQueue(rawEvent);
+      const user = State.get('user');
+      const learner = State.get('learner');
+      const event = {
+        name: 'raw_custom_event',
+        userId: user && user.id,
+        learnerId: learner && learner.id,
+        additionalFields: {'raw_event_payload': rawEvent}
+      };
+
+      KidaptiveSdkEventManager.addToEventQueue(event);
     });
   }
 
@@ -179,12 +192,6 @@ class KidaptiveSdkEventManager {
       deviceType: window && window.navigator && window.navigator.userAgent,
       language: window && window.navigator && window.navigator.language
     };
-    const user = State.get('user');
-    const learner = State.get('learner');
-    const learnerInfo = {
-      userId: user && user.id,
-      learnerId: learner && learner.id
-    }
 
     let eventQueue = KidaptiveSdkEventManager.getEventQueue();
     const itemIndex = Utils.findItemIndex(eventQueue, item =>
@@ -192,16 +199,13 @@ class KidaptiveSdkEventManager {
       item.appInfo.version === appInfo.version &&
       item.appInfo.build === appInfo.build &&
       item.deviceInfo.deviceType === deviceInfo.deviceType &&
-      item.deviceInfo.language === deviceInfo.language &&
-      item.learnerInfo.userId === learnerInfo.userId &&
-      item.learnerInfo.learnerId === learnerInfo.learnerId
+      item.deviceInfo.language === deviceInfo.language
     );
 
     if (itemIndex !== -1) {
       eventQueue[itemIndex].events.push(event);
     } else {
       eventQueue.push({
-        learnerInfo,
         appInfo,
         deviceInfo,
         events: [event]
