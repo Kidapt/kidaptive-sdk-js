@@ -70,7 +70,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Stable User Cache Key', () => {
       const settings = HttpClient.getRequestSettings('POST', Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]], {});
-      Should(HttpClient.getCacheKey(settings)).equal('EcIlKVPmmivUJTKKyRnNE_ypNeYZojk9ljs1bMdkNvc.alpUserData');
+      Should(HttpClient.getCacheKey(settings)).equal('uIk9oUPnvE8cIe82-TF2SQUYtg8v3Xx8c-6wZIfldJo.alpUserData');
     });
   });
 

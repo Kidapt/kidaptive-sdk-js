@@ -41,7 +41,6 @@ describe('KidaptiveSdk Core Unit Tests', () => {
         tier: 1,
         authMode: 'client',
         baseUrl: 'http://baseUrl',
-        appUri: '/app/uri',
         version: '1.0.0',
         build: '1.0.0.100',
         autoFlushInterval: 10000,
@@ -49,7 +48,6 @@ describe('KidaptiveSdk Core Unit Tests', () => {
         loggingLevel: 'none'
       };
     });
-    //TODO FUTURE: check other tiers
     it('before init State.get("initialized") is false', () => {
       Should(State.get('initialized')).not.ok();
     });
@@ -240,9 +238,10 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           return Should(KidaptiveSdk.destroy()).resolved();
         }); 
       });
-      it('tier must be 1', () => {
+      it('tier must be 1 or 2', () => {
         //TODO FUTURE: ADD OTHER TIERS
-        options.tier = 2;
+        var server;
+        options.tier = 3;
         return Should(KidaptiveSdk.init(apiKey, options)).rejected().then(() => { 
           options.tier = 0;
           return Should(KidaptiveSdk.init(apiKey, options)).rejected();
@@ -253,6 +252,15 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           options.tier = 1;
           return Should(KidaptiveSdk.init(apiKey, options)).resolved();
         }).then(() => { 
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }).then(() => { 
+          server = Sinon.fakeServer.create();
+          server.respondImmediately = true;
+          server.respondWith([200, {'Content-Type': 'application/json'}, '']);
+          options.tier = 2;
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => { 
+          server.restore();
           return Should(KidaptiveSdk.destroy()).resolved();
         }); 
       });
@@ -303,41 +311,6 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           return Should(KidaptiveSdk.destroy()).resolved();
         }).then(() => { 
           options.authMode = 'server';
-          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
-        }).then(() => { 
-          return Should(KidaptiveSdk.destroy()).resolved();
-        }); 
-      });
-      it('appUri is optional', () => {
-        options.appUri = undefined
-        return Should(KidaptiveSdk.init(apiKey, options)).resolved().then(() => { 
-          return Should(KidaptiveSdk.destroy()).resolved();
-        }).then(() => { 
-          options.appUri = null;
-          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
-        }).then(() => { 
-          return Should(KidaptiveSdk.destroy()).resolved();
-        }); 
-      });
-      it('appUri must be a string if defined', () => {
-        options.appUri = true;
-        return Should(KidaptiveSdk.init(apiKey, options)).rejected().then(() => { 
-          options.appUri = false;
-          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
-        }).then(() => { 
-          options.appUri = 100;
-          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
-        }).then(() => { 
-          options.appUri = {};
-          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
-        }).then(() => { 
-          options.appUri = [];
-          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
-        }).then(() => { 
-          options.appUri = () => {};
-          return Should(KidaptiveSdk.init(apiKey, options)).rejected();
-        }).then(() => { 
-          options.appUri = '/app/uri';
           return Should(KidaptiveSdk.init(apiKey, options)).resolved();
         }).then(() => { 
           return Should(KidaptiveSdk.destroy()).resolved();

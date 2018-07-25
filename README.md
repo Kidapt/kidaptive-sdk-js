@@ -13,6 +13,7 @@
   * [Tier 1 Interface](#tier-1-interface)
     * [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject)
     * [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring)
+    * [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial)
     * [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner)
     * [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout)
     * [KidaptiveSdk.learnerManager.getUser()](#kidaptivesdklearnermanagergetuser)
@@ -21,6 +22,19 @@
     * [KidaptiveSdk.eventManager.reportSimpleEvent()](#kidaptivesdkeventmanagerreportsimpleeventeventnamestring-eventfieldsobject)
     * [KidaptiveSdk.eventManager.reportRawEvent()](#kidaptivesdkeventmanagerreportraweventraweventstring)
     * [KidaptiveSdk.eventManager.flushEventQueue()](#kidaptivesdkeventmanagerflusheventqueue)
+  * [Tier 2 Interface](#tier-2-interface)
+    * [KidaptiveSdk.learnerManager.getLocalAbilityEstimates()](#kidaptivesdklearnermanagergetlocalabilityestimates)
+    * [KidaptiveSdk.learnerManager.getLocalAbilityEstimate()](#kidaptivesdklearnermanagergetlocalabilityestimatelocaldimensionuristring)
+    * [KidaptiveSdk.learnerManager.getLatentAbilityEstimates()](#kidaptivesdklearnermanagergetlatentabilityestimates)
+    * [KidaptiveSdk.learnerManager.getLatentAbilityEstimate()](#kidaptivesdklearnermanagergetlatentabilityestimatedimensionuristring)
+    * [KidaptiveSdk.learnerManager.updateAbilityEstimates()](#kidaptivesdklearnermanagerupdateabilityestimates)
+    * [KidaptiveSdk.modelManager.getGames()](#kidaptivesdkmodelmanagergetgames)
+    * [KidaptiveSdk.modelManager.getGameByUri()](#kidaptivesdkmodelmanagergetgamebyurigameuristring)
+    * [KidaptiveSdk.modelManager.getDimensions()](#kidaptivesdkmodelmanagergetdimensions)
+    * [KidaptiveSdk.modelManager.getDimensionByUri()](#kidaptivesdkmodelmanagergetdimensionbyuridimensionuristring)
+    * [KidaptiveSdk.modelManager.getLocalDimensions()](#kidaptivesdkmodelmanagergetlocaldimensions)
+    * [KidaptiveSdk.modelManager.getLocalDimensionByUri()](#kidaptivesdkmodelmanagergetlocaldimensionbyurilocaldimensionuristring)
+    * [KidaptiveSdk.modelManager.updateModels()](#kidaptivesdkmodelmanagerupdatemodels)
 * [Build Process](#build-process)
 * [Testing](#testing)
 * [Publishing](#publishing)
@@ -79,6 +93,8 @@ var KidaptiveSdk = require('kidaptive-sdk-js');
 
 Initializes the SDK. The return value is a [Promise] which resolves when the Kidaptive SDK is ready. The SDK is a singleton and only one SDK may be initialized at a time. The SDK must be initialized before any other methods can be called.
 
+When the SDK is configured to at least tier 2, all relevent models for the API key provided will automatically be retrieved from the server. This is done so by calling the function [KidaptiveSdk.modelManager.updateModels()](#kidaptivesdkmodelmanagerupdatemodels).
+
 ```javascript
 KidaptiveSdk.init("gPt1fU+pTaNgFv61Qbp3GUiaHsGcu+0h8", {environment: 'dev'}).then(function() {
     //SDK READY
@@ -105,7 +121,6 @@ environment | string | true |  | Values can be `dev`, `prod`, or `custom`
 tier | number | false | 1 | Sets up the SDK to have the desired level of functionality. Values can be `1`, `2`, or `3`
 authMode | string | false | client | Defines the authentication mode to be used. Values can be `client` or `server`
 baseUrl | string | false |  | This property is only used and required when environment is set to `custom`. This allows for sending events to a different host when using a proxy.
-appUri | string | false | | The appUri reported to the Kidaptive API with events.
 version | string | false |  | The version reported to the Kidaptive API with events.
 build | string | false |  | The build reported to the Kidaptive API with events.
 autoFlushInterval | number | false | 60000 | The interval in milliseconds that the events should be flushed. A value of 0 will result in the auto flush being disabled.
@@ -161,7 +176,8 @@ KidaptiveSdk.learnerManager.setUser(userObject).then(function() {
 If the `authMode` is `client`, then this method is used to specify a `providerUserId` to be sent along with events. This will create the user on our system for that given `providerUserId` if necessary. Events can be sent for that user, or if desired, a learner can be selected or created through the [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) method. 
 
 ```javascript
-KidaptiveSdk.learnerManager.setUser({providerUserId:"user123"}).then(function() {
+var userObject = {providerUserId:"user123"};
+KidaptiveSdk.learnerManager.setUser(userObject).then(function() {
     //USER SELECTED
 }, function(error) {
     //ERROR
@@ -177,12 +193,33 @@ This method selects the active learner. If a learner is already selected, and yo
 
 If `authMode` is configured to `server`, then the learner must be a learner specified in the learner array which is passed in the `userObject` in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) call. 
 
-If the `authMode` is `client`, then the learner will be created. If no user is selected, then a user will be created for this learner automatically. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user will still be logged in. Also, calling `selectActiveLearner` again while a learner is already selected will deselect the current learner and create and/or select the new learner under the same user. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout). 
+If the `authMode` is `client`, then the learner will be created. If no user is selected, then a user will be created for this learner automatically. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user will still be logged in. Also, calling `selectActiveLearner` again while a learner is already selected will deselect the current learner and create and/or select the new learner under the same user. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout).
+
+When the SDK is configured to tier 1, a trial is created when a learner is selected. This is done so by calling the function [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial).
+
+When the SDK is configured to tier 2, the ability estimates for that learner will be retrieved from the server when a learner is selected. This is done so by calling the function [KidaptiveSdk.learnerManager.updateAbilityEstimates()](#kidaptivesdklearnermanagerupdateabilityestimates).
 
 ```javascript
 var learnerProviderId = 'learner123';
 KidaptiveSdk.learnerManager.selectActiveLearner(learnerProviderId).then(function() {
     //LEARNER SELECTED
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.startTrial()
+
+Updates the trial time for the current selected learner. The return value is a [Promise] which resolves when the trial time has been updated. Trials are used to control the weight of prior information when calculating learner ability estimates. Starting a new trial indicates that the learner's current ability may have changed and that the estimate may not be accurate. This causes new evidence to be weighted more to adjust to the new ability.
+
+This function is called from [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) when the SDK is configured to at least tier 1.
+
+```javascript
+KidaptiveSdk.learnerManager.startTrial().then(function() {
+    //TRIAL STARTED
 }, function(error) {
     //ERROR
     console.log(error);
@@ -259,7 +296,9 @@ console.log(learnerList);
 
 This reports an event to the Kidaptive API using an `eventName string` and `eventFields object`. The return value is a [Promise] which resolves when the event is queued. 
 
-Certain fields will be autopopulated, such as the learner info, app info, and device info. The learner info object will be populated with the values specified in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) and [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) calls. When `authMode` is configured to `server` a user must be selected, but a learner is optional to send events. When `authMode` is configured to `client` events can be sent with or without a user or learner selected.
+Certain fields will be autopopulated, such as the learner info, app info, trial time, event time, and device info. The learner info will be populated with the values specified in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) and [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) calls. The trial time will be populated by the timestamp stored during the [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial) call. The event time will be populated by the current timestamp of when the event was sent.
+
+When `authMode` is configured to `server` a user must be selected, but a learner is optional to send events. When `authMode` is configured to `client` events can be sent with or without a user or learner selected.
 
 The properties in the `eventFields object` will be the specific values sent along with the event. The structure for `eventFields` is a flat key:value map where the values can only be `boolean`, `null`, `numeric`, and `string` values.
 
@@ -281,7 +320,9 @@ KidaptiveSdk.eventManager.reportSimpleEvent('eventName', {
 
 This reports an event to the Kidaptive API using only a `rawEvent` string. The return value is a [Promise] which resolves when the event is queued. 
 
-Certain fields will be autopopulated, such as the learner info, app info, and device info. The learner info object will be populated with the values specified in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) and [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) calls. When `authMode` is configured to `server` a user must be selected, but a learner is optional to send events. When `authMode` is configured to `client` events can be sent with or without a user or learner selected.
+Certain fields will be autopopulated, such as the learner info, app info, trial time, event time,, and device info. The learner info will be populated with the values specified in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) and [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) calls. The trial time will be populated by the timestamp stored during the [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial) call. The event time will be populated by the current timestamp of when the event was sent.
+
+When `authMode` is configured to `server` a user must be selected, but a learner is optional to send events. When `authMode` is configured to `client` events can be sent with or without a user or learner selected.
 
 The `rawEvent` string can be any string, including a query string, or stringified JSON object. The structure for `rawEvent` is flexible but must be established with the Kidaptive team so the API can evaluate the event correctly.
 
@@ -305,6 +346,158 @@ This flushes all events out of the event queue and sends them to the Kidaptive A
 KidaptiveSdk.eventManager.flushEventQueue().then(function(result) {
     //EVENTS FLUSHED
     console.log(result);
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+### Tier 2 Interface
+
+#### KidaptiveSdk.learnerManager.getLatentAbilityEstimates()
+
+Returns an array of latent ability estimate objects associated with the selected learner and the current app. Latent abilities are mapped to dimensions that represent the key skills and abilities that make up Kidaptive's early learning framework.
+
+```javascript
+var latentAbilities = KidaptiveSdk.learnerManager.getLatentAbilityEstimates();
+console.log(latentAbilities);
+```
+
+
+---
+
+#### KidaptiveSdk.learnerManager.getLatentAbilityEstimate(dimensionUri:string)
+
+Returns the latent ability estimate object associated with the dimensionUri for the selected learner and the current app. Latent abilities are mapped to dimensions that represent the key skills and abilities that make up Kidaptive's early learning framework.
+
+```javascript
+var dimensionUri = '/dimension/uri';
+var latentAbility = KidaptiveSdk.learnerManager.getLatentAbilityEstimate(dimensionUri);
+console.log(latentAbility);
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getLocalAbilityEstimates()
+
+Returns an array of local ability estimate objects associated with the selected learner and the current app. Local abilities are mapped to local dimensions that represent app specific dimensions that map to dimensions specified in Kidaptive's early learning framework.
+
+```javascript
+var localAbilities = KidaptiveSdk.learnerManager.getLocalAbilityEstimates();
+console.log(localAbilities);
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getLocalAbilityEstimate(localDimensionUri:string)
+
+Returns the local ability estimate object associated with the localDimensionUri for the selected learner and the current app. Local abilities are mapped to local dimensions that represent app specific dimensions that map to dimensions specified in Kidaptive's early learning framework.
+
+```javascript
+var localDimensionUri = '/local-dimension/uri';
+var localAbility = KidaptiveSdk.learnerManager.getLocalAbilityEstimate(localDimensionUri);
+console.log(localAbility);
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.updateAbilityEstimates()
+
+Updates the models associated with the current app and selected learner. The return value is a [Promise] which resolves when the ability estimates have been updated from the server. Once this function has resolved, the getters for the ability estimates can be used.
+
+This function is automatically called from [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring).
+
+```javascript
+KidaptiveSdk.learnerManager.updateAbilityEstimates().then(function() {
+    //ABILITY ESTIMATES UPDATED
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getGames()
+
+Returns an array of game objects associated with the current app. A game is a subset of functionality within the app that defines its own rules and experience.
+
+```javascript
+var games = KidaptiveSdk.modelManager.getGames();
+console.log(games);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getGameByUri(gameUri:string)
+
+Returns the game object associated with the gameUri within the current app. A game is a subset of functionality within the app that defines its own rules and experience.
+
+```javascript
+var gameUri = '/game/uri';
+var game = KidaptiveSdk.modelManager.getGameByUri(gameUri);
+console.log(game);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getDimensions()
+
+Returns an array of dimension objects associated with the current app. Dimensions represent the key skills and abilities that make up Kidaptive's early learning framework.
+
+```javascript
+var dimensions = KidaptiveSdk.modelManager.getDimensions();
+console.log(dimensions);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getDimensionByUri(dimensionUri:string)
+
+Returns the dimension object associated with the dimensionUri within the current app. Dimensions represent the key skills and abilities that make up Kidaptive's early learning framework.
+
+```javascript
+var dimensionUri = '/dimension/uri';
+var dimension = KidaptiveSdk.modelManager.getDimensionByUri(dimensionUri);
+console.log(dimension);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getLocalDimensions()
+
+Returns an array of local dimension objects associated with the current app. Local dimensions are defined for a given app and map to specific dimensions specified in Kidaptive's early learning framework.
+
+```javascript
+var localDimensions = KidaptiveSdk.modelManager.getLocalDimensions();
+console.log(localDimensions);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getLocalDimensionByUri(localDimensionUri:string)
+
+Returns the local dimension object associated with the localDimensionUri within the current app. Local dimensions are defined for a given app and map to specific dimensions specified in Kidaptive's early learning framework.
+
+```javascript
+var localDimensionUri = '/local-dimension/uri';
+var localDimension = KidaptiveSdk.modelManager.getLocalDimensionByUri(localDimensionUri);
+console.log(localDimension);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.updateModels()
+
+Updates the models associated with the current app, depending on what models are used by the configured tier. For tier 2, the game, dimension, and local dimension models will be updated. The return value is a [Promise] which resolves when the models have been updated from the server. Once this function is resolved, the getter functions for the models can be used.
+
+This function is called from [KidaptiveSdk.init()](#kidaptivesdkinitapikeystring-optionsobject) when the SDK is configured to at leaset tier 2.
+
+```javascript
+KidaptiveSdk.modelManager.updateModels().then(function() {
+    //MODELS UPDATED
 }, function(error) {
     //ERROR
     console.log(error);

@@ -8,6 +8,7 @@ import Q from 'q';
 import Superagent from 'superagent-q';
 
 class KidaptiveSdkHttpClient {
+
   /**
    * Sends a request to the Kidaptive API
    * 

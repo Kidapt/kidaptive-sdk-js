@@ -2,11 +2,17 @@ import Constants from './constants';
 import Error from './error';
 import EventManager from './event-manager';
 import HttpClient from './http-client';
+import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
+import Q from 'q';
 
 class KidaptiveSdkLearnerManager {
+  constructor() {
+    //lookup objects for abilities
+    this.latentAbilities = {};
+  }
 
   /**
    * Set the user object that contains the user metadata
@@ -165,6 +171,21 @@ class KidaptiveSdkLearnerManager {
           //set the state
           State.set('user', userObjectResponse);
           State.set('learner', Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId)));
+
+          //start trial for learner
+          const requests = [this.startTrial()];
+
+          //update ability estimates for learner
+          if (options.tier >= 2) {
+            requests.push(this.updateAbilityEstimates());
+          }
+
+          //resolve when all sub requests complete
+          return Q.all(requests).then(() => {
+
+            //resolve with undefined rather then array of undefined
+            return;
+          });
         });
       }
 
@@ -184,6 +205,21 @@ class KidaptiveSdkLearnerManager {
 
         //set the state
         State.set('learner', activeLearner);
+
+        //start trial for learner
+        const requests = [this.startTrial()];
+
+        //update ability estimates for learner
+        if (options.tier >= 2) {
+          requests.push(this.updateAbilityEstimates());
+        }
+
+        //resolve when all sub requests complete
+        return Q.all(requests).then(() => {
+
+          //resolve with undefined then array of undefined
+          return;
+        });
       }
     });
   }
@@ -275,6 +311,250 @@ class KidaptiveSdkLearnerManager {
     //get the state
     const userObject = State.get('user') || {};
     return Utils.isArray(userObject.learners) ? userObject.learners : [];
+  }
+
+  /**
+   * Starts a trial for the given learner. Sends the trial time length when sending events
+   * If no learner is selected, the function will log a warning, and resolve the promise
+   * 
+   * @return
+   *   A promise that resolves when the trial has been started
+   */
+  startTrial() {
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(1);
+
+      //resolve the promise if a learner is not set
+      const learner = State.get('learner');
+      if (!learner || !learner.id) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: startTrial called with no active learner selected.');       
+        }
+        return;
+      }
+
+      //save trial start timestamp
+      State.set('trialTime', Date.now());
+    });
+  }
+
+  /**
+   * Returns the latent ability estimates of the current active learner for all dimensions 
+   * If no active learner is selected, the function will log a warning, and return an empty array
+   * If no ability estimate exists for all or any of the dimension, a default ability estimate will be returned
+   *
+   * @return
+   *   An array of objects of the latent ability estimates for all dimensions
+   */
+  getLatentAbilityEstimates() {
+    Utils.checkTier(2);
+
+    //if a learner is not set return an empty array
+    const learner = State.get('learner');
+    if (!learner || !learner.id) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLatentAbilityEstimates called with no active learner selected.');       
+      }
+      return [];
+    }
+
+    //map latent ability estimates to all available latent abilities
+    return ModelManager.getDimensions().map(dimension => {
+      return this.getLatentAbilityEstimate(dimension.uri);
+    });
+  }
+
+  /**
+   * Returns the latent ability estimate of the current active learner for the specified dimension
+   * If no active learner is selected, the function will log a warning, and return undefined
+   * If no ability estimate exists, a default ability estimate will be returned
+   *
+   * @param {string} dimensionUri
+   *   The dimensionUri of the latent ability estimate that is to be returned
+   * 
+   * @return
+   *   An object of the latent ability estimate for the specified dimension
+   */
+  getLatentAbilityEstimate(dimensionUri) {
+    Utils.checkTier(2);
+
+    //if a learner is not set return undefined
+    const learner = State.get('learner');
+    if (!learner || !learner.id) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLatentAbilityEstimate called with no active learner selected.');       
+      }
+      return;
+    }
+
+    //get dimension
+    const dimension = ModelManager.getDimensionByUri(dimensionUri);
+
+    //if dimension does not exist, return undefined
+    if (!dimension) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLatentAbilityEstimate called with an invalid dimension.');       
+      }
+      return;
+    }
+
+    //find learner latent ability
+    const latentAbilities = this.latentAbilities[learner.id] || [];
+    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimensionId === dimension.id));
+
+    //if latent ability found, return that latent ability
+    if (latentAbility) {
+
+      //attach dimension object onto latent ability
+      localAbility.dimension = dimension;
+      delete latentAbility.dimensionId;
+      return latentAbility
+      
+    //if nothing found return default
+    } else {
+      return {
+        dimension: dimension,
+        mean: 0,
+        standardDeviation: 1,
+        timestamp: 0
+      }
+    }
+  }
+
+  /**
+   * Returns the local ability estimates of the current active learner for all local dimensions 
+   * If no active learner is selected, the function will log a warning, and return an empty array
+   * If no ability estimate exists for all or any of the local dimension, a default ability estimate will be returned
+   *
+   * @return
+   *   An array of objects of the local ability estimates for all local dimensions
+   */
+  getLocalAbilityEstimates() {
+    Utils.checkTier(2);
+
+    //if a learner is not set return an empty array
+    const learner = State.get('learner');
+    if (!learner || !learner.id) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLatentAbilityEstimates called with no active learner selected.');       
+      }
+      return [];
+    }
+
+    //map local ability estimates to all available local dimensions
+    return ModelManager.getLocalDimensions().map(localDimension => {
+      return this.getLocalAbilityEstimate(localDimension.uri);
+    });
+  }
+
+  /**
+   * Returns the local ability estimate of the current active learner for the specified local dimension
+   * If no active learner is selected, the function will log a warning, and return undefined
+   * If no ability estimate exists, a default ability estimate will be returned
+   *
+   * @param {string} localDimensionUri
+   *   The localDimensionUri of the local ability estimate that is to be returned
+   * 
+   * @return
+   *   An object of the local ability estimate for the specified local dimension
+   */
+  getLocalAbilityEstimate(localDimensionUri) {
+    Utils.checkTier(2);
+
+    //if a learner is not set return undefined
+    const learner = State.get('learner');
+    if (!learner || !learner.id) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLocalAbilityEstimate called with no active learner selected.');       
+      }
+      return;
+    }
+
+    //get local dimension
+    const localDimension = ModelManager.getLocalDimensionByUri(localDimensionUri);
+
+    //if local dimension does not exist, return undefined
+    if (!localDimension) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: getLocalAbilityEstimate called with an invalid local dimension.');       
+      }
+      return;
+    }
+
+    //get parent dimension
+    const dimension = localDimension.dimension || {};
+
+    //find learner latent ability
+    const latentAbilities = this.latentAbilities[learner.id] || [];
+    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimensionId === dimension.id));
+
+    //if latent ability found, return that local ability
+    if (latentAbility) {
+
+      //return local ability based off latent ability estimates
+      return {
+        localDimension,
+        mean: latentAbility.mean,
+        standardDeviation: latentAbility.standardDeviation,
+        timestamp: latentAbility.timestamp
+      }
+
+    //if nothing found return default
+    } else {
+      return {
+        localDimension: localDimension,
+        mean: 0,
+        standardDeviation: 1,
+        timestamp: 0
+      }
+    }
+  }
+
+  /**
+   * Updates the ability estimates for the current active learner
+   * If no learner is selected, the function will log a warning, and resolve the promise
+   * 
+   * @return
+   *   A promise that resolves when the ability estimates have been updated from the server
+   */
+  updateAbilityEstimates() {
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(2);
+
+      //check if learner is set
+      const learner = State.get('learner');
+      if (!learner || !learner.id) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: updateAbilityEstimates called with no active learner selected.');       
+        }
+
+        //resolve the promise
+        return;
+      }
+
+      //reset previous ability estimates
+      this.latentAbilities[learner.id] = [];
+
+      //query abilities
+      HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
+
+        //store copy of learner ability estimates
+        this.latentAbilities[learner.id] = Utils.copyObject(latentAbilities) || [];
+
+      //return error
+      }, error => {
+        throw error;
+      });
+            
+    });
   }
 
 }

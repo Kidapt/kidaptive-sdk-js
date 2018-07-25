@@ -5,6 +5,7 @@ import CloneDeep from 'lodash.clonedeep';
 import Stringify from 'json-stable-stringify';
 
 class KidaptiveSdkUtils {
+
   /**
    * Checks to see if the SDK is currently initialized.
    * If it isn't, an error is thrown.

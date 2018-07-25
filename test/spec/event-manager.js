@@ -181,7 +181,7 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
       server.respondImmediately = true;
       State.set('apiKey', 'testApiKey');
       State.set('initialized', true);
-      options = {tier: 1, authMode: 'client', environment: 'dev', appUri: 'testAppUri', version: '1.0.0', build: '1.0.0.100'};
+      options = {tier: 1, authMode: 'client', environment: 'dev', version: '1.0.0', build: '1.0.0.100'};
       State.set('options', options);
       State.set('user', {id: 'userAlpId'});
       State.set('learner', {id: 'learnerAlpId'});
@@ -208,7 +208,6 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         var event = parsed.events[0];
         Should(event).Object();
         Should(parsed.appInfo).Object();
-        Should(parsed.appInfo.uri).equal('testAppUri');
         Should(parsed.appInfo.version).equal('1.0.0');
         Should(parsed.appInfo.build).equal('1.0.0.100');
         Should(parsed.deviceInfo).Object();
@@ -239,11 +238,10 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
     });
     it('separate events by different app info', () => {
       return Should(EventManager.reportSimpleEvent('eventName1', {})).resolved().then(() => {
-        options.appUri = 'differentAppUri';
+        options.version = '1.0.2';
         State.set('options', options);
         return Should(EventManager.reportSimpleEvent('eventName2', {})).resolved();
       }).then(() => {
-        options.appUri = 'testAppUri';
         options.version = '1.0.1';
         State.set('options', options);
         return Should(EventManager.reportSimpleEvent('eventName3', {})).resolved();
@@ -258,22 +256,18 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         Should(server.requests).length(4);
         Should(JSON.parse(server.requests[0].requestBody).events).length(1);
         Should(JSON.parse(server.requests[0].requestBody).events[0].name).equal('eventName1');
-        Should(JSON.parse(server.requests[0].requestBody).appInfo.uri).equal('testAppUri');
         Should(JSON.parse(server.requests[0].requestBody).appInfo.version).equal('1.0.0');
         Should(JSON.parse(server.requests[0].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[1].requestBody).events).length(1);
         Should(JSON.parse(server.requests[1].requestBody).events[0].name).equal('eventName2');
-        Should(JSON.parse(server.requests[1].requestBody).appInfo.uri).equal('differentAppUri');
-        Should(JSON.parse(server.requests[1].requestBody).appInfo.version).equal('1.0.0');
+        Should(JSON.parse(server.requests[1].requestBody).appInfo.version).equal('1.0.2');
         Should(JSON.parse(server.requests[1].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[2].requestBody).events).length(1);
         Should(JSON.parse(server.requests[2].requestBody).events[0].name).equal('eventName3');
-        Should(JSON.parse(server.requests[2].requestBody).appInfo.uri).equal('testAppUri');
         Should(JSON.parse(server.requests[2].requestBody).appInfo.version).equal('1.0.1');
         Should(JSON.parse(server.requests[2].requestBody).appInfo.build).equal('1.0.0.100');
         Should(JSON.parse(server.requests[3].requestBody).events).length(1);
         Should(JSON.parse(server.requests[3].requestBody).events[0].name).equal('eventName4');
-        Should(JSON.parse(server.requests[3].requestBody).appInfo.uri).equal('testAppUri');
         Should(JSON.parse(server.requests[3].requestBody).appInfo.version).equal('1.0.0');
         Should(JSON.parse(server.requests[3].requestBody).appInfo.build).equal('1.0.0.101');
       });

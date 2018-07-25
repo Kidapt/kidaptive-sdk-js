@@ -10,11 +10,12 @@ let _autoFlushTimeout = null;
 let _eventQueue = [];
 
 class KidaptiveSdkEventManager {
+
   /**
    * Reports an event to the Kidaptive SDK
    * 
    * @param {string} eventName
-   *   THe event name to use when reporting the event
+   *   The event name to use when reporting the event
    *
    * @param {object} eventFields
    *   The data to send with the event in key:value pair format
@@ -56,15 +57,13 @@ class KidaptiveSdkEventManager {
         eventFields[key] = newValue;
       });
 
-      const user = State.get('user');
-      const learner = State.get('learner');
+      //create event object
       const event = {
-        name: eventName,
-        userId: user && user.id,
-        learnerId: learner && learner.id,
-        additionalFields: Utils.copyObject(eventFields)
+        additionalFields: Utils.copyObject(eventFields),
+        name: eventName
       };
 
+      //add event to queue
       KidaptiveSdkEventManager.addToEventQueue(event);
     });
   }
@@ -90,15 +89,13 @@ class KidaptiveSdkEventManager {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'RawEvent must be a string');
       }
 
-      const user = State.get('user');
-      const learner = State.get('learner');
+      //create event object
       const event = {
-        name: 'raw_custom_event',
-        userId: user && user.id,
-        learnerId: learner && learner.id,
-        additionalFields: {'raw_event_payload': rawEvent}
+        additionalFields: {'raw_event_payload': rawEvent},
+        name: 'raw_custom_event'
       };
 
+      //add event to queue
       KidaptiveSdkEventManager.addToEventQueue(event);
     });
   }
@@ -172,19 +169,30 @@ class KidaptiveSdkEventManager {
   }
 
   /**
-   * Internal method to add an event to the event queue
+   * Internal method to add properties to an event and add it to the event queue
    * 
    * @param {object} event
-   *   THe event object to add to the event queue
+   *   The event object to add to the event queue
    */
   static addToEventQueue(event) {
     const options = State.get('options') || {};
-    if (options.authMode === 'server' && !State.get('user')) {
+    const user = State.get('user');
+    if (options.authMode === 'server' && !user) {
       throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication');
     }
-    
+
+    //copy event object
+    const updatedEvent = Utils.copyObject(event);
+
+    //update event object with added properties
+    const learner = State.get('learner');
+    updatedEvent.eventTime = Date.now();
+    updatedEvent.learnerId = learner && learner.id;
+    updatedEvent.trialTime = State.get('trialTime');
+    updatedEvent.userId = user && user.id;
+
+    //get app and device info
     const appInfo = {
-      uri: options.appUri,
       version: options.version,
       build: options.build
     };
@@ -193,22 +201,25 @@ class KidaptiveSdkEventManager {
       language: window && window.navigator && window.navigator.language
     };
 
+    //see if there is a batch of events this event can be added to based on app info and device info
     let eventQueue = KidaptiveSdkEventManager.getEventQueue();
     const itemIndex = Utils.findItemIndex(eventQueue, item =>
-      item.appInfo.uri === appInfo.uri &&
       item.appInfo.version === appInfo.version &&
       item.appInfo.build === appInfo.build &&
       item.deviceInfo.deviceType === deviceInfo.deviceType &&
       item.deviceInfo.language === deviceInfo.language
     );
 
+    //push the event onto the existing batch
     if (itemIndex !== -1) {
-      eventQueue[itemIndex].events.push(event);
+      eventQueue[itemIndex].events.push(updatedEvent);
+
+    //create a new event group based on app info and device info
     } else {
       eventQueue.push({
         appInfo,
         deviceInfo,
-        events: [event]
+        events: [updatedEvent]
       });
     }
     KidaptiveSdkEventManager.setEventQueue(eventQueue);

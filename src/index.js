@@ -2,6 +2,7 @@ import Constants from './constants';
 import Error from './error';
 import EventManager from './event-manager';
 import LearnerManager from './learner-manager';
+import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
@@ -80,7 +81,7 @@ class KidaptiveSdk {
       if (!Utils.isNumber(options.tier)) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option must be a number');
       }
-      if ([1].indexOf(options.tier) === -1) {
+      if ([1, 2].indexOf(options.tier) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option is not an accepted value');
       }
 
@@ -90,13 +91,6 @@ class KidaptiveSdk {
       }
       if (['client', 'server'].indexOf(options.authMode) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AuthMode option is not an accepted value');
-      }
-
-      //validate appUri
-      if (options.appUri != null) {
-        if (!Utils.isString(options.appUri)) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AppUri option must be a string');
-        }
       }
 
       //validate version
@@ -143,9 +137,17 @@ class KidaptiveSdk {
       State.set('options', options);
 
       //start auto flush
-      if (State.get('options').tier >= 1) {
-        EventManager.startAutoFlush();
+      if (options.tier >= 1) {
+        return EventManager.startAutoFlush().then(() => {
+
+          //update models
+          if (options.tier >= 2) {
+            return ModelManager.updateModels();
+          }
+
+        });
       }
+
     });
   }
 
