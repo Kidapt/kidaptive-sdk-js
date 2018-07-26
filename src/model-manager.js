@@ -1,15 +1,12 @@
 import HttpClient from './http-client';
+import Error from './error';
 import State from './state';
 import Utils from './utils';
 import Q from 'q';
 
 class KidaptiveSdkModelManager {
-  constructor() {
-    //lookup objects for models
-    this.uriToModel = {};
-    this.idToModel = {};
-    this.modelList = {};
 
+  constructor() {
     //model hierarchy based on what models are used in each tier
     this.modelParents = {
       /*
@@ -32,6 +29,12 @@ class KidaptiveSdkModelManager {
         'dimension': [],
         'game': [],
         'local-dimension': ['dimension', 'game']
+      },
+      tier3: {
+        'dimension': [],
+        'game': [],
+        'local-dimension': ['dimension', 'game'],
+        'item': ['local-dimension']
       }
     };
 
@@ -64,7 +67,8 @@ class KidaptiveSdkModelManager {
   getGames() {
     Utils.checkTier(2);
     //lookup model list
-    const modelList = this.modelList['game'] || [];
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['game'] || [];
     //to copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -80,8 +84,15 @@ class KidaptiveSdkModelManager {
    */
   getGameByUri(gameUri) {
     Utils.checkTier(2);
+
+    //validate gameUri
+    if (!Utils.isString(gameUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'gameUri must be a string');
+    }
+
     //lookup model
-    const modelMap = this.uriToModel['game'];
+    const uriToModel = State.get('uriToModel', false) || {};
+    const modelMap = uriToModel['game'];
     const model =  modelMap && modelMap[gameUri];
     //copy object before returning
     return Utils.copyObject(model);
@@ -96,7 +107,8 @@ class KidaptiveSdkModelManager {
   getDimensions() {
     Utils.checkTier(2);
     //lookup model list
-    const modelList = this.modelList['dimension'] || [];
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['dimension'] || [];
     //to copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -112,8 +124,15 @@ class KidaptiveSdkModelManager {
    */
   getDimensionByUri(dimensionUri) {
     Utils.checkTier(2);
+
+    //validate dimensionUri
+    if (!Utils.isString(dimensionUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'dimensionUri must be a string');
+    }
+    
     //lookup model
-    const modelMap = this.uriToModel['dimension'];
+    const uriToModel = State.get('uriToModel', false) || {};
+    const modelMap = uriToModel['dimension'];
     const model =  modelMap && modelMap[dimensionUri];
     //copy object before returning
     return Utils.copyObject(model);
@@ -128,7 +147,8 @@ class KidaptiveSdkModelManager {
   getLocalDimensions() {
     Utils.checkTier(2);
     //lookup model list
-    const modelList = this.modelList['local-dimension'] || [];
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['local-dimension'] || [];
     //copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -144,9 +164,56 @@ class KidaptiveSdkModelManager {
    */
   getLocalDimensionByUri(localDimensionUri) {
     Utils.checkTier(2);
+
+    //validate localDimensionUri
+    if (!Utils.isString(localDimensionUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'localDimensionUri must be a string');
+    }
+    
     //lookup model
-    const modelMap = this.uriToModel['local-dimension'];
+    const uriToModel = State.get('uriToModel', false) || {};
+    const modelMap = uriToModel['local-dimension'];
     const model =  modelMap && modelMap[localDimensionUri];
+    //copy object before returning
+    return Utils.copyObject(model);
+  }
+
+  /**
+   * Gets all local item models
+   * 
+   * @return
+   *   An array of item objects. If the model list is undefined, an empty array is returned.
+   */
+  getItems() {
+    Utils.checkTier(3);
+    //lookup model list
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['item'] || [];
+    //copy array and objects before returning
+    return Utils.copyObject(modelList);
+  }
+
+  /**
+   * Gets the item by the provided URI
+   *
+   * @param {string} itemUri
+   *   The itemUri of the item object that is to be returned
+   * 
+   * @return
+   *   The item object. If no item is defined for that uri, then undefined is returned.
+   */
+  getItemByUri(itemUri) {
+    Utils.checkTier(3);
+
+    //validate itemUri
+    if (!Utils.isString(itemUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'itemUri must be a string');
+    }
+    
+    //lookup model
+    const uriToModel = State.get('uriToModel', false) || {};
+    const modelMap = uriToModel['item'];
+    const model =  modelMap && modelMap[itemUri];
     //copy object before returning
     return Utils.copyObject(model);
   }
@@ -161,9 +228,9 @@ class KidaptiveSdkModelManager {
     Utils.checkTier(2);
 
     //reset previous models
-    this.uriToModel = {};
-    this.idToModel = {};
-    this.modelList = {};
+    State.set('uriToModel', {});
+    State.set('idToModel', {});
+    State.set('modelListLookup', {});
 
     //setup reference variables
     const options = State.get('options') || {};
@@ -179,12 +246,17 @@ class KidaptiveSdkModelManager {
     //when all api calls complete
     return Q.all(requests).then(results => {
 
+      //setup objects used for storing id/uri maps for all models
+      const uriToModel = {};
+      const idToModel = {};
+      const modelListLookup = {};
+
       //loop through results
       for (let i = 0; i < results.length; i++) {
         //get model name from modelOrder
         const modelName = modelOrder[i];
 
-        //setup objects used for storing id/uri maps
+        //setup objects used for storing id/uri maps for model
         const modelUriMap = {};
         const modelIdMap = {};
         const modelList = [];
@@ -198,14 +270,18 @@ class KidaptiveSdkModelManager {
 
           //append parents to model using modelParents
           modelParents[modelName].forEach(modelParentName => {
+            //transforme model parent name removing - and camelCase
+            const publicModelParentName = modelParentName.replace(/-([a-z])/g, matched => matched[1].toUpperCase());
+
             //get modelParentId from model
-            const modelParentId = modelCopy[modelParentName + 'Id'];
+            const modelParentId = modelCopy[publicModelParentName + 'Id'];
 
             //place modelParent object
-            modelCopy[modelParentName] = this.idToModel[modelParentName][modelParentId];
+            const idToModel = State.get('idToModel', false) || {};
+            modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
 
             //delete original ID property since it will be contained in parent object
-            delete modelCopy[modelParentName + 'Id'];
+            delete modelCopy[publicModelParentName + 'Id'];
           });
 
           //build id/uri maps to optimize lookups
@@ -214,10 +290,15 @@ class KidaptiveSdkModelManager {
           modelList.push(modelCopy);
         });
 
-        //store model id/uri maps
-        this.uriToModel[modelName] = modelUriMap;
-        this.idToModel[modelName] = modelIdMap;
-        this.modelList[modelName] = modelList;
+        //store model lookups in objects that contain all models
+        uriToModel[modelName] = modelUriMap;
+        idToModel[modelName] = modelIdMap;
+        modelListLookup[modelName] = modelList;
+
+        //store model id/uri maps and lists
+        State.set('uriToModel', uriToModel, false);
+        State.set('idToModel', idToModel, false);
+        State.set('modelListLookup', modelListLookup, false);
       }
 
     //return first error

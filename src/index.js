@@ -13,6 +13,7 @@ class KidaptiveSdk {
     State.set('initialized', false);
     this.eventManager = EventManager;
     this.learnerManager = LearnerManager;
+    this.modelManager = ModelManager;
   }
 
   /**
@@ -81,7 +82,7 @@ class KidaptiveSdk {
       if (!Utils.isNumber(options.tier)) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option must be a number');
       }
-      if ([1, 2].indexOf(options.tier) === -1) {
+      if ([1, 2, 3].indexOf(options.tier) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option is not an accepted value');
       }
 

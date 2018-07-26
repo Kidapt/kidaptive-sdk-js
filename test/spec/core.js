@@ -238,10 +238,9 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           return Should(KidaptiveSdk.destroy()).resolved();
         }); 
       });
-      it('tier must be 1 or 2', () => {
-        //TODO FUTURE: ADD OTHER TIERS
+      it('tier must be 1, 2, or 3', () => {
         var server;
-        options.tier = 3;
+        options.tier = 4;
         return Should(KidaptiveSdk.init(apiKey, options)).rejected().then(() => { 
           options.tier = 0;
           return Should(KidaptiveSdk.init(apiKey, options)).rejected();
@@ -258,6 +257,11 @@ describe('KidaptiveSdk Core Unit Tests', () => {
           server.respondImmediately = true;
           server.respondWith([200, {'Content-Type': 'application/json'}, '']);
           options.tier = 2;
+          return Should(KidaptiveSdk.init(apiKey, options)).resolved();
+        }).then(() => {   
+          return Should(KidaptiveSdk.destroy()).resolved();
+        }).then(() => {   
+          options.tier = 3;
           return Should(KidaptiveSdk.init(apiKey, options)).resolved();
         }).then(() => { 
           server.restore();

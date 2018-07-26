@@ -1,3 +1,4 @@
+import AttemptProcessor from './attempt-processor';
 import Constants from './constants';
 import Error from './error';
 import HttpClient from './http-client';
@@ -169,6 +170,25 @@ class KidaptiveSdkEventManager {
   }
 
   /**
+   * Set the event transformer to be called with the event whenever and event is queued.
+   * The main purpose of this function is to add attempt data onto events to be processed by the local IRT.
+   * 
+   * @param {function} eventTransformer
+   *   The function to transform the event. The return value will be the event to be sent to the server.
+   *   If the function returns a falsey value, no event will be sent to the server.
+   */
+  setEventTransformer(eventTransformer) {
+    Utils.checkTier(3);
+
+    //validate eventTransformer
+    if (!Utils.isFunction(eventTransformer)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'eventTransformer must be a function');
+    }
+
+    State.set('eventTransformer', eventTransformer, false);
+  }
+
+  /**
    * Internal method to add properties to an event and add it to the event queue
    * 
    * @param {object} event
@@ -182,7 +202,7 @@ class KidaptiveSdkEventManager {
     }
 
     //copy event object
-    const updatedEvent = Utils.copyObject(event);
+    let updatedEvent = Utils.copyObject(event);
 
     //update event object with added properties
     const learner = State.get('learner');
@@ -209,6 +229,31 @@ class KidaptiveSdkEventManager {
       item.deviceInfo.deviceType === deviceInfo.deviceType &&
       item.deviceInfo.language === deviceInfo.language
     );
+
+    //transform event and process attempts
+    if (options.tier >= 3) {
+      
+      //transform event if an event transformer is present
+      const eventTransformer = State.get('eventTransformer', false);
+      if (eventTransformer) {
+        updatedEvent = eventTransformer(updatedEvent);
+
+        //if the event is not an object, do not queue any event
+        if (!Utils.isObject(updatedEvent)) {
+          return
+        }
+
+        //validate the updated event and display event warnings
+        KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
+
+        //process event attempts if they exist and skipIrt is not defined
+        if (Utils.isArray(updatedEvent.attempts) && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
+          updatedEvent.attempts.forEach(attempt => {
+            AttemptProcessor.processAttempt(attempt);
+          });
+        }
+      }
+    }
 
     //push the event onto the existing batch
     if (itemIndex !== -1) {
@@ -266,6 +311,84 @@ class KidaptiveSdkEventManager {
     const settings = HttpClient.getRequestSettings('POST', Constants.ENDPOINT.INGESTION);
     return HttpClient.getCacheKey(settings).replace(/[.].*/,'.alpEventData');
   };
+
+  /**
+   * If logging is enabled, validate a transformed event and log any issues to console
+   * 
+   * @param {string} event
+   *   The transformed event to validate
+   */
+  static validateTransformedEvent(event) {
+    //if logging enabled, validate the event object that is returned from the event transformer and provide warning logging
+    if (Utils.checkLoggingLevel('warn') && console && console.log) {
+      //validate root level properties
+      if (!Utils.isString(event.name) || !event.name.length) {
+        console.log('Warning: eventTransformer returned an event with name not set as a string.');   
+      }
+      if (!Utils.isObject(event.additionalFields) || event.additionalFields === null) {
+        console.log('Warning: eventTransformer returned an event with additionalFields not set as an object.');   
+      }
+      if (event.userId != null && !Utils.isNumber(event.userId)) {
+        console.log('Warning: eventTransformer returned an event with userId not set as a number.');   
+      }
+      if (event.learnerId != null && !Utils.isNumber(event.learnerId)) {
+        console.log('Warning: eventTransformer returned an event with learnerId not set as a number.');   
+      }
+      if (!Utils.isNumber(event.eventTime)) {
+        console.log('Warning: eventTransformer returned an event with eventTime not set as a number.');   
+      }
+      if (!Utils.isNumber(event.trialTime)) {
+        console.log('Warning: eventTransformer returned an event with trialTime not set as a number.');   
+      }
+
+      //validate attempts
+      if (event.attempts != null) {
+        if (!Utils.isArray(event.attempts)) {
+          console.log('Warning: eventTransformer returned an event with attempts not set as an array.');
+        } else {
+          event.attempts.forEach(attempt => {
+            if (!Utils.isObject(attempt)) {
+              console.log('Warning: eventTransformer returned an event with an attempt not set as an object.');
+            } else {
+              if (!Utils.isString(attempt.itemURI) || !attempt.itemURI.length) {
+                console.log('Warning: eventTransformer returned an event attempt with itemURI not set as a string.');   
+              }
+              if (!Utils.isNumber(attempt.outcome)) {
+                console.log('Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.');   
+              } else if (attempt.outcome !== 0 && attempt.outcome !== 1) {
+                console.log('Warning: eventTransformer returned an event attempt with outcome not set as 0 or 1.');   
+              }
+              if (attempt.guessingParameter != null && !Utils.isNumber(attempt.guessingParameter)) {
+                console.log('Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.');   
+              } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
+                console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.');   
+              }
+              if (attempt.priorLatentMean && Utils.isNumber(attempt.priorLatentMean)) {
+                console.log('Warning: eventTransformer returned an event attempt with priorLatentMean not as as a numeric value.');   
+              }
+              if (attempt.priorLocalMean && Utils.isNumber(attempt.priorLocalMean)) {
+                console.log('Warning: eventTransformer returned an event attempt with priorLocalMean not as as a numeric value.');   
+              }
+              if (attempt.priorLocalStandardDeviation && Utils.isNumber(attempt.priorLocalStandardDeviation)) {
+                console.log('Warning: eventTransformer returned an event attempt with priorLocalStandardDeviation not as as a numeric value.');   
+              }
+            }
+          });
+        }
+      }
+
+      //validate tags
+      if (event.tags != null) {
+        if (!Utils.isObject(event.tags)) {
+          console.log('Warning: eventTransformer returned an event with tags not set as an object.');
+        } else {
+          if (event.tags.skipIrt != null && !Utils.isBoolean(event.tags.skipIrt)) {
+            console.log('Warning: eventTransformer returned an event tag with skipIrt not set as a boolean.');   
+          }
+        }
+      }
+    } 
+  }
 }
 
 export default new KidaptiveSdkEventManager();

@@ -15,9 +15,14 @@ class KidaptiveSdkState {
    * 
    * @return
    *   The value of the property
+   *
+   * @param bool copy
+   *   If set to false the function will bypass the copying functionality
+   *   This should only be used in special cases, and the value should be copied before modifying the value or passing to the parent app
    */
-  get(property) {
-    return Utils.copyObject(_state[property]);
+  get(property, copy = true) {
+    //do not copy value if copy variable set to false
+    return copy ? Utils.copyObject(_state[property]) : _state[property];
   }
 
   /**
@@ -28,9 +33,14 @@ class KidaptiveSdkState {
    *
    * @param {*} value
    *   The value to set for the target property
+   *
+   * @param bool copy
+   *   If set to false the function will bypass the copying functionality
+   *   This should only be used in special cases, and the value should be copied before modifying the value or passing to the parent app
    */
-  set(property, value) {
-    _state[property] = Utils.copyObject(value);
+  set(property, value, copy = true) {
+    //do not copy value if copy variable set to false
+    _state[property] = copy ? Utils.copyObject(value) : value;
   }
 
   /**

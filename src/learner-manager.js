@@ -9,10 +9,6 @@ import Utils from './utils';
 import Q from 'q';
 
 class KidaptiveSdkLearnerManager {
-  constructor() {
-    //lookup objects for abilities
-    this.latentAbilities = {};
-  }
 
   /**
    * Set the user object that contains the user metadata
@@ -172,20 +168,15 @@ class KidaptiveSdkLearnerManager {
           State.set('user', userObjectResponse);
           State.set('learner', Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId)));
 
-          //start trial for learner
-          const requests = [this.startTrial()];
-
-          //update ability estimates for learner
+          //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
-            requests.push(this.updateAbilityEstimates());
+            return this.updateAbilityEstimates().then(() => {
+              return this.startTrial();
+            });
           }
 
-          //resolve when all sub requests complete
-          return Q.all(requests).then(() => {
-
-            //resolve with undefined rather then array of undefined
-            return;
-          });
+          //otherwise start trial immediately
+          return this.startTrial()
         });
       }
 
@@ -206,20 +197,15 @@ class KidaptiveSdkLearnerManager {
         //set the state
         State.set('learner', activeLearner);
 
-        //start trial for learner
-        const requests = [this.startTrial()];
-
-        //update ability estimates for learner
+        //if tier 2 or greater, update ability estimates for learner before starting trial
         if (options.tier >= 2) {
-          requests.push(this.updateAbilityEstimates());
+          return this.updateAbilityEstimates().then(() => {
+            return this.startTrial();
+          });
         }
 
-        //resolve when all sub requests complete
-        return Q.all(requests).then(() => {
-
-          //resolve with undefined then array of undefined
-          return;
-        });
+        //otherwise start trial immediately
+        return this.startTrial()
       }
     });
   }
@@ -334,8 +320,38 @@ class KidaptiveSdkLearnerManager {
         return;
       }
 
+      //get trial time
+      const trialTime = Date.now();
+
+      //adjust standard deviation to be at least 0.65
+      const options = State.get('options');
+      if (options.tier >= 3) {
+
+        //get latent abilities for learner
+        const previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
+
+        //adjust standard deviation for each latent ability
+        const updatedLatentAbilities = previousLatentAbilities.map(latentAbility => {
+
+          //copy object
+          const updatedLatentAbility = Utils.copyObject(latentAbility);
+
+          //adjust latent ability
+          if (updatedLatentAbility.standardDeviation < 0.65) {
+            updatedLatentAbility.standardDeviation = 0.65;
+            updatedLatentAbility.timestamp = trialTime;
+          }
+
+          //return adjusted latent ability
+          return updatedLatentAbility;
+        });
+
+        //update latent abilities in state
+        State.set('latentAbilities.' + learner.id, updatedLatentAbilities);
+      }
+
       //save trial start timestamp
-      State.set('trialTime', Date.now());
+      State.set('trialTime', trialTime);
     });
   }
 
@@ -362,7 +378,7 @@ class KidaptiveSdkLearnerManager {
 
     //map latent ability estimates to all available latent abilities
     return ModelManager.getDimensions().map(dimension => {
-      return this.getLatentAbilityEstimate(dimension.uri);
+      return this.getLatentAbilityEstimate(dimension && dimension.uri);
     });
   }
 
@@ -403,16 +419,12 @@ class KidaptiveSdkLearnerManager {
     }
 
     //find learner latent ability
-    const latentAbilities = this.latentAbilities[learner.id] || [];
-    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimensionId === dimension.id));
+    const latentAbilities = State.get('latentAbilities.' + learner.id) || [];
+    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimension.id === dimension.id));
 
     //if latent ability found, return that latent ability
     if (latentAbility) {
-
-      //attach dimension object onto latent ability
-      localAbility.dimension = dimension;
-      delete latentAbility.dimensionId;
-      return latentAbility
+      return latentAbility;
       
     //if nothing found return default
     } else {
@@ -448,7 +460,7 @@ class KidaptiveSdkLearnerManager {
 
     //map local ability estimates to all available local dimensions
     return ModelManager.getLocalDimensions().map(localDimension => {
-      return this.getLocalAbilityEstimate(localDimension.uri);
+      return this.getLocalAbilityEstimate(localDimension && localDimension.uri);
     });
   }
 
@@ -492,8 +504,8 @@ class KidaptiveSdkLearnerManager {
     const dimension = localDimension.dimension || {};
 
     //find learner latent ability
-    const latentAbilities = this.latentAbilities[learner.id] || [];
-    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimensionId === dimension.id));
+    const latentAbilities = State.get('latentAbilities.' + learner.id) || [];
+    const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimension.id === dimension.id));
 
     //if latent ability found, return that local ability
     if (latentAbility) {
@@ -509,7 +521,7 @@ class KidaptiveSdkLearnerManager {
     //if nothing found return default
     } else {
       return {
-        localDimension: localDimension,
+        localDimension,
         mean: 0,
         standardDeviation: 1,
         timestamp: 0
@@ -540,14 +552,45 @@ class KidaptiveSdkLearnerManager {
         return;
       }
 
-      //reset previous ability estimates
-      this.latentAbilities[learner.id] = [];
+      //get previous latent abilities for merge
+      const previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
 
       //query abilities
-      HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
+      return HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
 
-        //store copy of learner ability estimates
-        this.latentAbilities[learner.id] = Utils.copyObject(latentAbilities) || [];
+        const newAbilities = [];
+
+        //loop through abilities returned from server md compare with previous abilities to pick the most current one
+        latentAbilities.forEach(latentAbility => {
+
+          //find previous ability
+          const previousLatentAbility = Utils.findItem(previousLatentAbilities, previousAbility => previousAbility.dimension.id === latentAbility.dimensionId);
+          //if previous ability doesnt exist or previous ability timestamp is less than the ability returned from the server
+          if (!previousLatentAbility || previousLatentAbility.timestamp < latentAbility.timestamp) {
+
+            //replace dimension reference
+            const newAbility = Utils.copyObject(latentAbility);
+            const idToModel = State.get('idToModel', false);
+            newAbility.dimension = idToModel && idToModel.dimension && idToModel.dimension[newAbility.dimensionId];
+            delete newAbility.dimensionId;
+            newAbilities.push(newAbility);
+
+          //if previous ability timestamp is greater, then it is more recent and use that
+          } else {
+            newAbilities.push(previousLatentAbility);
+
+          }
+        });
+
+        //if new abilities missing any previous abilities, add them to the array
+        previousLatentAbilities.forEach(previousAbility => {
+          if (!Utils.findItem(newAbilities, newAbility => newAbility.dimension.id === previousAbility.dimension.id)) {
+            newAbilities.push(previousAbility);
+          }
+        });
+
+        //store copy of learner ability estimates in state
+        State.set('latentAbilities.' + learner.id, newAbilities);
 
       //return error
       }, error => {

@@ -35,6 +35,10 @@
     * [KidaptiveSdk.modelManager.getLocalDimensions()](#kidaptivesdkmodelmanagergetlocaldimensions)
     * [KidaptiveSdk.modelManager.getLocalDimensionByUri()](#kidaptivesdkmodelmanagergetlocaldimensionbyurilocaldimensionuristring)
     * [KidaptiveSdk.modelManager.updateModels()](#kidaptivesdkmodelmanagerupdatemodels)
+  * [Tier 3 Interface](#tier-3-interface)
+    * [KidaptiveSdk.eventManager.setEventTransformer()](#kidaptivesdkeventmanagerseteventtransformereventtransformerstring)
+    * [KidaptiveSdk.modelManager.getItems()](#kidaptivesdkmodelmanagergetitems)
+    * [KidaptiveSdk.modelManager.getItemByUri()](#kidaptivesdkmodelmanagergetitembyuriitemuristring)
 * [Build Process](#build-process)
 * [Testing](#testing)
 * [Publishing](#publishing)
@@ -215,6 +219,8 @@ KidaptiveSdk.learnerManager.selectActiveLearner(learnerProviderId).then(function
 
 Updates the trial time for the current selected learner. The return value is a [Promise] which resolves when the trial time has been updated. Trials are used to control the weight of prior information when calculating learner ability estimates. Starting a new trial indicates that the learner's current ability may have changed and that the estimate may not be accurate. This causes new evidence to be weighted more to adjust to the new ability.
 
+When the SDK is configured to tier 3 or greater, any of the ability estimates for the learner that have standard deviations below 0.65 will be reset to the value 0.65 when calling startTrial. The timestamps for those ability estimates will also be updated to the new trial time.
+
 This function is called from [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) when the SDK is configured to at least tier 1.
 
 ```javascript
@@ -365,7 +371,6 @@ var latentAbilities = KidaptiveSdk.learnerManager.getLatentAbilityEstimates();
 console.log(latentAbilities);
 ```
 
-
 ---
 
 #### KidaptiveSdk.learnerManager.getLatentAbilityEstimate(dimensionUri:string)
@@ -406,6 +411,8 @@ console.log(localAbility);
 #### KidaptiveSdk.learnerManager.updateAbilityEstimates()
 
 Updates the models associated with the current app and selected learner. The return value is a [Promise] which resolves when the ability estimates have been updated from the server. Once this function has resolved, the getters for the ability estimates can be used.
+
+When the SDK is configured to tier 3 or greater, the ability estimates could be updated by the local IRT. The server ability estimates will only replace the client ability estimates if the server ability estimate timestamps are newer than the client ability estimate timestamps. This prevents this function from overwriting the up to date client ability estimates with out of date server estimates.
 
 This function is automatically called from [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring).
 
@@ -491,9 +498,9 @@ console.log(localDimension);
 
 #### KidaptiveSdk.modelManager.updateModels()
 
-Updates the models associated with the current app, depending on what models are used by the configured tier. For tier 2, the game, dimension, and local dimension models will be updated. The return value is a [Promise] which resolves when the models have been updated from the server. Once this function is resolved, the getter functions for the models can be used.
+Updates the models associated with the current app, depending on what models are used by the configured tier. For tier 2, the game, dimension, and local dimension models will be updated. For tier 3, items will also be updated in addition to the models updated in tier 2. The return value is a [Promise] which resolves when the models have been updated from the server. Once this function is resolved, the getter functions for the models can be used.
 
-This function is called from [KidaptiveSdk.init()](#kidaptivesdkinitapikeystring-optionsobject) when the SDK is configured to at leaset tier 2.
+This function is called from [KidaptiveSdk.init()](#kidaptivesdkinitapikeystring-optionsobject) when the SDK is configured to at least tier 2.
 
 ```javascript
 KidaptiveSdk.modelManager.updateModels().then(function() {
@@ -502,6 +509,66 @@ KidaptiveSdk.modelManager.updateModels().then(function() {
     //ERROR
     console.log(error);
 });
+```
+
+---
+
+### Tier 3 Interface
+
+#### KidaptiveSdk.eventManager.setEventTransformer(eventTransformer:string)
+
+This method allows you to set an event transformer which will be called for every event being sent through the Kidaptive SDK. Whatever event you return from this function will be the event that is queued and sent to the server. If something other than an object is returned from this function, no event will be queued.
+
+The purpose of this method is to add attempts for the local IRT to use in processing. The attempts property on the event object is optional, but if it is defined it should be an array of attempt objects with the following properties:
+
+Attempt Property | Type | Required | Default | Description
+--- | --- | --- | --- | ---
+itemUri | string | true |  | The uri of the desired item to send an outcome
+outcome | number | true |  | Determines if the outcome of the attempt was positive or negative. Values can be `1` or `0`
+guessingParameter | number | false | 0 | Determines how likely the user was to guess at this item. Values can be between or equal to `0` and `1`
+priorLatentMean | number | false | | The prior latent ability mean for the item dimension that learner
+priorLatentStandardDeviation | number | false | | The prior latent ability mean for the item dimension for that 
+priorLocalMean | number | false | | The prior local ability mean for the item local dimension that learner
+priorLocalStandardDeviation | number | false | | The prior local ability mean for the item local dimension for that learner
+
+This method can also add tags that the local IRT uses to help process attempts. The tags property on the event object is optional, but if it is defined it should be an object with the following properties:
+
+Tags Property | Type | Required | Default | Description
+--- | --- | --- | --- | ---
+skipIrt | boolean | false | false | Determines whether the local IRT should be skipped for the attempts attached to this event. 
+
+When events are processed by the local IRT, they will update ability estimates. Server side IRT will also update ability estimates, but this happens less frequently, so having local IRT processing your events can help provide a more adaptive experience.
+
+```javascript
+var eventTransformer = function(event) {
+    //PROCESS EVENT HERE
+    event.attempts = [{itemURI: '/item/uri', outcome: 1}]
+    return event;
+}
+KidaptiveSdk.eventManager.setEventTransformer(eventTransformer);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getItems()
+
+Returns an array of item objects associated with the current app. Items represent the smallest unit of measurement for a given dimension or skill.
+
+```javascript
+var items = KidaptiveSdk.modelManager.getItems();
+console.log(items);
+```
+
+---
+
+#### KidaptiveSdk.modelManager.getItemByUri(itemUri:string)
+
+Returns the item object associated with the itemUri within the current app. Items represent the smallest unit of measurement for a given dimension or skill.
+
+```javascript
+var itemUri = '/item/uri';
+var item = KidaptiveSdk.modelManager.getItemByUri(itemUri);
+console.log(item);
 ```
 
 ---
