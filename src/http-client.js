@@ -35,7 +35,23 @@ class KidaptiveSdkHttpClient {
       if (settings.method === 'POST') {
         request.send(settings.data);
       } else {
-        request.query(settings.data);  
+        //if specialCharKeys option present
+        if (Utils.isArray(options.specialCharKeys) && Utils.isObject(settings.data)) {
+          //loop through the keys on the data object
+          Object.keys(settings.data).forEach(dataKey => {
+            //if the key is a specialCharKeys, then convert it to a query string to avoid encoding the special chars
+            if (options.specialCharKeys.indexOf(dataKey) !== -1) {
+              request.query(dataKey + '=' + settings.data[dataKey]);
+            //otherwise send it as an object to be encoded
+            } else {
+              request.query({[dataKey]: settings.data[dataKey]});
+            }
+          });
+
+        //if no query strings option present, just pass data object to query
+        } else {
+          request.query(settings.data); 
+        } 
       }
       if (settings.contentType) {
         request.set('Content-Type', settings.contentType);

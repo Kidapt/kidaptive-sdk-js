@@ -12,9 +12,11 @@ export default {
     DIMENSION:'/dimension',
     GAME:'/game',
     INGESTION:'/ingestion',
+    INSIGHT:'/insight',
     LOCAL_ABILITY:'/local-ability',
     LOCAL_DIMENSION:'/local-dimension',
-    LOGOUT:'/user/logout'
+    LOGOUT:'/user/logout',
+    METRIC:'/metric'
   },
 
   HOST: {
@@ -25,7 +27,9 @@ export default {
   USER_ENDPOINTS: [
     'ABILITY',
     'INGESTION',
+    'INSIGHT',
     'LOCAL_ABILITY',
-    'LOGOUT'
+    'LOGOUT',
+    'METRIC'
   ]
 };

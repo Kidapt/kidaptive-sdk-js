@@ -300,6 +300,259 @@ class KidaptiveSdkLearnerManager {
   }
 
   /**
+   * Gets the latest specific metric from the server for the current active learner
+   * 
+   * @param {string} metricUri
+   *   The URI of the metric object that is to be returned
+   * 
+   * @param {number} minTimestamp
+   *   The start of the time range to start quering for the metric.
+   *
+   * @param {number} maxTimestamp
+   *   The end of the time range to start quering for the metric.
+   * 
+   * @return
+   *   A promise that resolves with the result of the server request for the metric
+   */
+  getMetricByUri(metricUri, minTimestamp, maxTimestamp) {
+    return Q.fcall(() => {
+      Utils.checkTier(1);
+
+      //validate metricUri
+      if (metricUri == null) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'metricUri is required');
+      }
+      if (!Utils.isString(metricUri)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'metricUri must be a string');
+      }
+
+      //validate minTimestamp
+      if (minTimestamp != null) {
+        if (!Utils.isInteger(minTimestamp) || minTimestamp < 0) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be a positive integer');
+        }
+      }
+
+      //validate maxTimestamp
+      if (maxTimestamp != null) {
+        if (!Utils.isInteger(maxTimestamp) || maxTimestamp < 1) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be a positive integer greater than 0');
+        }
+      }
+
+      //validate minTimestamp and maxTimestamp if both provided
+      if (minTimestamp != null && maxTimestamp != null) {
+        if (minTimestamp >= maxTimestamp) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be greater than minTimestamp');
+        }
+        if (minTimestamp >= maxTimestamp) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be greater than minTimestamp');
+        }
+        if ((maxTimestamp - minTimestamp) > 31536000000) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp and maxTimestamp can only be 1 year (365 days) apart');
+        }
+      }
+
+      //if no learner, return
+      const learner = State.get('learner');
+      if (!learner || !learner.id) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: getMetricByUri called with no active learner selected.');       
+        }
+        return;
+      }
+
+      //default minTimestamp and maxTimestamp
+      if (minTimestamp == null && maxTimestamp == null) {
+        //maxTimestamp is tomorrow
+        maxTimestamp = Date.now() + 86400000;
+        //minTimestamp 1 year before maxTimestamp
+        minTimestamp = maxTimestamp - 31536000000;
+      } else if (minTimestamp  == null) {
+        //minTimestamp is 1 year before maxTimestamp
+        minTimestamp = maxTimestamp - 31536000000;
+        if (minTimestamp < 0) {
+          minTimestamp = 0;
+        }
+      } else if (maxTimestamp == null) {
+        //maxTimestamp is 1 year after minTimestamp
+        maxTimestamp = minTimestamp + 31536000000;
+      }
+
+      //setup request data
+      const data = {
+        learnerId: learner.id,
+        items: [{
+          name: metricUri,
+          start: minTimestamp,
+          end: maxTimestamp
+        }]
+      };
+
+      //setup options
+      const options = {
+        noCache: true
+      };
+
+      //http request
+      return HttpClient.request('POST', Constants.ENDPOINT.METRIC, data, options).then(result => {
+        return result;
+      }, error => {
+        return;
+      });
+    });
+  }
+
+  /**
+   * Gets the specified insight from the server for the current active learner
+   * 
+   * @param {string} insightUri
+   *   The URI of the insight object that is to be returned
+   * 
+   * @param {array} contextKeys
+   *   An optional array of strings which specify which keys should be present on the resulting insight.
+   *
+   * @return
+   *   A promise that resolves with the result of the server request for the insight
+   */
+  getInsightByUri(insightUri, contextKeys) {
+    return Q.fcall(() => {
+      Utils.checkTier(1);
+
+      //validate insightUri
+      if (insightUri == null) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'insightUri is required');
+      }
+      if (!Utils.isString(insightUri)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'insightUri must be a string');
+      }
+
+      //validate contextKeys
+      if (contextKeys != null) {
+        if (!Utils.isArray(contextKeys)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'contextKeys must be an array');
+        } else {
+          contextKeys.forEach(contextKey => {
+            if (!Utils.isString(contextKey)) {
+              throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'contextKeys must be an array of strings');
+            }
+          });
+        }
+      }
+
+      //if no learner, return
+      const learner = State.get('learner');
+      if (!learner || !learner.id) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: getMetricByUri called with no active learner selected.');       
+        }
+        return;
+      }
+
+      //setup request data
+      const data = {
+        learnerId: learner.id,
+        uri: insightUri,
+        latest: true
+      };
+      if (contextKeys != null) {
+        //encode context keys but unencode commas
+        data.contextKeys = encodeURIComponent(contextKeys.join(',')).replace(/%2C/g, ',');
+      }
+
+      //setup options
+      const options = {
+        noCache: true
+      };
+      if (contextKeys != null) {
+        //if contextKeys are present, do not have the HttpClient encode them
+        options.specialCharKeys = ['contextKeys'];
+      }
+
+      //http request
+      return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
+        return result;
+      }, error => {
+        return;
+      });
+    });
+  }
+
+  /**
+   * Gets all insights from a specific timestamp
+   * 
+   * @param {number} minTimestamp
+   *   Insights that occur after the timestamp will be queried.
+   * 
+   * @param {object} contextMap
+   *   An optional object of key:value string pairs which filter what insights are returned.
+   *
+   * @return
+   *   A promise that resolves with the result of the server request for the insights
+   */
+  getInsights(minTimestamp, contextMap) {
+    return Q.fcall(() => {
+      Utils.checkTier(1);
+
+      //validate minTimestamp
+      if (minTimestamp == null) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp is required');
+      }
+      if (!Utils.isInteger(minTimestamp) || minTimestamp < 0) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be a positive integer');
+      }
+
+      //validate contextKeys
+      if (contextMap != null) {
+        if (!Utils.isObject(contextMap)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'contextMap must be an object');
+        } else {
+          Object.keys(contextMap).forEach(contextKey => {
+            if (!Utils.isString(contextMap[contextKey])) {
+              throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'contextMap must be an object of key:value pairs with string values');
+            }
+          });
+        }
+      }
+
+      //if no learner, return
+      const learner = State.get('learner');
+      if (!learner || !learner.id) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: getMetricByUri called with no active learner selected.');       
+        }
+        return [];
+      }
+
+      //setup request data
+      const data = {
+        learnerId: learner.id,
+        minDateCreated: minTimestamp
+      };
+      if (contextMap != null) {
+        Object.keys(contextMap).forEach(contextKey => {
+          data['context.' + contextKey] = contextMap[contextKey];
+        });
+      }
+
+      //setup options
+      const options = {
+        noCache: true
+      };
+
+      //http request
+      return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
+        return result;
+      }, error => {
+        return [];
+      });
+    });
+  }
+
+  /**
    * Starts a trial for the given learner. Sends the trial time length when sending events
    * If no learner is selected, the function will log a warning, and resolve the promise
    * 
@@ -557,6 +810,16 @@ class KidaptiveSdkLearnerManager {
 
       //query abilities
       return HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
+        //pass abilities to then function
+        return latentAbilities;
+
+      //swollow http error
+      }, error => {
+        //pass empty array to then function
+        return [];
+
+      //handle response after http error handled in case this code ever generates an error
+      }).then(latentAbilities => {
 
         const newAbilities = [];
 
@@ -593,8 +856,6 @@ class KidaptiveSdkLearnerManager {
         State.set('latentAbilities.' + learner.id, newAbilities);
 
       //return error
-      }, error => {
-        throw error;
       });
             
     });

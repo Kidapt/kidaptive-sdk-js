@@ -197,6 +197,19 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Checks if an object is an integer
+   * 
+   * @param {object} object
+   *   The object to check
+   * 
+   * @return
+   *   A truthy value whether the object is an integer or not
+   */
+  isInteger(object) {
+    return this.isNumber(object) && isFinite(object) && Math.floor(object) === object;
+  }
+
+  /**
    * Checks if an object is an object {}
    * 
    * @param {object} object

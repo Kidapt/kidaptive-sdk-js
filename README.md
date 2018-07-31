@@ -19,6 +19,9 @@
     * [KidaptiveSdk.learnerManager.getUser()](#kidaptivesdklearnermanagergetuser)
     * [KidaptiveSdk.learnerManager.getActiveLearner()](#kidaptivesdklearnermanagergetactivelearner)
     * [KidaptiveSdk.learnerManager.getLearnerList()](#kidaptivesdklearnermanagergetlearnerlist)
+    * [KidaptiveSdk.learnerManager.getMetricByUri()](#kidaptivesdklearnermanagergetmetricbyurimetricuristring-mintimestampnumber-maxtimestampnumber)
+    * [KidaptiveSdk.learnerManager.getInsightByUri()](#kidaptivesdklearnermanagergetinsightbyuriinsighturistring-contextkeysarray)
+    * [KidaptiveSdk.learnerManager.getInsights()](#kidaptivesdklearnermanagergetinsightsmintimestampnumber-contextmapobject)
     * [KidaptiveSdk.eventManager.reportSimpleEvent()](#kidaptivesdkeventmanagerreportsimpleeventeventnamestring-eventfieldsobject)
     * [KidaptiveSdk.eventManager.reportRawEvent()](#kidaptivesdkeventmanagerreportraweventraweventstring)
     * [KidaptiveSdk.eventManager.flushEventQueue()](#kidaptivesdkeventmanagerflusheventqueue)
@@ -294,6 +297,70 @@ This method returns an array of learners tied to a given user. If no user or lea
 ```javascript
 var learnerList = KidaptiveSdk.learnerManager.getLearnerList();
 console.log(learnerList);
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getMetricByUri(metricUri:string, minTimestamp:number, maxTimestamp:number)
+
+This fetches the metric for the given `metricUri` for the current selected learner. The return value is a [Promise] which resolves when the metric is retrieved. A metric is a JSON object containing concrete statistics about the learner, such as engagement totals, or a history of actions they have taken.
+
+There are optional second and third parameters `minTimestamp` and `maxTimestamp` which are numeric values in milliseconds since unix epoch. These parameters determine the time range that the metric should be queried from. The most recent metric will always be queried from the designated time range. The following table explains the generated period based on what `minTimestamp` and `maxTimestamp` values are provided.
+
+minTimestamp provided | maxTimestamp provided | Resulting queried period
+--- | --- | ---
+No | No | defaults to the last year
+Yes | Yes | `minTimestamp` to `maxTimestamp`
+Yes | No | `minTimestamp` to a year following `minTimestamp`
+No | Yes | a year prior `maxTimestamp` to `maxTimestamp`
+
+```javascript
+var metricUri = '/metric/uri';
+KidaptiveSdk.learnerManager.getMetricByUri(metricUri).then(function(metric) {
+    //SUCCESS
+    console.log(metric)
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getInsightByUri(insightUri:string, contextKeys:array)
+
+This fetches the insight for the given `insightUri` for the current selected learner. The return value is a [Promise] which resolves when the insight is retrieved. An insight is a JSON object containing customized, learner-specific data, such as a content recommendation, parent report, or progress notification.
+
+There is an optional second parameter `contextKeys` that is an array of strings. These strings correspond with the properties you want to be present on the resulting insight. If no contextKeys are provided, then the entire insight will be returned.
+
+```javascript
+var insightUri = '/insight/uri';
+KidaptiveSdk.learnerManager.getInsightByUri(insightUri).then(function(insight) {
+    //SUCCESS
+    console.log(insight)
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getInsights(minTimestamp:number, contextMap:object)
+
+This fetches all insights for the current selected learner starting at the `minTimestamp` provided. The `minTimestamp` is a numeric value in milliseconds since unix epoch. The return value is a [Promise] which resolves when the insights are retrieved. An insight is a JSON object containing customized, learner-specific data, such as a content recommendation, parent report, or progress notification.
+
+There is an optional second parameter `contextMap` that is a flat key:value map of strings. These key:value pairs correspond with properties on the insight. Providing a `contextMap` will cause the server to return only the insights that match all the values for the given keys in the contextMap you provide. There can only be at most 8 key:value pairs provided in a contextMap.
+
+```javascript
+var timestamp = new Date() - 86400000; //last day
+KidaptiveSdk.learnerManager.getInsights(timestamp).then(function(insights) {
+    //SUCCESS
+    console.log(insights)
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
 ```
 
 ---
