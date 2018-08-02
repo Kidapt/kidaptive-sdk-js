@@ -58,7 +58,15 @@ class KidaptiveSdkHttpClient {
       }
       request.set('api-key', settings.apiKey);
 
+      //get cache key
+      const cacheKey = this.getCacheKey(settings);
+
       return request.end().then(result => {
+        //set cache
+        if (!options.noCache) {
+          Utils.localStorageSetItem(cacheKey, result.body);
+        }
+        //return result
         return result.body;
       }, error => {
         const parseError = (error.parse && 'Cannot parse response') || '';
@@ -66,13 +74,25 @@ class KidaptiveSdkHttpClient {
         const status = error && (error.status || error.statusCode);
         const errorMessage = (error.response && error.response.text) || parseError;
         if (status === 400) {
+          Utils.localStorageRemoveItem(cacheKey);
           throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
         } else if (status === 401) {
+          //always delete user data
+          //Utils.clearUserCache();
+          //if app endpoint, delete app data cache
+          if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
+          //  Utils.clearAppCache();
+          }
           throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
         } else if (status && (status < 200 || status >= 300)) {
+          Utils.localStorageRemoveItem(cacheKey);
           throw new Error(Error.ERROR_CODES.WEB_API_ERROR, errorMessage);
         } else {
-          throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
+          try {
+            return Utils.localStorageGetItem(cacheKey);
+          } catch (e) {
+            throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
+          }
         }
       });
     });
@@ -91,7 +111,7 @@ class KidaptiveSdkHttpClient {
     return Base64.encode(String.fromCharCode.apply(undefined, Sha256.array(Utils.toJson(settings))))
       .replace(/[+]/g,'-')
       .replace(/[/]/g,'_')
-      .replace(/=+/,'') + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? '.alpUserData' : '.alpAppData');
+      .replace(/=+/,'') + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? Constants.CACHE_KEY.USER : Constants.CACHE_KEY.APP);
   }
 
   /**
@@ -148,7 +168,7 @@ class KidaptiveSdkHttpClient {
   }
 
   /**
-   * Internal method to determinee if an endpoint is a user endpoint
+   * Internal method to determine if an endpoint is a user endpoint
    *
    * @param {string} endpoint
    *   The endpoint to check if its a user endpoint
@@ -161,7 +181,6 @@ class KidaptiveSdkHttpClient {
       return Constants.ENDPOINT[item] === endpoint
     }) !== -1;
   }
-
 }
 
 export default new KidaptiveSdkHttpClient();

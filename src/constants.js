@@ -26,10 +26,16 @@ export default {
 
   USER_ENDPOINTS: [
     'ABILITY',
+    'CLIENT_SESSION',
     'INGESTION',
     'INSIGHT',
     'LOCAL_ABILITY',
     'LOGOUT',
     'METRIC'
-  ]
+  ],
+
+  CACHE_KEY: {
+    USER: '.alpUserData',
+    APP: '.alpAppData'
+  }
 };

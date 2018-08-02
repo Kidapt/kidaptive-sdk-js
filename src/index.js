@@ -133,6 +133,28 @@ class KidaptiveSdk {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'LoggingLevel option is not an accepted value');
       }
 
+      //validate defaultHttpCache
+      if (options.defaultHttpCache != null) {
+        if (!Utils.isObject(options.defaultHttpCache)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'defaultHttpCache must be an object');
+        }
+        Object.keys(options.defaultHttpCache).forEach(cacheKey => {
+          if (!Utils.isString(options.defaultHttpCache[cacheKey])) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'defaultHttpCache must be an object of key:value pairs with string values');
+          }
+        });
+
+        //set default http cache
+        Object.keys(options.defaultHttpCache).forEach(cacheKey => {
+          try {
+            Utils.localStorageGetItem(cacheKey);
+          } catch (e) {
+            Utils.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
+          }
+        });
+      }
+
+      //set state
       State.set('initialized', true);
       State.set('apiKey', apiKey);
       State.set('options', options);

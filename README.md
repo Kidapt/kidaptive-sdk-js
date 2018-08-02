@@ -133,6 +133,7 @@ build | string | false |  | The build reported to the Kidaptive API with events.
 autoFlushInterval | number | false | 60000 | The interval in milliseconds that the events should be flushed. A value of 0 will result in the auto flush being disabled.
 autoFlushCallback | function or array | false |  | A callback function or an array of callback functions to be called with results of auto event flush.
 loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `minimal`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
+defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
 
 ---
 
@@ -200,7 +201,11 @@ This method selects the active learner. If a learner is already selected, and yo
 
 If `authMode` is configured to `server`, then the learner must be a learner specified in the learner array which is passed in the `userObject` in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) call. 
 
-If the `authMode` is `client`, then the learner will be created. If no user is selected, then a user will be created for this learner automatically. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user will still be logged in. Also, calling `selectActiveLearner` again while a learner is already selected will deselect the current learner and create and/or select the new learner under the same user. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout).
+If the `authMode` is `client`, then the learner will be selected or created if it does not already exist. 
+
+When `authMode` is set to `client` and you call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created for that given user. You can create multiple learners for a single user this way. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user that you set will still be logged in. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout).
+
+When `authMode` is set to `client` and you do not call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created under a user that is mapped specifically to that learner. If you call `selectActiveLearner` again, it will log the existing user and learner out, and the new learner will be selected or created under a user that is mapped specically to that learner. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user tied to that learner will also be logged out.
 
 For all SDK tiers, a trial is created when a learner is selected, equivalent to calling [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial).
 
@@ -239,7 +244,13 @@ KidaptiveSdk.learnerManager.startTrial().then(function() {
 
 #### KidaptiveSdk.learnerManager.clearActiveLearner()
 
-This method clears the current learner so no learner is selected. The user will still be logged in, and another learner, or the same learner, can be selected with the [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) method.
+This method clears the current learner so no learner is selected. 
+
+When `authMode` is set to `server` the user will still be logged in after calling `clearActiveLearner`.
+
+When `authMode` is set to `client` and you do not call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `clearActiveLearner` the user will be logged out.
+
+When `authMode` is set to `client` and you do call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `clearActiveLearner` the user will still be logged in.
 
 ```javascript
 KidaptiveSdk.learnerManager.clearActiveLearner().then(function() {
@@ -519,7 +530,7 @@ console.log(game);
 
 #### KidaptiveSdk.modelManager.getDimensions()
 
-Returns an array of dimension objects associated with the current app. Dimensions represent the key skills and abilities that make up Kidaptive's early learning framework.
+Returns an array of dimension objects associated with the current app. Dimensions represent the key skills and abilities that make up the app's learning framework.
 
 ```javascript
 var dimensions = KidaptiveSdk.modelManager.getDimensions();
@@ -530,7 +541,7 @@ console.log(dimensions);
 
 #### KidaptiveSdk.modelManager.getDimensionByUri(dimensionUri:string)
 
-Returns the dimension object associated with the dimensionUri within the current app. Dimensions represent the key skills and abilities that make up Kidaptive's early learning framework.
+Returns the dimension object associated with the dimensionUri within the current app. Dimensions represent the key skills and abilities that make up the app's learning framework.
 
 ```javascript
 var dimensionUri = '/dimension/uri';
@@ -542,7 +553,7 @@ console.log(dimension);
 
 #### KidaptiveSdk.modelManager.getLocalDimensions()
 
-Returns an array of local dimension objects associated with the current app. Local dimensions are defined for a given app and map to specific dimensions specified in Kidaptive's early learning framework.
+Returns an array of local dimension objects associated with the current app. Local dimensions are defined for a given app and map to specific dimensions specified in the app's learning framework.
 
 ```javascript
 var localDimensions = KidaptiveSdk.modelManager.getLocalDimensions();
@@ -553,7 +564,7 @@ console.log(localDimensions);
 
 #### KidaptiveSdk.modelManager.getLocalDimensionByUri(localDimensionUri:string)
 
-Returns the local dimension object associated with the localDimensionUri within the current app. Local dimensions are defined for a given app and map to specific dimensions specified in Kidaptive's early learning framework.
+Returns the local dimension object associated with the localDimensionUri within the current app. Local dimensions are defined for a given app and map to specific dimensions specified in the app's learning framework.
 
 ```javascript
 var localDimensionUri = '/local-dimension/uri';

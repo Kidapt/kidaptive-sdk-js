@@ -1,4 +1,6 @@
 
+import Constants from './constants';
+import HttpClient from './http-client';
 import Irt from './irt';
 import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
@@ -85,6 +87,16 @@ class KidaptiveSdkAttemptProcessor {
 
     //update latentAbilities in state
     State.set('latentAbilities.' + learner.id, newAbilities);
+
+    //prepare data for local storage cache, removing dimension references
+    newAbilities.forEach(newAbility => {
+      newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
+      delete newAbility.dimension;
+    });
+
+    //update local storage cache
+    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}));
+    Utils.localStorageSetItem(cacheKey, newAbilities);
   }
 
 }

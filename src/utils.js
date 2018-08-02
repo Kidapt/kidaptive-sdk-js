@@ -255,6 +255,32 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Gets the local storage keys
+   * 
+   * @return
+   *   An array of keys
+   */
+  localStorageGetKeys() {
+    try {
+      return Object.keys(localStorage);
+    } catch(e) {
+      return [];
+    }
+  }
+
+  /**
+   * Removes a property value in local storage
+   * 
+   * @param string property
+   *   The target property to remove
+   */
+  localStorageRemoveItem(property) {
+    try {
+      localStorage.removeItem(property);
+    } catch (e) {}
+  }
+
+  /**
    * Sets a property value in local storage
    * 
    * @param string property
@@ -262,10 +288,13 @@ class KidaptiveSdkUtils {
    *
    * @param {*} value
    *   The value to set for the target property
+   *
+   * @param {boolean} stringify
+   *   Whether the value should be stringified or not before being passed to the localaStorage
    */
-  localStorageSetItem(property, value) {
+  localStorageSetItem(property, value, stringify = true) {
     try {
-      localStorage.setItem(property, JSON.stringify(value));
+      localStorage.setItem(property, stringify ? JSON.stringify(value) : value);
     } catch (e) {
       if (KidaptiveSdkUtils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date');
@@ -284,6 +313,28 @@ class KidaptiveSdkUtils {
    */
   toJson(object) {
     return Stringify(object);
+  }
+
+  /**
+   * Deletes the cache for user requests
+   */
+  clearUserCache() {
+    this.localStorageGetKeys().forEach(cacheKey => {
+      if (cacheKey.match(/^[\w-]*[.]alpUserData$/)) {
+        this.localStorageRemoveItem(cacheKey);
+      }
+    });
+  }
+
+  /**
+   * Deletes the cache for app requests
+   */
+  clearAppCache() {
+    this.localStorageGetKeys().forEach(cacheKey => {
+      if (cacheKey.match(/^[\w-]*[.]alpAppData$/)) {
+        this.localStorageRemoveItem(cacheKey);
+      }
+    });
   }
 }
 

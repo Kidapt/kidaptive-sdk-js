@@ -103,15 +103,23 @@ class KidaptiveSdkLearnerManager {
         //if client level auth
         if (options.authMode === 'client') {
 
+          //if the userId is different from cached userId, clear the user cache
+          if (KidaptiveSdkLearnerManager.cachedUserIdDifferent(userObject.providerUserId)) {
+            Utils.clearUserCache();
+          }
+
           //send providerUserId to learner session endpoint to create user
           return HttpClient.request(
             'POST', 
             Constants.ENDPOINT.CLIENT_SESSION, 
-            {providerUserId: userObject.providerUserId}, 
-            {noCache: true}
+            {providerUserId: userObject.providerUserId}
           ).then((userObjectResponse) => {
+            
+            //cache new userId for future comparison
+            KidaptiveSdkLearnerManager.cacheUserId(userObject.providerUserId);
 
             //set the state
+            State.set('setUserCalled', true);
             State.set('user', userObjectResponse);
             State.set('learner', undefined);
           });
@@ -119,6 +127,14 @@ class KidaptiveSdkLearnerManager {
 
         //if server level auth
         if (options.authMode === 'server') {
+
+          //if the userId is different from cached userId, clear the user cache
+          if (KidaptiveSdkLearnerManager.cachedUserIdDifferent(userObject.id)) {
+            Utils.clearUserCache();
+
+            //cache new userId for future comparison
+            KidaptiveSdkLearnerManager.cacheUserId(userObject.id);
+          }
 
           //set the state
           State.set('user', userObject);
@@ -145,6 +161,7 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(1);
       const options = State.get('options') || {};
       const user = State.get('user');
+      const learner = State.get('learner');
 
       //validate providerLearnerId
       if (providerLearnerId == null) {
@@ -157,16 +174,31 @@ class KidaptiveSdkLearnerManager {
       //if client level auth
       if (options.authMode === 'client') {
 
+        //if set user not called, and learner already exists, log that learner out before setting new learner
+        const setUserCalled = State.get('setUserCalled');
+        if (!setUserCalled && learner) {
+
+          //call logout
+          return this.logout().then(() => {
+            //once the user is logged out, resubmit the selectActiveLearner function call
+            return this.selectActiveLearner(providerLearnerId);
+          });
+        }
+
         //send providerLearnerID and providerUserId learner session endpoint to create user and learner
         return HttpClient.request(
           'POST', 
           Constants.ENDPOINT.CLIENT_SESSION, 
-          {providerLearnerId, providerUserId: user && user.providerId}, 
-          {noCache: true}
+          {providerLearnerId, providerUserId: user && user.providerId}
         ).then((userObjectResponse) => {
+
           //set the state
           State.set('user', userObjectResponse);
-          State.set('learner', Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId)));
+          const learner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
+          State.set('learner', learner);
+
+          //cache the new userId and learnerId for future comparison
+          KidaptiveSdkLearnerManager.cacheUserId(userObjectResponse && userObjectResponse.providerId);
 
           //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
@@ -220,7 +252,16 @@ class KidaptiveSdkLearnerManager {
     return OperationManager.addToQueue(() => {
       Utils.checkTier(1);
 
-      //set the state
+      //if client based auth and setUser not called
+      const options = State.get('options') || {};
+      if (options.authMode === 'client' && !State.get('setUserCalled')) {
+        //clear the user cache as the user and learner relationship is one to one
+        Utils.clearUserCache();
+        //clear the user state
+        State.set('user', undefined);
+      }
+
+      //clear the learner state
       State.set('learner', undefined);
     });
   }
@@ -240,6 +281,15 @@ class KidaptiveSdkLearnerManager {
       return EventManager.flushEventQueue().then(() => {
         const options = State.get('options') || {};
 
+        //clear the user cache
+        Utils.clearUserCache();
+
+        //clear setUserCalled flag
+        if (options.authMode === 'client') {
+          State.set('setUserCalled', false);
+        }
+
+        //if authMode server, call logout endpoint
         if (options.authMode === 'server' && State.get('user')) {
           //catch logout error to prevent breaking logout chain
           return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {}, () => {});
@@ -805,8 +855,25 @@ class KidaptiveSdkLearnerManager {
         return;
       }
 
-      //get previous latent abilities for merge
-      const previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
+      //get reference to dimension id model
+      const idToModel = State.get('idToModel', false) || {};
+      const idToDimension = idToModel.dimension || {};
+
+      //try to get latent abilities from local storage cache
+      const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}));
+      let previousLatentAbilities;
+      try {
+        previousLatentAbilities = Utils.localStorageGetItem(cacheKey) || [];
+        //attach dimension objects to match state version of latentAbilities
+        previousLatentAbilities.forEach(previousAbility => {
+          previousAbility.dimension = idToDimension[previousAbility.dimensionId];
+          delete previousAbility.dimensionId;
+        });
+
+      //if that fails, get them from state or default to empty array
+      } catch(e) {
+        previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
+      }
 
       //query abilities
       return HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
@@ -831,11 +898,12 @@ class KidaptiveSdkLearnerManager {
           //if previous ability doesnt exist or previous ability timestamp is less than the ability returned from the server
           if (!previousLatentAbility || previousLatentAbility.timestamp < latentAbility.timestamp) {
 
-            //replace dimension reference
+            //replace dimensionId with dimension reference
             const newAbility = Utils.copyObject(latentAbility);
-            const idToModel = State.get('idToModel', false);
-            newAbility.dimension = idToModel && idToModel.dimension && idToModel.dimension[newAbility.dimensionId];
+            newAbility.dimension = idToDimension[newAbility.dimensionId];
             delete newAbility.dimensionId;
+
+            //add new ability
             newAbilities.push(newAbility);
 
           //if previous ability timestamp is greater, then it is more recent and use that
@@ -855,10 +923,47 @@ class KidaptiveSdkLearnerManager {
         //store copy of learner ability estimates in state
         State.set('latentAbilities.' + learner.id, newAbilities);
 
-      //return error
+        //prepare data for cache, removing dimension references
+        newAbilities.forEach(newAbility => {
+          newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
+          delete newAbility.dimension;
+        });
+
+        //store copy of learner abilities in local storage cache
+        Utils.localStorageSetItem(cacheKey, newAbilities);
+
+      //resolve error if there was one
       });
             
     });
+  }
+
+  /**
+   * Stores the userId in cache for future comparisons to see if the user has changed
+   *
+   * @param {number} userId
+   *   The numeric ID of the user
+   */
+  static cacheUserId(userId) {
+    Utils.localStorageSetItem('UserId' + Constants.CACHE_KEY.USER, userId);
+  }
+
+  /**
+   * Compares the provided userId with the cached userId
+   *
+   * @param {number} userId
+   *   The numeric ID of the user to compare with the cached version
+   *
+   * @return
+   *   If the provided userId is different from the cached userId, return true
+   *   If the provided userId is the same as the cached userId, return false
+   */
+  static cachedUserIdDifferent(userId) {
+    try {
+      return userId !== Utils.localStorageGetItem('UserId' + Constants.CACHE_KEY.USER);
+    } catch(e) {
+      return userId != null;
+    }
   }
 
 }

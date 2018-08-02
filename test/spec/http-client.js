@@ -80,6 +80,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     const endpoint = 'testEndpoint';
     const data = {boolean: true, number: 1, string: "a", array:[]};
     const params = {boolean: false, number: 2, string: 'b', array:[1,2]};
+    const options = {noCache: true};
     const query = 'boolean=false&number=2&string=b&array=1&array=2'
     let server;
     const parseUrl = url => {
@@ -106,7 +107,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
       server.restore();
     });
     it('Development GET', () => {
-      return Should(HttpClient.request('GET', endpoint, params)).resolved().then(response => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(endpoint);
@@ -120,7 +121,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Production GET', () => {
       State.set('options', {environment: 'prod'});
-      return Should(HttpClient.request('GET', endpoint, params)).resolved().then(response => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(endpoint);
@@ -134,7 +135,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Custom GET', () => {
       State.set('options', {environment: 'custom', baseUrl: baseUrl});
-      return Should(HttpClient.request('GET', endpoint, params)).resolved().then(response => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(baseUrl).endWith(endpoint);
@@ -147,7 +148,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
       });
     });
     it('POST', () => {
-      return Should(HttpClient.request('POST', endpoint, params)).resolved().then(response => {
+      return Should(HttpClient.request('POST', endpoint, params, options)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(endpoint);
@@ -162,35 +163,35 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Timeout', () => {
       server.respondWith([0, {}, '']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
       });
     });
     it('Bad Request', () => {
       server.respondWith([400, {}, '']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.INVALID_PARAMETER + ')');
       });
     });
     it('Unauthorized', () => {
       server.respondWith([401, {}, '']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.API_KEY_ERROR + ')');
       });
     });
     it('Internal Server Error', () => {
       server.respondWith([500, {}, '']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.WEB_API_ERROR + ')');
       });
     });
     it('Bad Error Response', () => {
       server.respondWith([400, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.INVALID_PARAMETER + ')');
         Should(error.message).endWith('Cannot parse response');
@@ -198,7 +199,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Bad OK Response', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
         Should(error.message).endWith('Cannot parse response');
@@ -206,7 +207,7 @@ describe('KidaptiveSdk HTTP Client Unit Tests', () => {
     });
     it('Bad Timeout Response', () => {
       server.respondWith([0, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request('GET', endpoint, params)).rejected().then(error => {
+      return Should(HttpClient.request('GET', endpoint, params, options)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
         Should(error.message).not.endWith('Cannot parse response');
