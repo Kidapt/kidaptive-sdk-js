@@ -205,9 +205,8 @@ class KidaptiveSdkEventManager {
     let updatedEvent = Utils.copyObject(event);
 
     //update event object with added properties
-    const learner = State.get('learner');
     updatedEvent.eventTime = Date.now();
-    updatedEvent.learnerId = learner && learner.id;
+    updatedEvent.learnerId = State.get('learnerId');
     updatedEvent.trialTime = State.get('trialTime');
     updatedEvent.userId = user && user.id;
 
@@ -308,8 +307,7 @@ class KidaptiveSdkEventManager {
    *   The cache key string to be used with local storage
    */
   static getEventQueueCacheKey() {
-    const settings = HttpClient.getRequestSettings('POST', Constants.ENDPOINT.INGESTION);
-    return HttpClient.getCacheKey(settings).replace(/[.].*/,'.alpEventData');
+    return HttpClient.getCacheKey(HttpClient.getRequestSettings('POST', Constants.ENDPOINT.INGESTION));
   };
 
   /**

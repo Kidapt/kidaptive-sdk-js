@@ -183,8 +183,8 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
       State.set('initialized', true);
       options = {tier: 1, authMode: 'client', environment: 'dev', version: '1.0.0', build: '1.0.0.100'};
       State.set('options', options);
-      State.set('user', {id: 'userAlpId'});
-      State.set('learner', {id: 'learnerAlpId'});
+      State.set('user', {id: 100});
+      State.set('learnerId', 200);
       return EventManager.flushEventQueue();
     });
     beforeEach(() => {
@@ -217,8 +217,8 @@ describe('KidaptiveSdk Event Manager Unit Tests', () => {
         if (parsed.deviceInfo.language) {
           Should(parsed.deviceInfo.language).String();
         }
-        Should(event.userId).equal('userAlpId');
-        Should(event.learnerId).equal('learnerAlpId');
+        Should(event.userId).equal(100);
+        Should(event.learnerId).equal(200);
         Should(event.name).equal('eventName');
         Should(event.additionalFields).deepEqual({});
       })

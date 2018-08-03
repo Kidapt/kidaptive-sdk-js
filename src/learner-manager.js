@@ -103,42 +103,55 @@ class KidaptiveSdkLearnerManager {
         //if client level auth
         if (options.authMode === 'client') {
 
-          //if the userId is different from cached userId, clear the user cache
-          if (KidaptiveSdkLearnerManager.cachedUserIdDifferent(userObject.providerUserId)) {
-            Utils.clearUserCache();
-          }
-
           //send providerUserId to learner session endpoint to create user
           return HttpClient.request(
             'POST', 
             Constants.ENDPOINT.CLIENT_SESSION, 
-            {providerUserId: userObject.providerUserId}
+            {providerUserId: userObject.providerUserId},
+            {defaultApiKey: true}
           ).then((userObjectResponse) => {
+
+            //if the userId is different from cached userId, clear the user cache after request successful
+            if (KidaptiveSdkLearnerManager.cachedProviderUserIdDifferent(userObject.providerUserId)) {
+              Utils.clearUserCache();
+
+              //cache this response since it was just cleared
+              const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings(
+                'POST', 
+                Constants.ENDPOINT.CLIENT_SESSION, 
+                {providerUserId: userObject.providerUserId},
+                {defaultApiKey: true}
+              ));
+              Utils.localStorageSetItem(cacheKey, userObjectResponse);
+            }
             
-            //cache new userId for future comparison
-            KidaptiveSdkLearnerManager.cacheUserId(userObject.providerUserId);
+            //cache new user for future comparison
+            Utils.cacheUser(userObjectResponse);
+
+            //store providerUserId which determines if setUser has been called for client auth
+            State.set('providerUserId', userObject.providerUserId);
+            Utils.cacheProviderUserId(userObject.providerUserId);
 
             //set the state
-            State.set('setUserCalled', true);
             State.set('user', userObjectResponse);
-            State.set('learner', undefined);
+            State.set('learnerId', undefined);
           });
         }
 
         //if server level auth
         if (options.authMode === 'server') {
 
-          //if the userId is different from cached userId, clear the user cache
-          if (KidaptiveSdkLearnerManager.cachedUserIdDifferent(userObject.id)) {
+          //if the providerUserId is different from cached providerUserId, clear the user cache
+          if (KidaptiveSdkLearnerManager.cachedProviderUserIdDifferent(userObject.providerId)) {
             Utils.clearUserCache();
-
-            //cache new userId for future comparison
-            KidaptiveSdkLearnerManager.cacheUserId(userObject.id);
           }
+
+          //cache new user object for future comparison
+          Utils.cacheUser(userObject);
 
           //set the state
           State.set('user', userObject);
-          State.set('learner', undefined);
+          State.set('learnerId', undefined);
         }
       });
     });
@@ -161,7 +174,8 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(1);
       const options = State.get('options') || {};
       const user = State.get('user');
-      const learner = State.get('learner');
+      const providerUserId = State.get('providerUserId');
+      const learnerId = State.get('learnerId');
 
       //validate providerLearnerId
       if (providerLearnerId == null) {
@@ -174,9 +188,29 @@ class KidaptiveSdkLearnerManager {
       //if client level auth
       if (options.authMode === 'client') {
 
-        //if set user not called, and learner already exists, log that learner out before setting new learner
-        const setUserCalled = State.get('setUserCalled');
-        if (!setUserCalled && learner) {
+        //get learner from user learner list if it exists
+        const learnerList = this.getLearnerList();
+        const learner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
+
+        //if learner does exist in user object, then set learner without doing a request to client session
+        if (learner) {
+          //set learner
+          State.set('learnerId', learner.id);
+          Utils.cacheLearnerId(learner.id);
+          
+          //if tier 2 or greater, update ability estimates for learner before starting trial
+          if (options.tier >= 2) {
+            return this.updateAbilityEstimates().then(() => {
+              return this.startTrial();
+            });
+          }
+
+          //otherwise start trial immediately
+          return this.startTrial()
+        }
+
+        //if providerUserId not set from setUser, log that learner out before setting new learner
+        if (providerUserId == null && learnerId != null) {
 
           //call logout
           return this.logout().then(() => {
@@ -189,16 +223,39 @@ class KidaptiveSdkLearnerManager {
         return HttpClient.request(
           'POST', 
           Constants.ENDPOINT.CLIENT_SESSION, 
-          {providerLearnerId, providerUserId: user && user.providerId}
+          {providerLearnerId, providerUserId},
+          {defaultApiKey: true}
         ).then((userObjectResponse) => {
 
-          //set the state
-          State.set('user', userObjectResponse);
-          const learner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
-          State.set('learner', learner);
+          //get the previous user object to modify it
+          let newUserObject = State.get('user');
 
-          //cache the new userId and learnerId for future comparison
-          KidaptiveSdkLearnerManager.cacheUserId(userObjectResponse && userObjectResponse.providerId);
+          //if a providerUserId is set, then setUser was called, and a request was made to client session for the learner
+          //therefore the learner doesn't exist and should be merged into the list
+          if (providerUserId != null) {
+            if (userObjectResponse.learners < 1) {
+              throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'The client session response is missing learner information');
+            }
+            newUserObject.learners.push(userObjectResponse.learners[0]);
+
+          //otherwise use the response as the new user object
+          } else {
+            newUserObject = userObjectResponse;
+          }
+
+          //set the user state
+          State.set('user', newUserObject);
+
+          //set the learner state
+          const activeLearner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
+          if (!activeLearner) {
+            throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'A learner with that providerLearnerId does not exist');
+          }
+          State.set('learnerId', activeLearner.id);
+
+          //cache the new user and learnerId for future comparison
+          Utils.cacheUser(newUserObject);
+          Utils.cacheLearnerId(activeLearner.id);
 
           //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
@@ -221,13 +278,16 @@ class KidaptiveSdkLearnerManager {
         }
 
         //validate that the providerLearnerId exists for that user
-        let activeLearner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
+        const activeLearner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
         if (!activeLearner) {
           throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'A learner with that providerLearnerId does not exist');
         }
 
         //set the state
-        State.set('learner', activeLearner);
+        State.set('learnerId', activeLearner.id);
+
+        //cache the new learnerId
+        Utils.cacheLearnerId(activeLearner.id);
 
         //if tier 2 or greater, update ability estimates for learner before starting trial
         if (options.tier >= 2) {
@@ -252,9 +312,9 @@ class KidaptiveSdkLearnerManager {
     return OperationManager.addToQueue(() => {
       Utils.checkTier(1);
 
-      //if client based auth and setUser not called
+      //if client based auth and providerUserId not defines (setUser hasn't been called)
       const options = State.get('options') || {};
-      if (options.authMode === 'client' && !State.get('setUserCalled')) {
+      if (options.authMode === 'client' && State.get('providerUserId') == null) {
         //clear the user cache as the user and learner relationship is one to one
         Utils.clearUserCache();
         //clear the user state
@@ -262,7 +322,8 @@ class KidaptiveSdkLearnerManager {
       }
 
       //clear the learner state
-      State.set('learner', undefined);
+      State.set('learnerId', undefined);
+      Utils.cacheLearnerId(undefined);
     });
   }
 
@@ -281,23 +342,20 @@ class KidaptiveSdkLearnerManager {
       return EventManager.flushEventQueue().then(() => {
         const options = State.get('options') || {};
 
-        //clear the user cache
-        Utils.clearUserCache();
-
-        //clear setUserCalled flag
-        if (options.authMode === 'client') {
-          State.set('setUserCalled', false);
-        }
-
         //if authMode server, call logout endpoint
         if (options.authMode === 'server' && State.get('user')) {
           //catch logout error to prevent breaking logout chain
           return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {}, () => {});
         }
       }).then(() => {
+        const options = State.get('options') || {};
+
+        //clear the user cache
+        Utils.clearUserCache();
 
         //reset state
-        State.set('learner', undefined);
+        State.set('providerUserId', undefined);
+        State.set('learnerId', undefined);
         State.set('user', undefined);
       });
     });
@@ -329,8 +387,14 @@ class KidaptiveSdkLearnerManager {
   getActiveLearner() {
     Utils.checkTier(1);
 
-    //get the state
-    return State.get('learner') || undefined;
+    //if no learner, return undefined
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
+      return undefined;
+    }
+
+    //get learner from user learner list
+    return Utils.findItem(this.getLearnerList(), learner => (learner.id === learnerId));
   }
 
   /**
@@ -404,8 +468,8 @@ class KidaptiveSdkLearnerManager {
       }
 
       //if no learner, return
-      const learner = State.get('learner');
-      if (!learner || !learner.id) {
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
           console.log('Warning: getMetricByUri called with no active learner selected.');       
@@ -432,7 +496,7 @@ class KidaptiveSdkLearnerManager {
 
       //setup request data
       const data = {
-        learnerId: learner.id,
+        learnerId,
         items: [{
           name: metricUri,
           start: minTimestamp,
@@ -492,8 +556,8 @@ class KidaptiveSdkLearnerManager {
       }
 
       //if no learner, return
-      const learner = State.get('learner');
-      if (!learner || !learner.id) {
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
           console.log('Warning: getMetricByUri called with no active learner selected.');       
@@ -503,7 +567,7 @@ class KidaptiveSdkLearnerManager {
 
       //setup request data
       const data = {
-        learnerId: learner.id,
+        learnerId,
         uri: insightUri,
         latest: true
       };
@@ -568,8 +632,8 @@ class KidaptiveSdkLearnerManager {
       }
 
       //if no learner, return
-      const learner = State.get('learner');
-      if (!learner || !learner.id) {
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
           console.log('Warning: getMetricByUri called with no active learner selected.');       
@@ -579,7 +643,7 @@ class KidaptiveSdkLearnerManager {
 
       //setup request data
       const data = {
-        learnerId: learner.id,
+        learnerId,
         minDateCreated: minTimestamp
       };
       if (contextMap != null) {
@@ -614,8 +678,8 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(1);
 
       //resolve the promise if a learner is not set
-      const learner = State.get('learner');
-      if (!learner || !learner.id) {
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
           console.log('Warning: startTrial called with no active learner selected.');       
@@ -631,7 +695,7 @@ class KidaptiveSdkLearnerManager {
       if (options.tier >= 3) {
 
         //get latent abilities for learner
-        const previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
+        const previousLatentAbilities = State.get('latentAbilities.' + learnerId) || [];
 
         //adjust standard deviation for each latent ability
         const updatedLatentAbilities = previousLatentAbilities.map(latentAbility => {
@@ -650,7 +714,7 @@ class KidaptiveSdkLearnerManager {
         });
 
         //update latent abilities in state
-        State.set('latentAbilities.' + learner.id, updatedLatentAbilities);
+        State.set('latentAbilities.' + learnerId, updatedLatentAbilities);
       }
 
       //save trial start timestamp
@@ -670,8 +734,8 @@ class KidaptiveSdkLearnerManager {
     Utils.checkTier(2);
 
     //if a learner is not set return an empty array
-    const learner = State.get('learner');
-    if (!learner || !learner.id) {
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: getLatentAbilityEstimates called with no active learner selected.');       
@@ -700,8 +764,8 @@ class KidaptiveSdkLearnerManager {
     Utils.checkTier(2);
 
     //if a learner is not set return undefined
-    const learner = State.get('learner');
-    if (!learner || !learner.id) {
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: getLatentAbilityEstimate called with no active learner selected.');       
@@ -722,7 +786,7 @@ class KidaptiveSdkLearnerManager {
     }
 
     //find learner latent ability
-    const latentAbilities = State.get('latentAbilities.' + learner.id) || [];
+    const latentAbilities = State.get('latentAbilities.' + learnerId) || [];
     const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimension.id === dimension.id));
 
     //if latent ability found, return that latent ability
@@ -752,8 +816,8 @@ class KidaptiveSdkLearnerManager {
     Utils.checkTier(2);
 
     //if a learner is not set return an empty array
-    const learner = State.get('learner');
-    if (!learner || !learner.id) {
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: getLatentAbilityEstimates called with no active learner selected.');       
@@ -782,8 +846,8 @@ class KidaptiveSdkLearnerManager {
     Utils.checkTier(2);
 
     //if a learner is not set return undefined
-    const learner = State.get('learner');
-    if (!learner || !learner.id) {
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: getLocalAbilityEstimate called with no active learner selected.');       
@@ -807,7 +871,7 @@ class KidaptiveSdkLearnerManager {
     const dimension = localDimension.dimension || {};
 
     //find learner latent ability
-    const latentAbilities = State.get('latentAbilities.' + learner.id) || [];
+    const latentAbilities = State.get('latentAbilities.' + learnerId) || [];
     const latentAbility = Utils.copyObject(Utils.findItem(latentAbilities, latentAbility => latentAbility.dimension.id === dimension.id));
 
     //if latent ability found, return that local ability
@@ -844,8 +908,8 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(2);
 
       //check if learner is set
-      const learner = State.get('learner');
-      if (!learner || !learner.id) {
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
           console.log('Warning: updateAbilityEstimates called with no active learner selected.');       
@@ -860,7 +924,7 @@ class KidaptiveSdkLearnerManager {
       const idToDimension = idToModel.dimension || {};
 
       //try to get latent abilities from local storage cache
-      const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}));
+      const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
       let previousLatentAbilities;
       try {
         previousLatentAbilities = Utils.localStorageGetItem(cacheKey) || [];
@@ -872,11 +936,11 @@ class KidaptiveSdkLearnerManager {
 
       //if that fails, get them from state or default to empty array
       } catch(e) {
-        previousLatentAbilities = State.get('latentAbilities.' + learner.id) || [];
+        previousLatentAbilities = State.get('latentAbilities.' + learnerId) || [];
       }
 
       //query abilities
-      return HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}, {noCache:true}).then(latentAbilities => {
+      return HttpClient.request('GET', Constants.ENDPOINT.ABILITY , {learnerId: learnerId}, {noCache:true}).then(latentAbilities => {
         //pass abilities to then function
         return latentAbilities;
 
@@ -921,7 +985,7 @@ class KidaptiveSdkLearnerManager {
         });
 
         //store copy of learner ability estimates in state
-        State.set('latentAbilities.' + learner.id, newAbilities);
+        State.set('latentAbilities.' + learnerId, newAbilities);
 
         //prepare data for cache, removing dimension references
         newAbilities.forEach(newAbility => {
@@ -939,31 +1003,20 @@ class KidaptiveSdkLearnerManager {
   }
 
   /**
-   * Stores the userId in cache for future comparisons to see if the user has changed
+   * Compares the providerUserId with the cached providerUserId
+   * This uses the providerUserId within the user object as this will always be available
    *
-   * @param {number} userId
-   *   The numeric ID of the user
-   */
-  static cacheUserId(userId) {
-    Utils.localStorageSetItem('UserId' + Constants.CACHE_KEY.USER, userId);
-  }
-
-  /**
-   * Compares the provided userId with the cached userId
-   *
-   * @param {number} userId
-   *   The numeric ID of the user to compare with the cached version
+   * @param {string} providerUserId
+   *   The provider ID of the user to compare with the cached version
    *
    * @return
-   *   If the provided userId is different from the cached userId, return true
-   *   If the provided userId is the same as the cached userId, return false
+   *   If the providerUserId is different from the cached providerUserId, return true
+   *   If the providerUserId is the same as the cached providerUserId, return false
    */
-  static cachedUserIdDifferent(userId) {
-    try {
-      return userId !== Utils.localStorageGetItem('UserId' + Constants.CACHE_KEY.USER);
-    } catch(e) {
-      return userId != null;
-    }
+  static cachedProviderUserIdDifferent(providerUserId) {
+    const user = Utils.getCachedUser();
+    //compare providerUserId, or if no user in the cache, see if the new providerUserId is defined
+    return user ? (user.providerId !== providerUserId) : (providerUserId != null);
   }
 
 }

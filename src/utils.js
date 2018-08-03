@@ -336,6 +336,81 @@ class KidaptiveSdkUtils {
       }
     });
   }
+
+  /**
+   * Stores the userId in cache for future comparisons to see if the user has changed
+   *
+   * @param {number} userId
+   *   The numeric ID of the user
+   */
+  cacheUser(user) {
+    this.localStorageSetItem('User' + Constants.CACHE_KEY.USER, user);
+  }
+
+  /**
+   * Stores the learnerId in cache to be loaded when the app is initialized
+   *
+   * @param {number} userId
+   *   The numeric ID of the learner
+   */
+  cacheLearnerId(learnerId) {
+    this.localStorageSetItem('LearnerId' + Constants.CACHE_KEY.USER, learnerId);
+  }
+
+  /**
+   * Stores the providerUserId in cache to be loaded when the app is initialized
+   * This property determines if setUser has been called when authMode is set to client
+   *
+   * @param {string} providerUserId
+   *   The string providerUserId sent to the setUser call
+   */
+  cacheProviderUserId(providerUserId) {
+    this.localStorageSetItem('ProviderUserId' + Constants.CACHE_KEY.USER, providerUserId);
+  }
+
+  /**
+   * Gets the user stored in cache
+   *
+   * @return
+   *   The cached user object or undefined
+   */
+  getCachedUser() {
+    try {
+      return this.localStorageGetItem('User' + Constants.CACHE_KEY.USER);
+    } catch(e) {
+      return undefined;
+    }
+  }
+
+  /**
+   * Gets the learnerId stored in cache
+   *
+   * @return
+   *   The cachedlearnerId or undefined
+   */
+  getCachedLearnerId() {
+    try {
+      return this.localStorageGetItem('LearnerId' + Constants.CACHE_KEY.USER);
+    } catch(e) {
+      return undefined;
+    }
+  }
+
+  /**
+   * Gets the providerUserId stored in cache
+   * This property determines if setUser has been called when authMode is set to client
+   *
+   * @return
+   *   The cached providerUserId sent to the setUser call or undefined
+   */
+  getCachedProviderUserId() {
+    try {
+      return this.localStorageGetItem('ProviderUserId' + Constants.CACHE_KEY.USER);
+    } catch(e) {
+      return undefined;
+    }
+  }
+
 }
 
 export default new KidaptiveSdkUtils();

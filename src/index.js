@@ -6,6 +6,7 @@ import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
+import Q from 'q';
 
 class KidaptiveSdk {
   constructor() {
@@ -159,17 +160,35 @@ class KidaptiveSdk {
       State.set('apiKey', apiKey);
       State.set('options', options);
 
+      //get cached user and learner
+      State.set('user', Utils.getCachedUser());
+      State.set('learnerId', Utils.getCachedLearnerId());
+      if (options.authMode === 'client') {
+        State.set('providerUserId', Utils.getCachedProviderUserId());
+      }
+
+      //setup requests object to resolve when all items are resolved
+      const requests = [];
+
       //start auto flush
       if (options.tier >= 1) {
-        return EventManager.startAutoFlush().then(() => {
-
-          //update models
-          if (options.tier >= 2) {
-            return ModelManager.updateModels();
-          }
-
-        });
+        requests.push(EventManager.startAutoFlush());
       }
+
+      //update models
+      if (options.tier >= 2) {
+        requests.push(ModelManager.updateModels());
+      }
+
+      //resolve init when all requests complete
+      return Q.all(requests).then(results => {
+        //if active learner, update it after models feteched
+        const activeLearner = LearnerManager.getActiveLearner();
+        if (activeLearner) {
+          return LearnerManager.selectActiveLearner(activeLearner.providerId);
+        }
+        //otherwise resolve undefined
+      })
 
     });
   }

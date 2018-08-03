@@ -29,7 +29,7 @@ class KidaptiveSdkHttpClient {
    */
   request(method, endpoint, data, options = {}) {
     return Q.fcall(() => {
-      const settings = this.getRequestSettings(method, endpoint, data);
+      const settings = this.getRequestSettings(method, endpoint, data, options);
       const request = Superagent(settings.method, settings.host + settings.endpoint);
       request.withCredentials();
       if (settings.method === 'POST') {
@@ -78,10 +78,10 @@ class KidaptiveSdkHttpClient {
           throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
         } else if (status === 401) {
           //always delete user data
-          //Utils.clearUserCache();
+          Utils.clearUserCache();
           //if app endpoint, delete app data cache
           if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
-          //  Utils.clearAppCache();
+            Utils.clearAppCache();
           }
           throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
         } else if (status && (status < 200 || status >= 300)) {
@@ -129,10 +129,10 @@ class KidaptiveSdkHttpClient {
    * @return
    *   Returns the settings object used to generate a cache key and to submit a request
    */
-  getRequestSettings(method, endpoint, data) {
+  getRequestSettings(method, endpoint, data, options = {}) {
       let apiKey = State.get('apiKey');
       const user = State.get('user');
-      if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey) {
+      if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey && !options.defaultApiKey) {
         apiKey = user.apiKey;
       }
       const settings = {

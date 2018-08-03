@@ -17,9 +17,9 @@ class KidaptiveSdkAttemptProcessor {
    *   The attempt object to be processed
    */
   processAttempt(attempt) {
-    //check learner
-    const learner = State.get('learner');
-    if (!learner || !learner.id) {
+    //check if learner is set
+    const learnerId = State.get('learnerId');
+    if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: processAttempt called with no active learner selected.');       
@@ -73,7 +73,7 @@ class KidaptiveSdkAttemptProcessor {
     newAbility.timestamp = State.get('trialTime') || 0;
 
     //setup variables to update abilities based off of latent abilities
-    const newAbilities = State.get('latentAbilities.' + learner.id) || [];
+    const newAbilities = State.get('latentAbilities.' + learnerId) || [];
 
     //if the ability already exists, replace it in the array
     const updateAbilityIndex = Utils.findItemIndex(newAbilities, newAbility => newAbility.dimension.id === latentAbility.dimension.id);
@@ -86,7 +86,7 @@ class KidaptiveSdkAttemptProcessor {
     }
 
     //update latentAbilities in state
-    State.set('latentAbilities.' + learner.id, newAbilities);
+    State.set('latentAbilities.' + learnerId, newAbilities);
 
     //prepare data for local storage cache, removing dimension references
     newAbilities.forEach(newAbility => {
@@ -95,7 +95,7 @@ class KidaptiveSdkAttemptProcessor {
     });
 
     //update local storage cache
-    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId: learner.id}));
+    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
     Utils.localStorageSetItem(cacheKey, newAbilities);
   }
 
