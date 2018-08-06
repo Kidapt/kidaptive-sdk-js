@@ -215,7 +215,7 @@ class KidaptiveSdk {
      
       if (State.get('options').tier >= 1) {
         EventManager.stopAutoFlush();
-        return LearnerManager.logout().then(() => {
+        return EventManager.flushEventQueue().then(() => {
           State.clear();
           State.set('initialized', false);
         });
