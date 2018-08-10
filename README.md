@@ -727,10 +727,10 @@ Attempt Property | Type | Required | Default | Description
 itemUri | string | true |  | The uri of the desired item to send an outcome
 outcome | number | true |  | Determines if the outcome of the attempt was positive or negative. Values can be `1` or `0`
 guessingParameter | number | false | 0 | Determines how likely the user was to guess at this item. Values can be between or equal to `0` and `1`
-priorLatentMean | number | false | | The learner's prior latent ability mean for the item's dimension
-priorLatentStandardDeviation | number | false | | The learner's prior latent ability standard deviation for the item's dimension
-priorLocalMean | number | false | | The learner's prior local ability mean for the item's local dimension
-priorLocalStandardDeviation | number | false | | The learner's prior local ability standard deviation for the item's local dimension
+priorLatentMean | number | false | | The learner's prior latent ability mean for the item's dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
+priorLatentStandardDeviation | number | false | | The learner's prior latent ability standard deviation for the item's dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
+priorLocalMean | number | false | | The learner's prior local ability mean for the item's local dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
+priorLocalStandardDeviation | number | false | | The learner's prior local ability standard deviation for the item's local dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
 
 The `eventTransformer function` can also add `tags` that the local IRT module uses to help process `attempts`. The `tags` property on the `event object` is optional, but if it is defined it should be an object with the following properties:
 

@@ -235,7 +235,7 @@ class KidaptiveSdkEventManager {
       //transform event if an event transformer is present
       const eventTransformer = State.get('eventTransformer', false);
       if (eventTransformer) {
-        updatedEvent = eventTransformer(updatedEvent);
+        updatedEvent = Utils.copyObject(eventTransformer(updatedEvent));
 
         //if the event is not an object, do not queue any event
         if (!Utils.isObject(updatedEvent)) {
@@ -245,10 +245,20 @@ class KidaptiveSdkEventManager {
         //validate the updated event and display event warnings
         KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
 
-        //process event attempts if they exist and skipIrt is not defined
-        if (Utils.isArray(updatedEvent.attempts) && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
-          updatedEvent.attempts.forEach(attempt => {
-            AttemptProcessor.processAttempt(attempt);
+        //loop through events to add missing prior values
+        if (Utils.isArray(updatedEvent.attempts)) {
+          updatedEvent.attempts = updatedEvent.attempts.map(attempt => {
+            //prepare attempt by validating attempt object and populating default values
+            //if something is wrong with the attempt object or learner state, this will return undefined
+            const updatedAttempt = AttemptProcessor.prepareAttempt(attempt);
+
+            //process event attempts if skipIrt is falsey and if nothing went wrong with prepareAttempt
+            if (updatedAttempt && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
+              AttemptProcessor.processAttempt(updatedAttempt);
+            }
+
+            //return new updated attempt if available, or fall back on the old attempt if needed
+            return updatedAttempt || attempt;
           });
         }
       }
@@ -361,13 +371,16 @@ class KidaptiveSdkEventManager {
               } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
                 console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.');   
               }
-              if (attempt.priorLatentMean && Utils.isNumber(attempt.priorLatentMean)) {
+              if (attempt.priorLatentMean != null && !Utils.isNumber(attempt.priorLatentMean)) {
                 console.log('Warning: eventTransformer returned an event attempt with priorLatentMean not as as a numeric value.');   
               }
-              if (attempt.priorLocalMean && Utils.isNumber(attempt.priorLocalMean)) {
+              if (attempt.priorLocalMean != null && !Utils.isNumber(attempt.priorLocalMean)) {
                 console.log('Warning: eventTransformer returned an event attempt with priorLocalMean not as as a numeric value.');   
               }
-              if (attempt.priorLocalStandardDeviation && Utils.isNumber(attempt.priorLocalStandardDeviation)) {
+              if (attempt.priorLatentStandardDeviation != null && !Utils.isNumber(attempt.priorLatentStandardDeviation)) {
+                console.log('Warning: eventTransformer returned an event attempt with priorLatentStandardDeviation not as as a numeric value.');   
+              }
+              if (attempt.priorLocalStandardDeviation != null && !Utils.isNumber(attempt.priorLocalStandardDeviation)) {
                 console.log('Warning: eventTransformer returned an event attempt with priorLocalStandardDeviation not as as a numeric value.');   
               }
             }

@@ -8,15 +8,17 @@ import State from './state';
 import Utils from './utils';
 
 class KidaptiveSdkAttemptProcessor {
-  
   /**
-   * Process an attempt for the current learner
+   * Prepares an attempt for processAttempt by validating the object and defining missing prior values
    * This function is a private function within the SDK called when events with attempts are processed
    * 
    * @param {object} attempt
-   *   The attempt object to be processed
+   *   The attempt object to be prepared
+   *
+   * @return
+   *   The updated attempt object, or undefined if something went wrong
    */
-  processAttempt(attempt) {
+  prepareAttempt(attempt) {
     //check if learner is set
     const learnerId = State.get('learnerId');
     if (learnerId == null) {
@@ -57,12 +59,48 @@ class KidaptiveSdkAttemptProcessor {
       return;
     }
 
-    //get abilities
-    const localAbility = LearnerManager.getLocalAbilityEstimate(item.localDimension.uri);
+    //get models
+    const latentAbility = LearnerManager.getLatentAbilityEstimate(item.localDimension.dimension.uri);
+    const localAbility = LearnerManager.getLocalAbilityEstimate(item.localDimension && item.localDimension.uri);
+
+    //copy atttempt
+    const updatedAttempt = Utils.copyObject(attempt);
+
+    //add missing values
+    if (attempt.priorLatentMean == null) {
+      updatedAttempt.priorLatentMean = latentAbility.mean;
+    }
+    if (attempt.priorLatentStandardDeviation == null) {
+      updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
+    }
+    if (attempt.priorLocalMean == null) {
+      updatedAttempt.priorLocalMean = localAbility.mean;
+    }
+    if (attempt.priorLocalStandardDeviation == null) {
+      updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
+    }
+
+    //return
+    return updatedAttempt;
+  }
+
+  /**
+   * Process an attempt for the current learner
+   * This function is a private function within the SDK called when events with attempts are processed
+   * 
+   * @param {object} attempt
+   *   The attempt object to be processed
+   */
+  processAttempt(attempt) {
+    //get learner
+    const learnerId = State.get('learnerId');
+
+    //get models
+    const item = ModelManager.getItemByUri(attempt.itemURI);
     const latentAbility = LearnerManager.getLatentAbilityEstimate(item.localDimension.dimension.uri);
 
     //process data in IRT to get new ability
-    const estimation = Irt.estimate(!!attempt.outcome, item.mean, attempt.guessingParameter, localAbility.mean, localAbility.standardDeviation);
+    const estimation = Irt.estimate(!!attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
 
     //new ability is based off latentAbility
     const newAbility = Utils.copyObject(latentAbility);
@@ -98,7 +136,6 @@ class KidaptiveSdkAttemptProcessor {
     const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
     Utils.localStorageSetItem(cacheKey, newAbilities);
   }
-
 }
 
 export default new KidaptiveSdkAttemptProcessor();
