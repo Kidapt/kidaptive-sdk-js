@@ -62,7 +62,7 @@ class KidaptiveSdkAttemptProcessor {
     const latentAbility = LearnerManager.getLatentAbilityEstimate(item.localDimension.dimension.uri);
 
     //process data in IRT to get new ability
-    const estimation = Irt.estimate(!!attempt.outcome, item.mean, localAbility.mean, localAbility.standardDeviation);
+    const estimation = Irt.estimate(!!attempt.outcome, item.mean, attempt.guessingParameter, localAbility.mean, localAbility.standardDeviation);
 
     //new ability is based off latentAbility
     const newAbility = Utils.copyObject(latentAbility);

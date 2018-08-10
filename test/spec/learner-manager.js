@@ -43,6 +43,10 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
     server.restore();
   });
   describe('setUser', () => {
+    beforeEach(() => {
+      State.set('user', undefined);
+      localStorage.clear();
+    });
     describe('validate userObject for authMode:server', () => {
       let userObject;
       beforeEach(() => {

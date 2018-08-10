@@ -34,7 +34,8 @@ class KidaptiveSdkModelManager {
         'dimension': [],
         'game': [],
         'local-dimension': ['dimension', 'game'],
-        'item': ['local-dimension']
+        'item': ['prompt', 'local-dimension'],
+        'prompt': ['game']
       }
     };
 
@@ -66,9 +67,11 @@ class KidaptiveSdkModelManager {
    */
   getGames() {
     Utils.checkTier(2);
+
     //lookup model list
     const modelListLookup = State.get('modelListLookup', false) || {};
     const modelList = modelListLookup['game'] || [];
+
     //to copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -94,6 +97,7 @@ class KidaptiveSdkModelManager {
     const uriToModel = State.get('uriToModel', false) || {};
     const modelMap = uriToModel['game'];
     const model =  modelMap && modelMap[gameUri];
+
     //copy object before returning
     return Utils.copyObject(model);
   }
@@ -106,9 +110,11 @@ class KidaptiveSdkModelManager {
    */
   getDimensions() {
     Utils.checkTier(2);
+
     //lookup model list
     const modelListLookup = State.get('modelListLookup', false) || {};
     const modelList = modelListLookup['dimension'] || [];
+
     //to copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -134,6 +140,7 @@ class KidaptiveSdkModelManager {
     const uriToModel = State.get('uriToModel', false) || {};
     const modelMap = uriToModel['dimension'];
     const model =  modelMap && modelMap[dimensionUri];
+
     //copy object before returning
     return Utils.copyObject(model);
   }
@@ -146,9 +153,11 @@ class KidaptiveSdkModelManager {
    */
   getLocalDimensions() {
     Utils.checkTier(2);
+
     //lookup model list
     const modelListLookup = State.get('modelListLookup', false) || {};
     const modelList = modelListLookup['local-dimension'] || [];
+
     //copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -174,21 +183,24 @@ class KidaptiveSdkModelManager {
     const uriToModel = State.get('uriToModel', false) || {};
     const modelMap = uriToModel['local-dimension'];
     const model =  modelMap && modelMap[localDimensionUri];
+
     //copy object before returning
     return Utils.copyObject(model);
   }
 
   /**
-   * Gets all local item models
+   * Gets all item models
    * 
    * @return
    *   An array of item objects. If the model list is undefined, an empty array is returned.
    */
   getItems() {
     Utils.checkTier(3);
+
     //lookup model list
     const modelListLookup = State.get('modelListLookup', false) || {};
     const modelList = modelListLookup['item'] || [];
+
     //copy array and objects before returning
     return Utils.copyObject(modelList);
   }
@@ -214,8 +226,109 @@ class KidaptiveSdkModelManager {
     const uriToModel = State.get('uriToModel', false) || {};
     const modelMap = uriToModel['item'];
     const model =  modelMap && modelMap[itemUri];
+
     //copy object before returning
     return Utils.copyObject(model);
+  }
+
+  /**
+   * Gets all item models for the given promptUri
+   *
+   * @param {string} promptUri
+   *   The promptUri of the prompt that the items to be returned should belong to
+   * 
+   * @return
+   *   An array of item objects. If the model list is undefined, an empty array is returned.
+   */
+  getItemsByPromptUri(promptUri) {
+    Utils.checkTier(3);
+
+    //validate promptUri
+    if (!Utils.isString(promptUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'promptUri must be a string');
+    }
+
+    //lookup model list
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['item'] || [];
+
+    //filter model list
+    const filteredModelList = modelList.filter(model => model.prompt.uri === promptUri);
+
+    //to copy array and objects before returning
+    return Utils.copyObject(filteredModelList);
+  }
+
+
+  /**
+   * Gets all prompt models
+   * 
+   * @return
+   *   An array of prompt objects. If the model list is undefined, an empty array is returned.
+   */
+  getPrompts() {
+    Utils.checkTier(3);
+
+    //lookup model list
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['prompt'] || [];
+
+    //to copy array and objects before returning
+    return Utils.copyObject(modelList);
+  }
+
+  /**
+   * Gets the pompt by the provided URI
+   *
+   * @param {string} promptUri
+   *   The promptUri of the prompt object that is to be returned
+   * 
+   * @return
+   *   The prompt object. If no item is defined for that uri, then undefined is returned.
+   */
+  getPromptByUri(promptUri) {
+    Utils.checkTier(3);
+
+    //validate promptUri
+    if (!Utils.isString(promptUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'promptUri must be a string');
+    }
+    
+    //lookup model
+    const uriToModel = State.get('uriToModel', false) || {};
+    const modelMap = uriToModel['prompt'];
+    const model =  modelMap && modelMap[promptUri];
+
+    //copy object before returning
+    return Utils.copyObject(model);
+  }
+
+  /**
+   * Gets all prompt models for the given gameUri
+   *
+   * @param {string} gameUri
+   *   The gameUri of the game that the prompts to be returned should belong to
+   * 
+   * @return
+   *   An array of prompt objects. If the model list is undefined, an empty array is returned.
+   */
+  getPromptsByGameUri(gameUri) {
+    Utils.checkTier(3);
+
+    //validate gameUri
+    if (!Utils.isString(gameUri)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'gameUri must be a string');
+    }
+
+    //lookup model list
+    const modelListLookup = State.get('modelListLookup', false) || {};
+    const modelList = modelListLookup['prompt'] || [];
+
+    //filter model list
+    const filteredModelList = modelList.filter(model => model.game.uri === gameUri);
+
+    //to copy array and objects before returning
+    return Utils.copyObject(filteredModelList);
   }
 
   /**

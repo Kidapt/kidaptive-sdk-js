@@ -320,7 +320,7 @@ class KidaptiveSdkUtils {
    */
   clearUserCache() {
     this.localStorageGetKeys().forEach(cacheKey => {
-      if (cacheKey.match(/^[\w-]*[.]alpUserData$/)) {
+      if (cacheKey.match(/^[\w-.]*[.]alpUserData$/)) {
         this.localStorageRemoveItem(cacheKey);
       }
     });
@@ -331,7 +331,7 @@ class KidaptiveSdkUtils {
    */
   clearAppCache() {
     this.localStorageGetKeys().forEach(cacheKey => {
-      if (cacheKey.match(/^[\w-]*[.]alpAppData$/)) {
+      if (cacheKey.match(/^[\w-.]*[.]alpAppData$/)) {
         this.localStorageRemoveItem(cacheKey);
       }
     });
@@ -344,7 +344,7 @@ class KidaptiveSdkUtils {
    *   The numeric ID of the user
    */
   cacheUser(user) {
-    this.localStorageSetItem('User' + Constants.CACHE_KEY.USER, user);
+    this.localStorageSetItem('User.' + State.get('apiKey') + Constants.CACHE_KEY.USER, user);
   }
 
   /**
@@ -354,7 +354,7 @@ class KidaptiveSdkUtils {
    *   The numeric ID of the learner
    */
   cacheLearnerId(learnerId) {
-    this.localStorageSetItem('LearnerId' + Constants.CACHE_KEY.USER, learnerId);
+    this.localStorageSetItem('LearnerId.' + State.get('apiKey') + Constants.CACHE_KEY.USER, learnerId);
   }
 
   /**
@@ -365,7 +365,7 @@ class KidaptiveSdkUtils {
    *   The string providerUserId sent to the setUser call
    */
   cacheProviderUserId(providerUserId) {
-    this.localStorageSetItem('ProviderUserId' + Constants.CACHE_KEY.USER, providerUserId);
+    this.localStorageSetItem('ProviderUserId.' + State.get('apiKey') + Constants.CACHE_KEY.USER, providerUserId);
   }
 
   /**
@@ -376,7 +376,7 @@ class KidaptiveSdkUtils {
    */
   getCachedUser() {
     try {
-      return this.localStorageGetItem('User' + Constants.CACHE_KEY.USER);
+      return this.localStorageGetItem('User.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
     } catch(e) {
       return undefined;
     }
@@ -390,7 +390,7 @@ class KidaptiveSdkUtils {
    */
   getCachedLearnerId() {
     try {
-      return this.localStorageGetItem('LearnerId' + Constants.CACHE_KEY.USER);
+      return this.localStorageGetItem('LearnerId.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
     } catch(e) {
       return undefined;
     }
@@ -405,7 +405,7 @@ class KidaptiveSdkUtils {
    */
   getCachedProviderUserId() {
     try {
-      return this.localStorageGetItem('ProviderUserId' + Constants.CACHE_KEY.USER);
+      return this.localStorageGetItem('ProviderUserId.' + State.get('apiKey') +  Constants.CACHE_KEY.USER);
     } catch(e) {
       return undefined;
     }

@@ -4,6 +4,9 @@ import EventManager from './event-manager';
 import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
+import RecommendationManager from './recommendation-manager';
+import RecommenderOptimalDifficulty from './recommenders/optimalDifficulty';
+import RecommenderRandom from './recommenders/random';
 import State from './state';
 import Utils from './utils';
 import Q from 'q';
@@ -52,10 +55,10 @@ class KidaptiveSdk {
 
       //validate apiKey
       if (apiKey == null) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Api key is required');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'API key is required');
       }
       if (!Utils.isString(apiKey)) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Api key must be a string');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'API key must be a string');
       }
 
       //validate environment
@@ -165,6 +168,12 @@ class KidaptiveSdk {
       State.set('learnerId', Utils.getCachedLearnerId());
       if (options.authMode === 'client') {
         State.set('providerUserId', Utils.getCachedProviderUserId());
+      }
+
+      //register built in recommenders
+      if (options.tier >= 3) {
+        RecommendationManager.registerRecommender(new RecommenderOptimalDifficulty(this), 'optimalDifficulty');
+        RecommendationManager.registerRecommender(new RecommenderRandom(this), 'random');
       }
 
       //setup requests object to resolve when all items are resolved

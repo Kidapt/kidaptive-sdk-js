@@ -35,23 +35,7 @@ class KidaptiveSdkHttpClient {
       if (settings.method === 'POST') {
         request.send(settings.data);
       } else {
-        //if specialCharKeys option present
-        if (Utils.isArray(options.specialCharKeys) && Utils.isObject(settings.data)) {
-          //loop through the keys on the data object
-          Object.keys(settings.data).forEach(dataKey => {
-            //if the key is a specialCharKeys, then convert it to a query string to avoid encoding the special chars
-            if (options.specialCharKeys.indexOf(dataKey) !== -1) {
-              request.query(dataKey + '=' + settings.data[dataKey]);
-            //otherwise send it as an object to be encoded
-            } else {
-              request.query({[dataKey]: settings.data[dataKey]});
-            }
-          });
-
-        //if no query strings option present, just pass data object to query
-        } else {
-          request.query(settings.data); 
-        } 
+        request.query(settings.data); 
       }
       if (settings.contentType) {
         request.set('Content-Type', settings.contentType);
@@ -61,40 +45,53 @@ class KidaptiveSdkHttpClient {
       //get cache key
       const cacheKey = this.getCacheKey(settings);
 
-      return request.end().then(result => {
-        //set cache
-        if (!options.noCache) {
-          Utils.localStorageSetItem(cacheKey, result.body);
-        }
-        //return result
-        return result.body;
-      }, error => {
-        const parseError = (error.parse && 'Cannot parse response') || '';
-        //error statusCode is available when there is a parse error
-        const status = error && (error.status || error.statusCode);
-        const errorMessage = (error.response && error.response.text) || parseError;
-        if (status === 400) {
-          Utils.localStorageRemoveItem(cacheKey);
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
-        } else if (status === 401) {
-          //always delete user data
-          Utils.clearUserCache();
-          //if app endpoint, delete app data cache
-          if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
-            Utils.clearAppCache();
+      //certain older browsers may fail to catch the error
+      try {
+
+        return request.end().then(result => {
+          //set cache
+          if (!options.noCache) {
+            Utils.localStorageSetItem(cacheKey, result.body);
           }
-          throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
-        } else if (status && (status < 200 || status >= 300)) {
-          Utils.localStorageRemoveItem(cacheKey);
-          throw new Error(Error.ERROR_CODES.WEB_API_ERROR, errorMessage);
-        } else {
-          try {
-            return Utils.localStorageGetItem(cacheKey);
-          } catch (e) {
-            throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
+          //return result
+          return result.body;
+        }, error => {
+          const parseError = (error.parse && 'Cannot parse response') || '';
+          //error statusCode is available when there is a parse error
+          const status = error && (error.status || error.statusCode);
+          const errorMessage = (error.response && error.response.text) || parseError;
+          if (status === 400) {
+            Utils.localStorageRemoveItem(cacheKey);
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
+          } else if (status === 401) {
+            //always delete user data
+            Utils.clearUserCache();
+            //if app endpoint, delete app data cache
+            if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
+              Utils.clearAppCache();
+            }
+            throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
+          } else if (status && (status < 200 || status >= 300)) {
+            Utils.localStorageRemoveItem(cacheKey);
+            throw new Error(Error.ERROR_CODES.WEB_API_ERROR, errorMessage);
+          } else {
+            try {
+              return Utils.localStorageGetItem(cacheKey);
+            } catch (e) {
+              throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
+            }
           }
+        });
+
+      //for browsers that completely fail to handle the http error correctly, catch the error here
+      } catch (errorMessage) {
+        //try to resolve the request with cache
+        try {
+          return Utils.localStorageGetItem(cacheKey);
+        } catch (e) {
+          throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
         }
-      });
+      }
     });
   }
 

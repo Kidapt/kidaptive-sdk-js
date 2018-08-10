@@ -4,6 +4,7 @@ import EventManager from './event-manager';
 import HttpClient from './http-client';
 import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
+import RecommendationManager from './recommendation-manager';
 import State from './state';
 import Utils from './utils';
 import Q from 'q';
@@ -112,29 +113,28 @@ class KidaptiveSdkLearnerManager {
           ).then((userObjectResponse) => {
 
             //if the userId is different from cached userId, clear the user cache after request successful
-            if (KidaptiveSdkLearnerManager.cachedProviderUserIdDifferent(userObject.providerUserId)) {
-              Utils.clearUserCache();
+            if (KidaptiveSdkLearnerManager.providerUserIdDifferent(userObject.providerUserId)) {
 
-              //cache this response since it was just cleared
-              const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings(
-                'POST', 
-                Constants.ENDPOINT.CLIENT_SESSION, 
-                {providerUserId: userObject.providerUserId},
-                {defaultApiKey: true}
-              ));
-              Utils.localStorageSetItem(cacheKey, userObjectResponse);
+              //call logout to log existing user out
+              return this.logout().then(() => {
+
+                //cache this response since it was just cleared during logout
+                const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings(
+                  'POST', 
+                  Constants.ENDPOINT.CLIENT_SESSION, 
+                  {providerUserId: userObject.providerUserId},
+                  {defaultApiKey: true}
+                ));
+                Utils.localStorageSetItem(cacheKey, userObjectResponse);
+
+                //call method to cache user and set state
+                KidaptiveSdkLearnerManager.onClientSetUserSuccess(userObjectResponse);
+              });
+
             }
             
-            //cache new user for future comparison
-            Utils.cacheUser(userObjectResponse);
-
-            //store providerUserId which determines if setUser has been called for client auth
-            State.set('providerUserId', userObject.providerUserId);
-            Utils.cacheProviderUserId(userObject.providerUserId);
-
-            //set the state
-            State.set('user', userObjectResponse);
-            State.set('learnerId', undefined);
+            //call method to cache user and set state
+            KidaptiveSdkLearnerManager.onClientSetUserSuccess(userObjectResponse);
           });
         }
 
@@ -142,19 +142,57 @@ class KidaptiveSdkLearnerManager {
         if (options.authMode === 'server') {
 
           //if the providerUserId is different from cached providerUserId, clear the user cache
-          if (KidaptiveSdkLearnerManager.cachedProviderUserIdDifferent(userObject.providerId)) {
-            Utils.clearUserCache();
+          if (KidaptiveSdkLearnerManager.providerUserIdDifferent(userObject.providerId)) {
+
+            //call logout to log existing user out
+            return this.logout().then(() => {
+
+              //call method to cache user and set state
+              KidaptiveSdkLearnerManager.onServerSetUserSuccess(userObject);
+            });
+
           }
 
-          //cache new user object for future comparison
-          Utils.cacheUser(userObject);
-
-          //set the state
-          State.set('user', userObject);
-          State.set('learnerId', undefined);
+          //call method to cache user and set state
+          KidaptiveSdkLearnerManager.onServerSetUserSuccess(userObject);
         }
       });
     });
+  }
+
+  /**
+   * Set the state and cache for a user when authMode client setUser is complete
+   *
+   * @param {object} userObjectResponse
+   *   The user object response from the client session endpoint
+   */
+  static onClientSetUserSuccess(userObjectResponse) {
+    //cache new user for future comparison
+    Utils.cacheUser(userObjectResponse);
+
+    //store providerUserId which determines if setUser has been called for client auth
+    State.set('providerUserId', userObjectResponse.providerId);
+    Utils.cacheProviderUserId(userObjectResponse.providerId);
+
+    //set the state
+    State.set('user', userObjectResponse);
+    State.set('learnerId', undefined);
+  }
+
+  /**
+   * Set the state and cache for a user when authMode server setUser is complete
+   *
+   * @param {object} userObject
+   *   The user object provided from the backend
+   */
+  static onServerSetUserSuccess(userObject) {
+    //cache new user object for future comparison
+    Utils.cacheUser(userObject);
+
+    //set the state
+    State.set('providerUserId', undefined);
+    State.set('user', userObject);
+    State.set('learnerId', undefined);
   }
 
   /**
@@ -572,18 +610,14 @@ class KidaptiveSdkLearnerManager {
         latest: true
       };
       if (contextKeys != null) {
-        //encode context keys but unencode commas
-        data.contextKeys = encodeURIComponent(contextKeys.join(',')).replace(/%2C/g, ',');
+        //join context keys into comma separated list
+        data.contextKeys = contextKeys.join(',');
       }
 
       //setup options
       const options = {
         noCache: true
       };
-      if (contextKeys != null) {
-        //if contextKeys are present, do not have the HttpClient encode them
-        options.specialCharKeys = ['contextKeys'];
-      }
 
       //http request
       return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
@@ -1003,7 +1037,79 @@ class KidaptiveSdkLearnerManager {
   }
 
   /**
-   * Compares the providerUserId with the cached providerUserId
+   * Returns recommendations based on the prompts associated with the local dimension 
+   * and the learner's ability estimate for that local dimension.
+   *
+   * @param {string} localDimensionUri
+   *   The localDimensionUri to be used for getting associated prompts and the learner's ability estimate
+   *
+   * @param {number} targetSuccessProbability
+   *   The target success probability for the learner to succeed at the given prompt, between 0 and 1
+   *
+   * @param {number} maxResults
+   *   The maximum number of recommendations that are desired
+   *
+   * @param {array} excludedPromptUris
+   *   An array of promptUris which determine which prompts should be excluded from consideration when generating the recommendations
+   *
+   * @param {array} includedPromptUris
+   *   An array of promptUris which determine which prompts should be included from used when generating the recommendations.
+   *   ExcludedPromptUris will take priority and potentially exclude items from this list.
+   * 
+   * @return
+   *   An array of recommendations in the form of an array of prompt uris
+   */
+  getSuggestedPrompts(localDimensionUri, targetSuccessProbability, maxResults, excludedPromptUris, includedPromptUris) {
+    Utils.checkTier(3);
+
+    //get recommendation
+    const result = RecommendationManager.getRecommendation('optimalDifficulty', {localDimensionUri, targetSuccessProbability, maxResults, excludedPromptUris, includedPromptUris});
+
+    //if an error is present, throw it
+    if (result.error) {
+      throw result.error;
+    }
+
+    //return recommendations
+    return result.recommendations;
+  }
+
+  /**
+   * Returns random recommendations based on the prompts associated with the game
+   *
+   * @param {string} gameUri
+   *   The gameUri to be used for getting associated prompts
+   *
+   * @param {number} maxResults
+   *   The maximum number of recommendations that are desired
+   *
+   * @param {array} excludedPromptUris
+   *   An array of promptUris which determine which prompts should be excluded from consideration when generating the recommendations
+   *
+   * @param {array} includedPromptUris
+   *   An array of promptUris which determine which prompts should be included from used when generating the recommendations.
+   *   ExcludedPromptUris will take priority and potentially exclude items from this list.
+   * 
+   * @return
+   *   An array of recommendations in the form of an array of prompt uris
+   */
+  getRandomPromptForGame(gameUri, maxResults, excludedPromptUris, includedPromptUris) {
+    Utils.checkTier(3);
+
+    //get recommendation
+    const result = RecommendationManager.getRecommendation('random', {gameUri, maxResults, excludedPromptUris, includedPromptUris});
+
+    //if an error is present, throw it
+    if (result.error) {
+      throw result.error;
+    }
+
+    //return recommendations
+    return result.recommendations;
+  }
+
+  /**
+   * Compares the providerUserId with the user providerUserId in the state, or the cache
    * This uses the providerUserId within the user object as this will always be available
    *
    * @param {string} providerUserId
@@ -1013,12 +1119,11 @@ class KidaptiveSdkLearnerManager {
    *   If the providerUserId is different from the cached providerUserId, return true
    *   If the providerUserId is the same as the cached providerUserId, return false
    */
-  static cachedProviderUserIdDifferent(providerUserId) {
-    const user = Utils.getCachedUser();
+  static providerUserIdDifferent(providerUserId) {
+    const user = State.get('user') || Utils.getCachedUser();
     //compare providerUserId, or if no user in the cache, see if the new providerUserId is defined
     return user ? (user.providerId !== providerUserId) : (providerUserId != null);
   }
-
 }
 
 export default new KidaptiveSdkLearnerManager();
