@@ -40,17 +40,17 @@ class KidaptiveSdkLearnerManager {
 
         //if an apiKey is passed in the SDK is likely configured to the wrong auth mode
         if (userObject.apiKey != null) {
-          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser apiKey not supported when the SDK authMode is server');
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser apiKey not supported when the SDK authMode is cient');
         }
 
         //if a providerId is passed in the SDK is likely configured to the wrong auth mode
         if (userObject.providerId != null) {
-          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser providerId not supported when the SDK authMode is server');
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser providerId not supported when the SDK authMode is cient');
         }
 
         //if an id is passed in the SDK is likely configured to the wrong auth mode
         if (userObject.id != null) {
-          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser id not supported when the SDK authMode is server');
+          throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser id not supported when the SDK authMode is cient');
         }
       }
 

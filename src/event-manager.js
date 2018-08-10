@@ -114,14 +114,39 @@ class KidaptiveSdkEventManager {
       let eventQueue = KidaptiveSdkEventManager.getEventQueue();
       if (eventQueue.length) {
         const requests = [];
+        const eventBatches = []
         eventQueue.forEach(event => {
+          eventBatches.push(event);
           requests.push(
             HttpClient.request('POST', Constants.ENDPOINT.INGESTION, event, {noCache:true})
           );
         });
         eventQueue = [];
         KidaptiveSdkEventManager.setEventQueue(eventQueue);
-        return Q.allSettled(requests);
+        return Q.allSettled(requests).then(results => {
+          //reset event queue in case new events have been pushed while event flush occurred
+          let requeue = [];
+
+          //loop through results and requeue ones that failed
+          for (let i = 0; i < results.length; i++) {
+            const rejected = results[i].state === 'rejected';
+            const error = results[i].reason || {};;
+
+            //requeue events when API unavailable
+            if (rejected && error.type === Error.ERROR_CODES.GENERIC_ERROR) {
+              requeue.push(eventBatches[i]);
+            }
+
+            //append requeue onto event queue
+            if (requeue.length) {
+              const newEventQueue = KidaptiveSdkEventManager.getEventQueue().concat(requeue);
+              KidaptiveSdkEventManager.setEventQueue(newEventQueue);
+            }
+          }
+
+          //return flush event queue results
+          return results;
+        });
       } else {
         return Q.fcall(() => []);
       }
