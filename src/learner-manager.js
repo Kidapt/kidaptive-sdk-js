@@ -113,7 +113,7 @@ class KidaptiveSdkLearnerManager {
           ).then((userObjectResponse) => {
 
             //if the userId is different from cached userId, clear the user cache after request successful
-            if (KidaptiveSdkLearnerManager.providerUserIdDifferent(userObject.providerUserId)) {
+            if (KidaptiveSdkLearnerManager.userIdDifferent(userObjectResponse.id)) {
 
               //call logout to log existing user out
               return this.logout().then(() => {
@@ -142,7 +142,7 @@ class KidaptiveSdkLearnerManager {
         if (options.authMode === 'server') {
 
           //if the providerUserId is different from cached providerUserId, clear the user cache
-          if (KidaptiveSdkLearnerManager.providerUserIdDifferent(userObject.providerId)) {
+          if (KidaptiveSdkLearnerManager.userIdDifferent(userObject.id)) {
 
             //call logout to log existing user out
             return this.logout().then(() => {
@@ -167,16 +167,14 @@ class KidaptiveSdkLearnerManager {
    *   The user object response from the client session endpoint
    */
   static onClientSetUserSuccess(userObjectResponse) {
-    //cache new user for future comparison
+    //cache new user and singletonLearner flag for future
     Utils.cacheUser(userObjectResponse);
-
-    //store providerUserId which determines if setUser has been called for client auth
-    State.set('providerUserId', userObjectResponse.providerId);
-    Utils.cacheProviderUserId(userObjectResponse.providerId);
+    Utils.cacheSingletonLearnerFlag(false);
 
     //set the state
     State.set('user', userObjectResponse);
     State.set('learnerId', undefined);
+    State.set('singletonLearner', false);
   }
 
   /**
@@ -188,11 +186,12 @@ class KidaptiveSdkLearnerManager {
   static onServerSetUserSuccess(userObject) {
     //cache new user object for future comparison
     Utils.cacheUser(userObject);
+    Utils.cacheSingletonLearnerFlag(false);
 
     //set the state
-    State.set('providerUserId', undefined);
     State.set('user', userObject);
     State.set('learnerId', undefined);
+    State.set('singletonLearner', false);
   }
 
   /**
@@ -212,8 +211,9 @@ class KidaptiveSdkLearnerManager {
       Utils.checkTier(1);
       const options = State.get('options') || {};
       const user = State.get('user');
-      const providerUserId = State.get('providerUserId');
       const learnerId = State.get('learnerId');
+      //default singleton learner to true if its not set explicitly to false, as it won't be set if set user has never been called
+      const singletonLearner = State.get('singletonLearner') === false ? false : true;
 
       //validate providerLearnerId
       if (providerLearnerId == null) {
@@ -227,7 +227,6 @@ class KidaptiveSdkLearnerManager {
       if (options.authMode === 'client') {
 
         //get learner from user learner list if it exists
-        const learnerList = this.getLearnerList();
         const learner = Utils.findItem(this.getLearnerList(), learner => (learner.providerId === providerLearnerId));
 
         //if learner does exist in user object, then set learner without doing a request to client session
@@ -247,8 +246,8 @@ class KidaptiveSdkLearnerManager {
           return this.startTrial()
         }
 
-        //if providerUserId not set from setUser, log that learner out before setting new learner
-        if (providerUserId == null && learnerId != null) {
+        //if singletonLearner (setUser not called), log that learner out before setting new learner
+        if (singletonLearner && learnerId != null) {
 
           //call logout
           return this.logout().then(() => {
@@ -257,20 +256,20 @@ class KidaptiveSdkLearnerManager {
           });
         }
 
-        //send providerLearnerID and providerUserId learner session endpoint to create user and learner
+        //send providerLearnerID and providerUserId to learner session endpoint to create user and learner
         return HttpClient.request(
           'POST', 
           Constants.ENDPOINT.CLIENT_SESSION, 
-          {providerLearnerId, providerUserId},
+          {providerLearnerId, providerUserId: user && user.providerId},
           {defaultApiKey: true}
         ).then((userObjectResponse) => {
 
           //get the previous user object to modify it
           let newUserObject = State.get('user');
 
-          //if a providerUserId is set, then setUser was called, and a request was made to client session for the learner
-          //therefore the learner doesn't exist and should be merged into the list
-          if (providerUserId != null) {
+          //if the user is not a singletonLearner user, and the learner doesn't already exist, then this http request occured
+          //and the learner returned from this request should be merged into the list
+          if (!singletonLearner) {
             if (userObjectResponse.learners < 1) {
               throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'The client session response is missing learner information');
             }
@@ -279,6 +278,9 @@ class KidaptiveSdkLearnerManager {
           //otherwise use the response as the new user object
           } else {
             newUserObject = userObjectResponse;
+
+            //since singleton learner truthy value never cached, cache it now
+            Utils.cacheSingletonLearnerFlag(true);
           }
 
           //set the user state
@@ -386,15 +388,13 @@ class KidaptiveSdkLearnerManager {
           return HttpClient.request('POST', Constants.ENDPOINT.LOGOUT, undefined, {noCache: true}).then(() => {}, () => {});
         }
       }).then(() => {
-        const options = State.get('options') || {};
-
         //clear the user cache
         Utils.clearUserCache();
 
         //reset state
-        State.set('providerUserId', undefined);
         State.set('learnerId', undefined);
         State.set('user', undefined);
+        State.set('singletonLearner', undefined);
       });
     });
   }
@@ -428,7 +428,7 @@ class KidaptiveSdkLearnerManager {
     //if no learner, return undefined
     const learnerId = State.get('learnerId');
     if (learnerId == null) {
-      return undefined;
+      return;
     }
 
     //get learner from user learner list
@@ -452,7 +452,7 @@ class KidaptiveSdkLearnerManager {
   }
 
   /**
-   * Gets the latest specific metric from the server for the current active learner
+   * Gets the specific metric from the server for the current active learner
    * 
    * @param {string} metricUri
    *   The URI of the metric object that is to be returned
@@ -466,7 +466,7 @@ class KidaptiveSdkLearnerManager {
    * @return
    *   A promise that resolves with the result of the server request for the metric
    */
-  getMetricByUri(metricUri, minTimestamp, maxTimestamp) {
+  getMetricsByUri(metricUri, minTimestamp, maxTimestamp) {
     return Q.fcall(() => {
       Utils.checkTier(1);
 
@@ -497,9 +497,6 @@ class KidaptiveSdkLearnerManager {
         if (minTimestamp >= maxTimestamp) {
           throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be greater than minTimestamp');
         }
-        if (minTimestamp >= maxTimestamp) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be greater than minTimestamp');
-        }
         if ((maxTimestamp - minTimestamp) > 31536000000) {
           throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp and maxTimestamp can only be 1 year (365 days) apart');
         }
@@ -510,7 +507,7 @@ class KidaptiveSdkLearnerManager {
       if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
-          console.log('Warning: getMetricByUri called with no active learner selected.');       
+          console.log('Warning: getMetricsByUri called with no active learner selected.');       
         }
         return;
       }
@@ -550,14 +547,12 @@ class KidaptiveSdkLearnerManager {
       //http request
       return HttpClient.request('POST', Constants.ENDPOINT.METRIC, data, options).then(result => {
         return result;
-      }, error => {
-        return;
       });
     });
   }
 
   /**
-   * Gets the specified insight from the server for the current active learner
+   * Gets the latest specified insight from the server for the current active learner
    * 
    * @param {string} insightUri
    *   The URI of the insight object that is to be returned
@@ -568,7 +563,7 @@ class KidaptiveSdkLearnerManager {
    * @return
    *   A promise that resolves with the result of the server request for the insight
    */
-  getInsightByUri(insightUri, contextKeys) {
+  getLatestInsightByUri(insightUri, contextKeys) {
     return Q.fcall(() => {
       Utils.checkTier(1);
 
@@ -598,7 +593,7 @@ class KidaptiveSdkLearnerManager {
       if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
-          console.log('Warning: getMetricByUri called with no active learner selected.');       
+          console.log('Warning: getLatestInsightByUri called with no active learner selected.');       
         }
         return;
       }
@@ -621,9 +616,7 @@ class KidaptiveSdkLearnerManager {
 
       //http request
       return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
-        return result;
-      }, error => {
-        return;
+        return (result && result.length) ? result[0] : undefined;
       });
     });
   }
@@ -670,7 +663,7 @@ class KidaptiveSdkLearnerManager {
       if (learnerId == null) {
         //log a warning
         if (Utils.checkLoggingLevel('warn') && console && console.log) {
-          console.log('Warning: getMetricByUri called with no active learner selected.');       
+          console.log('Warning: getInsights called with no active learner selected.');       
         }
         return [];
       }
@@ -694,8 +687,6 @@ class KidaptiveSdkLearnerManager {
       //http request
       return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
         return result;
-      }, error => {
-        return [];
       });
     });
   }
@@ -978,7 +969,7 @@ class KidaptiveSdkLearnerManager {
         //pass abilities to then function
         return latentAbilities;
 
-      //swollow http error
+      //swallow http error
       }, error => {
         //pass empty array to then function
         return [];
@@ -988,7 +979,7 @@ class KidaptiveSdkLearnerManager {
 
         const newAbilities = [];
 
-        //loop through abilities returned from server md compare with previous abilities to pick the most current one
+        //loop through abilities returned from server and compare with previous abilities to pick the most current one
         latentAbilities.forEach(latentAbility => {
 
           //find previous ability
@@ -1109,20 +1100,19 @@ class KidaptiveSdkLearnerManager {
   }
 
   /**
-   * Compares the providerUserId with the user providerUserId in the state, or the cache
-   * This uses the providerUserId within the user object as this will always be available
+   * Compares the userId with the userId in the state, or the cache
    *
-   * @param {string} providerUserId
-   *   The provider ID of the user to compare with the cached version
+   * @param {number} userId
+   *   The user ID of the user to compare with the cached version
    *
    * @return
-   *   If the providerUserId is different from the cached providerUserId, return true
-   *   If the providerUserId is the same as the cached providerUserId, return false
+   *   If the userId is different from the cached userId, return true
+   *   If the userId is the same as the cached userId, return false
    */
-  static providerUserIdDifferent(providerUserId) {
+  static userIdDifferent(userId) {
     const user = State.get('user') || Utils.getCachedUser();
-    //compare providerUserId, or if no user in the cache, see if the new providerUserId is defined
-    return user ? (user.providerId !== providerUserId) : (providerUserId != null);
+    //compare providerUserId, or if no user in the cache, see if the new userId is defined
+    return user ? (user.id !== userId) : (userId != null);
   }
 }
 

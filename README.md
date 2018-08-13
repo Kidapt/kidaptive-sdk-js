@@ -19,8 +19,8 @@
     * [KidaptiveSdk.learnerManager.getUser()](#kidaptivesdklearnermanagergetuser)
     * [KidaptiveSdk.learnerManager.getActiveLearner()](#kidaptivesdklearnermanagergetactivelearner)
     * [KidaptiveSdk.learnerManager.getLearnerList()](#kidaptivesdklearnermanagergetlearnerlist)
-    * [KidaptiveSdk.learnerManager.getMetricByUri()](#kidaptivesdklearnermanagergetmetricbyurimetricuristring-mintimestampnumber-maxtimestampnumber)
-    * [KidaptiveSdk.learnerManager.getInsightByUri()](#kidaptivesdklearnermanagergetinsightbyuriinsighturistring-contextkeysarray)
+    * [KidaptiveSdk.learnerManager.getMetricsByUri()](#kidaptivesdklearnermanagergetmetricsbyurimetricuristring-mintimestampnumber-maxtimestampnumber)
+    * [KidaptiveSdk.learnerManager.getLatestInsightByUri()](#kidaptivesdklearnermanagergetlatestinsightbyuriinsighturistring-contextkeysarray)
     * [KidaptiveSdk.learnerManager.getInsights()](#kidaptivesdklearnermanagergetinsightsmintimestampnumber-contextmapobject)
     * [KidaptiveSdk.eventManager.reportSimpleEvent()](#kidaptivesdkeventmanagerreportsimpleeventeventnamestring-eventfieldsobject)
     * [KidaptiveSdk.eventManager.reportRawEvent()](#kidaptivesdkeventmanagerreportraweventraweventstring)
@@ -222,15 +222,13 @@ KidaptiveSdk.learnerManager.setUser(userObject).then(function() {
 
 #### KidaptiveSdk.learnerManager.selectActiveLearner(providerLearnerId:string)
 
-This method selects the active learner. If calling `selectActiveLearner` fails for any reason, the active learner will still be set to its previous value. 
+This method selects the active learner. An active learner is cached in local storage. If the local storage is retained, the learner and user will be available and logged in when the SDK is re-initialized, even after a complete restart of the browser. Calling [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) or [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout) will result in this local storage cache being cleared.
 
-An active learner is cached in local storage. If the local storage is retained, the learner and user will be available and logged in when the SDK is re-initialized, even after a complete restart of the browser. Calling [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) or [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout) will result in this local storage cache being cleared.
-
-If `authMode` is configured to `server`, then the learner must be a learner specified in the learner array which is passed in the `userObject` in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) call. 
+If `authMode` is configured to `server`, then the learner must be a learner specified in the learner array which is passed in the `userObject` in the [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) call. If calling `selectActiveLearner` fails for any reason, the active learner will still be set to its previous value. 
 
 If the `authMode` is configured to `client`, then the learner will be selected or created if it does not already exist. The `selectActiveLearner` call can fail if you have previously called [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) and the learner you are trying to select is not associated with that user.
 
-When `authMode` is configured to `client` and you call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created for that given user. You can create multiple learners for a single user this way. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user that you set will still be logged in. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout).
+When `authMode` is configured to `client` and you call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created for that given user. You can create multiple learners for a single user this way. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user that you set will still be logged in. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout). If calling `selectActiveLearner` fails for any reason, the active learner will still be set to its previous value. 
 
 When `authMode` is configured to `client` and you do not call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created under a user that is mapped specifically to that learner. If you call `selectActiveLearner` again, it will log the existing user and learner out, equivalent to calling [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout), and the new learner will be selected or created under a user that is mapped specically to that learner. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user tied to that learner will also be logged out.
 
@@ -347,7 +345,7 @@ console.log(learnerList);
 
 ---
 
-#### KidaptiveSdk.learnerManager.getMetricByUri(metricUri:string, minTimestamp:number, maxTimestamp:number)
+#### KidaptiveSdk.learnerManager.getMetricsByUri(metricUri:string, minTimestamp:number, maxTimestamp:number)
 
 This fetches the metric for the given `metricUri` for the current selected learner. The return value is a [Promise] which resolves when the metric is retrieved. A metric is a JSON object containing concrete statistics about the learner, such as engagement totals, or a history of actions they have taken.
 
@@ -362,7 +360,7 @@ No | Yes | a year prior `maxTimestamp` to `maxTimestamp`
 
 ```javascript
 var metricUri = '/metric/uri';
-KidaptiveSdk.learnerManager.getMetricByUri(metricUri).then(function(metric) {
+KidaptiveSdk.learnerManager.getMetricsByUri(metricUri).then(function(metric) {
     //SUCCESS
     console.log(metric)
 }, function(error) {
@@ -373,7 +371,7 @@ KidaptiveSdk.learnerManager.getMetricByUri(metricUri).then(function(metric) {
 
 ---
 
-#### KidaptiveSdk.learnerManager.getInsightByUri(insightUri:string, contextKeys:array)
+#### KidaptiveSdk.learnerManager.getLatestInsightByUri(insightUri:string, contextKeys:array)
 
 This fetches the insight for the given `insightUri` for the current selected learner. The return value is a [Promise] which resolves when the insight is retrieved. An insight is a JSON object containing customized, learner-specific data, such as a content recommendation, parent report, or progress notification.
 
@@ -381,7 +379,7 @@ There is an optional second parameter `contextKeys` that is an array of strings.
 
 ```javascript
 var insightUri = '/insight/uri';
-KidaptiveSdk.learnerManager.getInsightByUri(insightUri).then(function(insight) {
+KidaptiveSdk.learnerManager.getLatestInsightByUri(insightUri).then(function(insight) {
     //SUCCESS
     console.log(insight)
 }, function(error) {
@@ -727,10 +725,6 @@ Attempt Property | Type | Required | Default | Description
 itemUri | string | true |  | The uri of the desired item to send an outcome
 outcome | number | true |  | Determines if the outcome of the attempt was positive or negative. Values can be `1` or `0`
 guessingParameter | number | false | 0 | Determines how likely the user was to guess at this item. Values can be between or equal to `0` and `1`
-priorLatentMean | number | false | | The learner's prior latent ability mean for the item's dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
-priorLatentStandardDeviation | number | false | | The learner's prior latent ability standard deviation for the item's dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
-priorLocalMean | number | false | | The learner's prior local ability mean for the item's local dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
-priorLocalStandardDeviation | number | false | | The learner's prior local ability standard deviation for the item's local dimension. It's unlikely the `eventTransformer` should assign this value as it will be autopopulated in the SDK.
 
 The `eventTransformer function` can also add `tags` that the local IRT module uses to help process `attempts`. The `tags` property on the `event object` is optional, but if it is defined it should be an object with the following properties:
 

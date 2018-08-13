@@ -167,7 +167,7 @@ class KidaptiveSdk {
       State.set('user', Utils.getCachedUser());
       State.set('learnerId', Utils.getCachedLearnerId());
       if (options.authMode === 'client') {
-        State.set('providerUserId', Utils.getCachedProviderUserId());
+        State.set('singletonLearner', Utils.getCachedSingletonLearnerFlag());
       }
 
       //register built in recommenders

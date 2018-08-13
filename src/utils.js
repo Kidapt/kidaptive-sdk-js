@@ -358,14 +358,14 @@ class KidaptiveSdkUtils {
   }
 
   /**
-   * Stores the providerUserId in cache to be loaded when the app is initialized
+   * Stores the singleton learner flag in cache to be loaded when the app is initialized
    * This property determines if setUser has been called when authMode is set to client
    *
-   * @param {string} providerUserId
-   *   The string providerUserId sent to the setUser call
+   * @param {bool} singletonLearnerFlag
+   *   The bool value of whether setUser has been called and the user is a singletonLearner user
    */
-  cacheProviderUserId(providerUserId) {
-    this.localStorageSetItem('ProviderUserId.' + State.get('apiKey') + Constants.CACHE_KEY.USER, providerUserId);
+  cacheSingletonLearnerFlag(singletonLearnerFlag) {
+    this.localStorageSetItem('SingletonLearnerFlag.' + State.get('apiKey') + Constants.CACHE_KEY.USER, singletonLearnerFlag);
   }
 
   /**
@@ -377,9 +377,7 @@ class KidaptiveSdkUtils {
   getCachedUser() {
     try {
       return this.localStorageGetItem('User.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
-    } catch(e) {
-      return undefined;
-    }
+    } catch(e) {}
   }
 
   /**
@@ -391,23 +389,22 @@ class KidaptiveSdkUtils {
   getCachedLearnerId() {
     try {
       return this.localStorageGetItem('LearnerId.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
-    } catch(e) {
-      return undefined;
-    }
+    } catch(e) {}
   }
 
   /**
-   * Gets the providerUserId stored in cache
+   * Gets the singletonLearner flag stored in cache
    * This property determines if setUser has been called when authMode is set to client
    *
    * @return
-   *   The cached providerUserId sent to the setUser call or undefined
+   *   The bool value of the singletonLearnerFlag
    */
-  getCachedProviderUserId() {
+  getCachedSingletonLearnerFlag() {
     try {
-      return this.localStorageGetItem('ProviderUserId.' + State.get('apiKey') +  Constants.CACHE_KEY.USER);
+      return this.localStorageGetItem('SingletonLearnerFlag.' + State.get('apiKey') +  Constants.CACHE_KEY.USER);
     } catch(e) {
-      return undefined;
+      //since singleton learner flag gets set to false by setUser, need to default to true since singleton users are when setUser is not called
+      return true;
     }
   }
 

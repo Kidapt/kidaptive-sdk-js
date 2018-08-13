@@ -270,7 +270,7 @@ class KidaptiveSdkEventManager {
         //validate the updated event and display event warnings
         KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
 
-        //loop through events to add missing prior values
+        //loop through events to add prior values and to process attempts
         if (Utils.isArray(updatedEvent.attempts)) {
           updatedEvent.attempts = updatedEvent.attempts.map(attempt => {
             //prepare attempt by validating attempt object and populating default values
@@ -395,18 +395,6 @@ class KidaptiveSdkEventManager {
                 console.log('Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.');   
               } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
                 console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.');   
-              }
-              if (attempt.priorLatentMean != null && !Utils.isNumber(attempt.priorLatentMean)) {
-                console.log('Warning: eventTransformer returned an event attempt with priorLatentMean not as as a numeric value.');   
-              }
-              if (attempt.priorLocalMean != null && !Utils.isNumber(attempt.priorLocalMean)) {
-                console.log('Warning: eventTransformer returned an event attempt with priorLocalMean not as as a numeric value.');   
-              }
-              if (attempt.priorLatentStandardDeviation != null && !Utils.isNumber(attempt.priorLatentStandardDeviation)) {
-                console.log('Warning: eventTransformer returned an event attempt with priorLatentStandardDeviation not as as a numeric value.');   
-              }
-              if (attempt.priorLocalStandardDeviation != null && !Utils.isNumber(attempt.priorLocalStandardDeviation)) {
-                console.log('Warning: eventTransformer returned an event attempt with priorLocalStandardDeviation not as as a numeric value.');   
               }
             }
           });

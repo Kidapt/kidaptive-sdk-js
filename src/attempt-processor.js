@@ -66,19 +66,11 @@ class KidaptiveSdkAttemptProcessor {
     //copy atttempt
     const updatedAttempt = Utils.copyObject(attempt);
 
-    //add missing values
-    if (attempt.priorLatentMean == null) {
-      updatedAttempt.priorLatentMean = latentAbility.mean;
-    }
-    if (attempt.priorLatentStandardDeviation == null) {
-      updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
-    }
-    if (attempt.priorLocalMean == null) {
-      updatedAttempt.priorLocalMean = localAbility.mean;
-    }
-    if (attempt.priorLocalStandardDeviation == null) {
-      updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
-    }
+    //add prior values
+    updatedAttempt.priorLatentMean = latentAbility.mean;
+    updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
+    updatedAttempt.priorLocalMean = localAbility.mean;
+    updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
 
     //return
     return updatedAttempt;
@@ -97,24 +89,23 @@ class KidaptiveSdkAttemptProcessor {
 
     //get models
     const item = ModelManager.getItemByUri(attempt.itemURI);
-    const latentAbility = LearnerManager.getLatentAbilityEstimate(item.localDimension.dimension.uri);
 
     //process data in IRT to get new ability
-    const estimation = Irt.estimate(!!attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
-
-    //new ability is based off latentAbility
-    const newAbility = Utils.copyObject(latentAbility);
+    const estimation = Irt.estimate(attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
 
     //set new ability values
-    newAbility.mean = estimation.post_mean;
-    newAbility.standardDeviation = estimation.post_sd;
-    newAbility.timestamp = State.get('trialTime') || 0;
+    const newAbility = {
+      dimension: item.localDimension.dimension,
+      mean: estimation.post_mean,
+      standardDeviation: estimation.post_sd,
+      timestamp: State.get('trialTime') || 0
+    };
 
     //setup variables to update abilities based off of latent abilities
     const newAbilities = State.get('latentAbilities.' + learnerId) || [];
 
     //if the ability already exists, replace it in the array
-    const updateAbilityIndex = Utils.findItemIndex(newAbilities, newAbility => newAbility.dimension.id === latentAbility.dimension.id);
+    const updateAbilityIndex = Utils.findItemIndex(newAbilities, newAbility => newAbility.dimension && (newAbility.dimension.uri === item.localDimension.dimension.uri));
     if (updateAbilityIndex !== -1) {
       newAbilities[updateAbilityIndex] = newAbility;
 

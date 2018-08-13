@@ -405,9 +405,6 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
   });
 
   describe('selectActiveLearner', () => {
-    beforeEach(() => {
-      State.set('providerUserId', undefined);
-    });
     describe('Validate providerLearnerId', () => {
       beforeEach(() => {
         server.respondWith([200, {'Content-Type': 'application/json'}, JSON.stringify(clientUserObjectResponse)]);
@@ -450,10 +447,9 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, JSON.stringify(clientUserObjectResponse)]);
       options.authMode = 'client';
       State.set('options', options);
-      State.set('user', {learners:[]});
       const userId = clientUserObject.providerUserId;
+      State.set('user', {providerId: userId, learners:[]});
       const learnerId = clientUserObjectResponse.learners[0].providerId;
-      State.set('providerUserId', userId);
       return Should(LearnerManager.selectActiveLearner(learnerId)).resolved().then(() => {
         Should(server.requests).length(1);
         const request = server.requests[0];

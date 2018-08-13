@@ -24,7 +24,7 @@ class KidaptiveSdkIrt {
     if (sigma === 0) {
         return {post_mean: post_mean, post_sd: post_sd};
     }
-    y = Math.min(Math.max(y, 0), 1);
+    y = y < .5 ? 0 : 1;
     if (guessing >= 1) {
         return {post_mean: post_mean, post_sd: post_sd};
     } else {
