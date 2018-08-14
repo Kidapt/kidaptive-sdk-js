@@ -2,9 +2,14 @@ import Constants from './constants';
 import Error from './error';
 import EventManager from './event-manager';
 import LearnerManager from './learner-manager';
+import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
+import RecommendationManager from './recommendation-manager';
+import RecommenderOptimalDifficulty from './recommenders/optimalDifficulty';
+import RecommenderRandom from './recommenders/random';
 import State from './state';
 import Utils from './utils';
+import Q from 'q';
 
 class KidaptiveSdk {
   constructor() {
@@ -12,6 +17,7 @@ class KidaptiveSdk {
     State.set('initialized', false);
     this.eventManager = EventManager;
     this.learnerManager = LearnerManager;
+    this.modelManager = ModelManager;
   }
 
   /**
@@ -49,10 +55,10 @@ class KidaptiveSdk {
 
       //validate apiKey
       if (apiKey == null) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Api key is required');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'API key is required');
       }
       if (!Utils.isString(apiKey)) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Api key must be a string');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'API key must be a string');
       }
 
       //validate environment
@@ -80,7 +86,7 @@ class KidaptiveSdk {
       if (!Utils.isNumber(options.tier)) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option must be a number');
       }
-      if ([1].indexOf(options.tier) === -1) {
+      if ([1, 2, 3].indexOf(options.tier) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Tier option is not an accepted value');
       }
 
@@ -90,13 +96,6 @@ class KidaptiveSdk {
       }
       if (['client', 'server'].indexOf(options.authMode) === -1) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AuthMode option is not an accepted value');
-      }
-
-      //validate appUri
-      if (options.appUri != null) {
-        if (!Utils.isString(options.appUri)) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'AppUri option must be a string');
-        }
       }
 
       //validate version
@@ -138,14 +137,68 @@ class KidaptiveSdk {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'LoggingLevel option is not an accepted value');
       }
 
+      //validate defaultHttpCache
+      if (options.defaultHttpCache != null) {
+        if (!Utils.isObject(options.defaultHttpCache)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'defaultHttpCache must be an object');
+        }
+        Object.keys(options.defaultHttpCache).forEach(cacheKey => {
+          if (!Utils.isString(options.defaultHttpCache[cacheKey])) {
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'defaultHttpCache must be an object of key:value pairs with string values');
+          }
+        });
+
+        //set default http cache
+        Object.keys(options.defaultHttpCache).forEach(cacheKey => {
+          try {
+            Utils.localStorageGetItem(cacheKey);
+          } catch (e) {
+            Utils.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
+          }
+        });
+      }
+
+      //set state
       State.set('initialized', true);
       State.set('apiKey', apiKey);
       State.set('options', options);
 
-      //start auto flush
-      if (State.get('options').tier >= 1) {
-        EventManager.startAutoFlush();
+      //get cached user and learner
+      State.set('user', Utils.getCachedUser());
+      State.set('learnerId', Utils.getCachedLearnerId());
+      if (options.authMode === 'client') {
+        State.set('singletonLearner', Utils.getCachedSingletonLearnerFlag());
       }
+
+      //register built in recommenders
+      if (options.tier >= 3) {
+        RecommendationManager.registerRecommender(new RecommenderOptimalDifficulty(this), 'optimalDifficulty');
+        RecommendationManager.registerRecommender(new RecommenderRandom(this), 'random');
+      }
+
+      //setup requests object to resolve when all items are resolved
+      const requests = [];
+
+      //start auto flush
+      if (options.tier >= 1) {
+        requests.push(EventManager.startAutoFlush());
+      }
+
+      //update models
+      if (options.tier >= 2) {
+        requests.push(ModelManager.updateModels());
+      }
+
+      //resolve init when all requests complete
+      return Q.all(requests).then(results => {
+        //if active learner, update it after models feteched
+        const activeLearner = LearnerManager.getActiveLearner();
+        if (activeLearner) {
+          return LearnerManager.selectActiveLearner(activeLearner.providerId);
+        }
+        //otherwise resolve undefined
+      })
+
     });
   }
 
@@ -171,7 +224,7 @@ class KidaptiveSdk {
      
       if (State.get('options').tier >= 1) {
         EventManager.stopAutoFlush();
-        return LearnerManager.logout().then(() => {
+        return EventManager.flushEventQueue().then(() => {
           State.clear();
           State.set('initialized', false);
         });

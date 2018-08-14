@@ -15,7 +15,7 @@ var apiKey = 'gsdkTestV3';
 var options = {
   environment: 'dev',
   tier: 1,
-  appUri: '/kidaptive/demo',
+  appUri: '/kidaptive/sdk_test',
   version: '1.0.0',
   build: '1',
   autoFlushInterval: 30000,

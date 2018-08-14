@@ -171,15 +171,15 @@ describe('KidaptiveSdk Tier 1 Unit Tests', () => {
         spyStopAutoFlush.restore();
       });
     });
-    it('calls LearnerManager.logout()', () => {
-      const spyLogout = Sinon.spy(LearnerManager, 'logout');
-      Should(spyLogout.called).false();
+    it('calls EventManager.flushEventQueue()', () => {
+      const spyFlushEventQueue = Sinon.spy(EventManager, 'flushEventQueue');
+      Should(spyFlushEventQueue.called).false();
       return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', autoFlushInterval: 0})).resolved().then(() => {
-        Should(spyLogout.called).false();
+        Should(spyFlushEventQueue.called).false();
         return Should(KidaptiveSdk.destroy()).resolved();
       }).then(() => {
-        Should(spyLogout.called).true();
-        spyLogout.restore();
+        Should(spyFlushEventQueue.called).true();
+        spyFlushEventQueue.restore();
       });
     });
   });

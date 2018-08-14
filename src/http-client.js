@@ -8,6 +8,7 @@ import Q from 'q';
 import Superagent from 'superagent-q';
 
 class KidaptiveSdkHttpClient {
+
   /**
    * Sends a request to the Kidaptive API
    * 
@@ -28,36 +29,69 @@ class KidaptiveSdkHttpClient {
    */
   request(method, endpoint, data, options = {}) {
     return Q.fcall(() => {
-      const settings = this.getRequestSettings(method, endpoint, data);
+      const settings = this.getRequestSettings(method, endpoint, data, options);
       const request = Superagent(settings.method, settings.host + settings.endpoint);
       request.withCredentials();
       if (settings.method === 'POST') {
         request.send(settings.data);
       } else {
-        request.query(settings.data);  
+        request.query(settings.data); 
       }
       if (settings.contentType) {
         request.set('Content-Type', settings.contentType);
       }
       request.set('api-key', settings.apiKey);
 
-      return request.end().then(result => {
-        return result.body;
-      }, error => {
-        const parseError = (error.parse && 'Cannot parse response') || '';
-        //error statusCode is available when there is a parse error
-        const status = error && (error.status || error.statusCode);
-        const errorMessage = (error.response && error.response.text) || parseError;
-        if (status === 400) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
-        } else if (status === 401) {
-          throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
-        } else if (status && (status < 200 || status >= 300)) {
-          throw new Error(Error.ERROR_CODES.WEB_API_ERROR, errorMessage);
-        } else {
+      //get cache key
+      const cacheKey = this.getCacheKey(settings);
+
+      //certain older browsers may fail to catch the error
+      try {
+
+        return request.end().then(result => {
+          //set cache
+          if (!options.noCache) {
+            Utils.localStorageSetItem(cacheKey, result.body);
+          }
+          //return result
+          return result.body;
+        }, error => {
+          const parseError = (error.parse && 'Cannot parse response') || '';
+          //error statusCode is available when there is a parse error
+          const status = error && (error.status || error.statusCode);
+          const errorMessage = (error.response && error.response.text) || parseError;
+          if (status === 400) {
+            Utils.localStorageRemoveItem(cacheKey);
+            throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorMessage);
+          } else if (status === 401) {
+            //always delete user data
+            Utils.clearUserCache();
+            //if app endpoint, delete app data cache
+            if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
+              Utils.clearAppCache();
+            }
+            throw new Error(Error.ERROR_CODES.API_KEY_ERROR, errorMessage);
+          } else if (status && (status < 200 || status >= 300)) {
+            Utils.localStorageRemoveItem(cacheKey);
+            throw new Error(Error.ERROR_CODES.WEB_API_ERROR, errorMessage);
+          } else {
+            try {
+              return Utils.localStorageGetItem(cacheKey);
+            } catch (e) {
+              throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
+            }
+          }
+        });
+
+      //for browsers that completely fail to handle the http error correctly, catch the error here
+      } catch (errorMessage) {
+        //try to resolve the request with cache
+        try {
+          return Utils.localStorageGetItem(cacheKey);
+        } catch (e) {
           throw new Error(Error.ERROR_CODES.GENERIC_ERROR, 'HTTP Client Error' + (errorMessage ? (': ' + errorMessage) : ''));
         }
-      });
+      }
     });
   }
 
@@ -74,7 +108,7 @@ class KidaptiveSdkHttpClient {
     return Base64.encode(String.fromCharCode.apply(undefined, Sha256.array(Utils.toJson(settings))))
       .replace(/[+]/g,'-')
       .replace(/[/]/g,'_')
-      .replace(/=+/,'') + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? '.alpUserData' : '.alpAppData');
+      .replace(/=+/,'') + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? Constants.CACHE_KEY.USER : Constants.CACHE_KEY.APP);
   }
 
   /**
@@ -92,10 +126,10 @@ class KidaptiveSdkHttpClient {
    * @return
    *   Returns the settings object used to generate a cache key and to submit a request
    */
-  getRequestSettings(method, endpoint, data) {
+  getRequestSettings(method, endpoint, data, options = {}) {
       let apiKey = State.get('apiKey');
       const user = State.get('user');
-      if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey) {
+      if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey && !options.defaultApiKey) {
         apiKey = user.apiKey;
       }
       const settings = {
@@ -131,7 +165,7 @@ class KidaptiveSdkHttpClient {
   }
 
   /**
-   * Internal method to determinee if an endpoint is a user endpoint
+   * Internal method to determine if an endpoint is a user endpoint
    *
    * @param {string} endpoint
    *   The endpoint to check if its a user endpoint
@@ -144,7 +178,6 @@ class KidaptiveSdkHttpClient {
       return Constants.ENDPOINT[item] === endpoint
     }) !== -1;
   }
-
 }
 
 export default new KidaptiveSdkHttpClient();

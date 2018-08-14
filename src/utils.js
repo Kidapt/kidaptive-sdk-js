@@ -5,6 +5,7 @@ import CloneDeep from 'lodash.clonedeep';
 import Stringify from 'json-stable-stringify';
 
 class KidaptiveSdkUtils {
+
   /**
    * Checks to see if the SDK is currently initialized.
    * If it isn't, an error is thrown.
@@ -196,6 +197,19 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Checks if an object is an integer
+   * 
+   * @param {object} object
+   *   The object to check
+   * 
+   * @return
+   *   A truthy value whether the object is an integer or not
+   */
+  isInteger(object) {
+    return this.isNumber(object) && isFinite(object) && Math.floor(object) === object;
+  }
+
+  /**
    * Checks if an object is an object {}
    * 
    * @param {object} object
@@ -241,6 +255,32 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Gets the local storage keys
+   * 
+   * @return
+   *   An array of keys
+   */
+  localStorageGetKeys() {
+    try {
+      return Object.keys(localStorage);
+    } catch(e) {
+      return [];
+    }
+  }
+
+  /**
+   * Removes a property value in local storage
+   * 
+   * @param string property
+   *   The target property to remove
+   */
+  localStorageRemoveItem(property) {
+    try {
+      localStorage.removeItem(property);
+    } catch (e) {}
+  }
+
+  /**
    * Sets a property value in local storage
    * 
    * @param string property
@@ -248,10 +288,13 @@ class KidaptiveSdkUtils {
    *
    * @param {*} value
    *   The value to set for the target property
+   *
+   * @param {boolean} stringify
+   *   Whether the value should be stringified or not before being passed to the localaStorage
    */
-  localStorageSetItem(property, value) {
+  localStorageSetItem(property, value, stringify = true) {
     try {
-      localStorage.setItem(property, JSON.stringify(value));
+      localStorage.setItem(property, stringify ? JSON.stringify(value) : value);
     } catch (e) {
       if (KidaptiveSdkUtils.checkLoggingLevel('warn') && console && console.log) {
         console.log('Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date');
@@ -271,6 +314,100 @@ class KidaptiveSdkUtils {
   toJson(object) {
     return Stringify(object);
   }
+
+  /**
+   * Deletes the cache for user requests
+   */
+  clearUserCache() {
+    this.localStorageGetKeys().forEach(cacheKey => {
+      if (cacheKey.match(/^[\w-.]*[.]alpUserData$/)) {
+        this.localStorageRemoveItem(cacheKey);
+      }
+    });
+  }
+
+  /**
+   * Deletes the cache for app requests
+   */
+  clearAppCache() {
+    this.localStorageGetKeys().forEach(cacheKey => {
+      if (cacheKey.match(/^[\w-.]*[.]alpAppData$/)) {
+        this.localStorageRemoveItem(cacheKey);
+      }
+    });
+  }
+
+  /**
+   * Stores the userId in cache for future comparisons to see if the user has changed
+   *
+   * @param {number} userId
+   *   The numeric ID of the user
+   */
+  cacheUser(user) {
+    this.localStorageSetItem('User.' + State.get('apiKey') + Constants.CACHE_KEY.USER, user);
+  }
+
+  /**
+   * Stores the learnerId in cache to be loaded when the app is initialized
+   *
+   * @param {number} userId
+   *   The numeric ID of the learner
+   */
+  cacheLearnerId(learnerId) {
+    this.localStorageSetItem('LearnerId.' + State.get('apiKey') + Constants.CACHE_KEY.USER, learnerId);
+  }
+
+  /**
+   * Stores the singleton learner flag in cache to be loaded when the app is initialized
+   * This property determines if setUser has been called when authMode is set to client
+   *
+   * @param {bool} singletonLearnerFlag
+   *   The bool value of whether setUser has been called and the user is a singletonLearner user
+   */
+  cacheSingletonLearnerFlag(singletonLearnerFlag) {
+    this.localStorageSetItem('SingletonLearnerFlag.' + State.get('apiKey') + Constants.CACHE_KEY.USER, singletonLearnerFlag);
+  }
+
+  /**
+   * Gets the user stored in cache
+   *
+   * @return
+   *   The cached user object or undefined
+   */
+  getCachedUser() {
+    try {
+      return this.localStorageGetItem('User.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
+    } catch(e) {}
+  }
+
+  /**
+   * Gets the learnerId stored in cache
+   *
+   * @return
+   *   The cachedlearnerId or undefined
+   */
+  getCachedLearnerId() {
+    try {
+      return this.localStorageGetItem('LearnerId.' + State.get('apiKey') + Constants.CACHE_KEY.USER);
+    } catch(e) {}
+  }
+
+  /**
+   * Gets the singletonLearner flag stored in cache
+   * This property determines if setUser has been called when authMode is set to client
+   *
+   * @return
+   *   The bool value of the singletonLearnerFlag
+   */
+  getCachedSingletonLearnerFlag() {
+    try {
+      return this.localStorageGetItem('SingletonLearnerFlag.' + State.get('apiKey') +  Constants.CACHE_KEY.USER);
+    } catch(e) {
+      //since singleton learner flag gets set to false by setUser, need to default to true since singleton users are when setUser is not called
+      return true;
+    }
+  }
+
 }
 
 export default new KidaptiveSdkUtils();

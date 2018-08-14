@@ -1,6 +1,8 @@
 class KidaptiveSdkError {
   constructor(type, message) {
-    return new Error('KidaptiveError (' + type + ') ' + message);
+    const thisError = new Error('KidaptiveError (' + type + ') ' + message);
+    thisError.type = type;
+    return thisError;
   }
 }
 

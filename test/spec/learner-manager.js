@@ -43,6 +43,10 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
     server.restore();
   });
   describe('setUser', () => {
+    beforeEach(() => {
+      State.set('user', undefined);
+      localStorage.clear();
+    });
     describe('validate userObject for authMode:server', () => {
       let userObject;
       beforeEach(() => {
@@ -341,7 +345,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       options.authMode = 'client';
       State.set('options', options);
       State.set('user', undefined);
-      State.set('learner', undefined);
+      State.set('learnerId', undefined);
       return Should(LearnerManager.setUser(clientUserObject)).resolved().then(() => {
         Should(server.requests).length(1);
         Should(State.get('user')).deepEqual(clientUserObjectResponse);
@@ -350,19 +354,19 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
     it('Learner data is cleared for authMode:server', () => {
       options.authMode = 'server';
       State.set('options', options);
-      State.set('learner', {id: 100, providerId: '100'});
+      State.set('learnerId', 100);
       return Should(LearnerManager.setUser(serverUserObject)).resolved().then(() => {
-        Should(State.get('learner')).equal(undefined);
+        Should(State.get('learnerId')).equal(undefined);
       });
     });
     it('Learner data is cleared for authMode:client', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, JSON.stringify(clientUserObjectResponse)]);
       options.authMode = 'client';
       State.set('options', options);
-      State.set('learner', {id: 100, providerId: '100'});
+      State.set('learnerId', 100);
       return Should(LearnerManager.setUser(clientUserObject)).resolved().then(() => {
         Should(server.requests).length(1);
-        Should(State.get('learner')).equal(undefined);
+        Should(State.get('learnerId')).equal(undefined);
       });
     });
     it('Learner and user data not cleared for authMode:client when API error', () => {
@@ -370,11 +374,11 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       options.authMode = 'client';
       State.set('options', options);
       State.set('user', 100);
-      State.set('learner', 200);
+      State.set('learnerId', 200);
       return Should(LearnerManager.setUser(clientUserObject)).rejected().then(() => {
         Should(server.requests).length(1);
         Should(State.get('user')).equal(100);
-        Should(State.get('learner')).equal(200);
+        Should(State.get('learnerId')).equal(200);
       });
     });
     it('Event queue is flushed for authMode:server', () => {
@@ -443,6 +447,8 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, JSON.stringify(clientUserObjectResponse)]);
       options.authMode = 'client';
       State.set('options', options);
+      const userId = clientUserObject.providerUserId;
+      State.set('user', {providerId: userId, learners:[]});
       const learnerId = clientUserObjectResponse.learners[0].providerId;
       return Should(LearnerManager.selectActiveLearner(learnerId)).resolved().then(() => {
         Should(server.requests).length(1);
@@ -450,7 +456,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
         Should(request.method).equal('POST');
         Should(request.url).endWith(Constants.ENDPOINT.CLIENT_SESSION);
         const parsed = JSON.parse(request.requestBody);
-        Should(parsed.providerUserId).equal(clientUserObject.providerUserId);
+        Should(parsed.providerUserId).equal(userId);
         Should(parsed.providerLearnerId).equal(learnerId);
       });
     });
@@ -480,7 +486,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       const learner = serverUserObject.learners[0];
       const learnerId = learner.providerId;
       return Should(LearnerManager.selectActiveLearner(learnerId)).resolved().then(() => {
-        Should(State.get('learner')).deepEqual(learner);
+        Should(State.get('learnerId')).deepEqual(learner.id);
       });
     });
     it('User and Learner data is stored for authMode:client', () => {
@@ -491,7 +497,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       const learnerId = learner.providerId;
       return Should(LearnerManager.selectActiveLearner(learnerId)).resolved().then(() => {
         Should(server.requests).length(1);
-        Should(State.get('learner')).deepEqual(learner);
+        Should(State.get('learnerId')).deepEqual(learner.id);
       });
     });
   });
@@ -502,7 +508,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       options.authMode = 'server';
       State.set('options', options);
       State.set('user', undefined);
-      State.set('learner', undefined);
+      State.set('learnerId', undefined);
       Should(spyFlushEventQueue.called).false();
       return Should(LearnerManager.logout(clientUserObject)).resolved().then(() => {
         Should(spyFlushEventQueue.called).true();
@@ -514,7 +520,7 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       options.authMode = 'client';
       State.set('options', options);
       State.set('user', undefined);
-      State.set('learner', undefined);
+      State.set('learnerId', undefined);
       Should(spyFlushEventQueue.called).false();
       return Should(LearnerManager.logout(clientUserObject)).resolved().then(() => {
         Should(spyFlushEventQueue.called).true();
@@ -572,32 +578,32 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
       options.authMode = 'server';
       State.set('options', options);
       State.set('user', {id: 100});
-      State.set('learner', {id: 200});
+      State.set('learnerId', 200);
       return Should(LearnerManager.logout()).resolved().then(() => {
         Should(server.requests).length(1);
         Should(State.get('user')).equal(undefined);
-        Should(State.get('learner')).equal(undefined);
+        Should(State.get('learnerId')).equal(undefined);
       });
     });
     it('User and learner data is cleared for authMode:client', () => {
       options.authMode = 'client';
       State.set('options', options);
       State.set('user', {id: 100});
-      State.set('learner', {id: 200});
+      State.set('learnerId', 200);
       return Should(LearnerManager.logout()).resolved().then(() => {
         Should(server.requests).length(0);
         Should(State.get('user')).equal(undefined);
-        Should(State.get('learner')).equal(undefined);
+        Should(State.get('learnerId')).equal(undefined);
       });
     });
   });
 
   describe('clearActiveLearner', () => {
     it('Promise is resolved when learner data is cleared', () => {
-      State.set('learner', true);
-      Should(State.get('learner')).equal(true);
+      State.set('learnerId', 200);
+      Should(State.get('learnerId')).equal(200);
       return Should(LearnerManager.clearActiveLearner()).resolved().then(() => {
-        Should(State.get('learner')).equal(undefined);
+        Should(State.get('learnerId')).equal(undefined);
       });
     });
   });
@@ -619,15 +625,10 @@ describe('KidaptiveSdk Learner Manager Unit Tests', () => {
 
   describe('getActiveLearner', () => {
     it('Gets learner data from state', () => {
-      State.set('learner', true);
-      Should(LearnerManager.getActiveLearner()).equal(true);
-      State.set('learner', undefined);
-      Should(LearnerManager.getActiveLearner()).equal(undefined);
-    });
-    it('When a falsey value is set, default to undefined', () => {
-      State.set('learner', false);
-      Should(LearnerManager.getActiveLearner()).equal(undefined);
-      State.set('learner', undefined);
+      State.set('user', {learners:[{id: 200, name: '123'}]});
+      State.set('learnerId', 200);
+      Should(LearnerManager.getActiveLearner()).deepEqual({id: 200, name: '123'});
+      State.set('learnerId', undefined);
       Should(LearnerManager.getActiveLearner()).equal(undefined);
     });
   });
