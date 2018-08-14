@@ -45,7 +45,7 @@
             return Object.prototype.hasOwnProperty.call(object, property);
         };
         __webpack_require__.p = "";
-        return __webpack_require__(__webpack_require__.s = 29);
+        return __webpack_require__(__webpack_require__.s = 35);
     }([ function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -69,13 +69,13 @@
         }();
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(3);
+        var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
-        var _lodash = __webpack_require__(28);
+        var _lodash = __webpack_require__(33);
         var _lodash2 = _interopRequireDefault(_lodash);
-        var _jsonStableStringify = __webpack_require__(27);
+        var _jsonStableStringify = __webpack_require__(32);
         var _jsonStableStringify2 = _interopRequireDefault(_jsonStableStringify);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
@@ -187,6 +187,11 @@
                     return Object.prototype.toString.call(object) === "[object Number]";
                 }
             }, {
+                key: "isInteger",
+                value: function isInteger(object) {
+                    return this.isNumber(object) && isFinite(object) && Math.floor(object) === object;
+                }
+            }, {
                 key: "isObject",
                 value: function isObject(object) {
                     return object === Object(object) && Object.prototype.toString.call(object) !== "[object Array]" && Object.prototype.toString.call(object) !== "[object Function]";
@@ -206,10 +211,27 @@
                     return cached === "undefined" ? undefined : JSON.parse(cached);
                 }
             }, {
+                key: "localStorageGetKeys",
+                value: function localStorageGetKeys() {
+                    try {
+                        return Object.keys(localStorage);
+                    } catch (e) {
+                        return [];
+                    }
+                }
+            }, {
+                key: "localStorageRemoveItem",
+                value: function localStorageRemoveItem(property) {
+                    try {
+                        localStorage.removeItem(property);
+                    } catch (e) {}
+                }
+            }, {
                 key: "localStorageSetItem",
                 value: function localStorageSetItem(property, value) {
+                    var stringify = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
                     try {
-                        localStorage.setItem(property, JSON.stringify(value));
+                        localStorage.setItem(property, stringify ? JSON.stringify(value) : value);
                     } catch (e) {
                         if (KidaptiveSdkUtils.checkLoggingLevel("warn") && console && console.log) {
                             console.log("Warning: ALP SDK unable to write to localStorage. Cached data may be inconsistent or out-of-date");
@@ -221,21 +243,92 @@
                 value: function toJson(object) {
                     return (0, _jsonStableStringify2.default)(object);
                 }
+            }, {
+                key: "clearUserCache",
+                value: function clearUserCache() {
+                    var _this = this;
+                    this.localStorageGetKeys().forEach(function(cacheKey) {
+                        if (cacheKey.match(/^[\w-.]*[.]alpUserData$/)) {
+                            _this.localStorageRemoveItem(cacheKey);
+                        }
+                    });
+                }
+            }, {
+                key: "clearAppCache",
+                value: function clearAppCache() {
+                    var _this2 = this;
+                    this.localStorageGetKeys().forEach(function(cacheKey) {
+                        if (cacheKey.match(/^[\w-.]*[.]alpAppData$/)) {
+                            _this2.localStorageRemoveItem(cacheKey);
+                        }
+                    });
+                }
+            }, {
+                key: "cacheUser",
+                value: function cacheUser(user) {
+                    this.localStorageSetItem("User." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER, user);
+                }
+            }, {
+                key: "cacheLearnerId",
+                value: function cacheLearnerId(learnerId) {
+                    this.localStorageSetItem("LearnerId." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER, learnerId);
+                }
+            }, {
+                key: "cacheSingletonLearnerFlag",
+                value: function cacheSingletonLearnerFlag(singletonLearnerFlag) {
+                    this.localStorageSetItem("SingletonLearnerFlag." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER, singletonLearnerFlag);
+                }
+            }, {
+                key: "getCachedUser",
+                value: function getCachedUser() {
+                    try {
+                        return this.localStorageGetItem("User." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER);
+                    } catch (e) {}
+                }
+            }, {
+                key: "getCachedLearnerId",
+                value: function getCachedLearnerId() {
+                    try {
+                        return this.localStorageGetItem("LearnerId." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER);
+                    } catch (e) {}
+                }
+            }, {
+                key: "getCachedSingletonLearnerFlag",
+                value: function getCachedSingletonLearnerFlag() {
+                    try {
+                        return this.localStorageGetItem("SingletonLearnerFlag." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER);
+                    } catch (e) {
+                        return true;
+                    }
+                }
             } ]);
             return KidaptiveSdkUtils;
         }();
         exports.default = new KidaptiveSdkUtils();
-    }, function(module, exports) {
-        var g;
-        g = function() {
-            return this;
-        }();
-        try {
-            g = g || Function("return this")() || (1, eval)("this");
-        } catch (e) {
-            if (typeof window === "object") g = window;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
         }
-        module.exports = g;
+        var KidaptiveSdkError = function KidaptiveSdkError(type, message) {
+            _classCallCheck(this, KidaptiveSdkError);
+            var thisError = new Error("KidaptiveError (" + type + ") " + message);
+            thisError.type = type;
+            return thisError;
+        };
+        KidaptiveSdkError.ERROR_CODES = {
+            GENERIC_ERROR: "GENERIC_ERROR",
+            INVALID_PARAMETER: "INVALID_PARAMETER",
+            ILLEGAL_STATE: "ILLEGAL_STATE",
+            API_KEY_ERROR: "API_KEY_ERROR",
+            WEB_API_ERROR: "WEB_API_ERROR"
+        };
+        exports.default = KidaptiveSdkError;
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -278,12 +371,14 @@
             _createClass(KidaptiveSdkState, [ {
                 key: "get",
                 value: function get(property) {
-                    return _utils2.default.copyObject(_state[property]);
+                    var copy = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+                    return copy ? _utils2.default.copyObject(_state[property]) : _state[property];
                 }
             }, {
                 key: "set",
                 value: function set(property, value) {
-                    _state[property] = _utils2.default.copyObject(value);
+                    var copy = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+                    _state[property] = copy ? _utils2.default.copyObject(value) : value;
                 }
             }, {
                 key: "clear",
@@ -294,51 +389,6 @@
             return KidaptiveSdkState;
         }();
         exports.default = new KidaptiveSdkState();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkError = function KidaptiveSdkError(type, message) {
-            _classCallCheck(this, KidaptiveSdkError);
-            return new Error("KidaptiveError (" + type + ") " + message);
-        };
-        KidaptiveSdkError.ERROR_CODES = {
-            GENERIC_ERROR: "GENERIC_ERROR",
-            INVALID_PARAMETER: "INVALID_PARAMETER",
-            ILLEGAL_STATE: "ILLEGAL_STATE",
-            API_KEY_ERROR: "API_KEY_ERROR",
-            WEB_API_ERROR: "WEB_API_ERROR"
-        };
-        exports.default = KidaptiveSdkError;
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        exports.default = {
-            DEFAULT: {
-                AUTO_FLUSH_INTERVAL: 6e4,
-                LOGGING_LEVEL: "all",
-                TIER: 1,
-                AUTH_MODE: "client"
-            },
-            ENDPOINT: {
-                INGESTION: "/ingestion",
-                CLIENT_SESSION: "/learner/client-session",
-                LOGOUT: "/user/logout"
-            },
-            HOST: {
-                PROD: "https://service.kidaptive.com/v3",
-                DEV: "https://develop.kidaptive.com/v3"
-            },
-            USER_ENDPOINTS: [ "INGESTION", "LOGOUT" ]
-        };
     }, function(module, exports, __webpack_require__) {
         (function(process, setImmediate) {
             (function(definition) {
@@ -1524,7 +1574,212 @@
                 var qEndingLine = captureLine();
                 return Q;
             });
-        }).call(this, __webpack_require__(7), __webpack_require__(20).setImmediate);
+        }).call(this, __webpack_require__(9), __webpack_require__(25).setImmediate);
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        exports.default = {
+            DEFAULT: {
+                AUTH_MODE: "client",
+                AUTO_FLUSH_INTERVAL: 6e4,
+                LOGGING_LEVEL: "all",
+                TIER: 1
+            },
+            ENDPOINT: {
+                ABILITY: "/ability",
+                CLIENT_SESSION: "/learner/client-session",
+                DIMENSION: "/dimension",
+                GAME: "/game",
+                INGESTION: "/ingestion",
+                INSIGHT: "/insight",
+                LOCAL_ABILITY: "/local-ability",
+                LOCAL_DIMENSION: "/local-dimension",
+                LOGOUT: "/user/logout",
+                METRIC: "/metric"
+            },
+            HOST: {
+                DEV: "https://develop.kidaptive.com/v3",
+                PROD: "https://service.kidaptive.com/v3"
+            },
+            USER_ENDPOINTS: [ "ABILITY", "CLIENT_SESSION", "INGESTION", "INSIGHT", "LOCAL_ABILITY", "LOGOUT", "METRIC" ],
+            CACHE_KEY: {
+                USER: ".alpUserData",
+                APP: ".alpAppData"
+            }
+        };
+    }, function(module, exports) {
+        var g;
+        g = function() {
+            return this;
+        }();
+        try {
+            g = g || Function("return this")() || (1, eval)("this");
+        } catch (e) {
+            if (typeof window === "object") g = window;
+        }
+        module.exports = g;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _base = __webpack_require__(28);
+        var _base2 = _interopRequireDefault(_base);
+        var _jsSha = __webpack_require__(27);
+        var _jsSha2 = _interopRequireDefault(_jsSha);
+        var _q = __webpack_require__(3);
+        var _q2 = _interopRequireDefault(_q);
+        var _superagentQ = __webpack_require__(23);
+        var _superagentQ2 = _interopRequireDefault(_superagentQ);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkHttpClient = function() {
+            function KidaptiveSdkHttpClient() {
+                _classCallCheck(this, KidaptiveSdkHttpClient);
+            }
+            _createClass(KidaptiveSdkHttpClient, [ {
+                key: "request",
+                value: function request(method, endpoint, data) {
+                    var _this = this;
+                    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+                    return _q2.default.fcall(function() {
+                        var settings = _this.getRequestSettings(method, endpoint, data, options);
+                        var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
+                        request.withCredentials();
+                        if (settings.method === "POST") {
+                            request.send(settings.data);
+                        } else {
+                            request.query(settings.data);
+                        }
+                        if (settings.contentType) {
+                            request.set("Content-Type", settings.contentType);
+                        }
+                        request.set("api-key", settings.apiKey);
+                        var cacheKey = _this.getCacheKey(settings);
+                        try {
+                            return request.end().then(function(result) {
+                                if (!options.noCache) {
+                                    _utils2.default.localStorageSetItem(cacheKey, result.body);
+                                }
+                                return result.body;
+                            }, function(error) {
+                                var parseError = error.parse && "Cannot parse response" || "";
+                                var status = error && (error.status || error.statusCode);
+                                var errorMessage = error.response && error.response.text || parseError;
+                                if (status === 400) {
+                                    _utils2.default.localStorageRemoveItem(cacheKey);
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorMessage);
+                                } else if (status === 401) {
+                                    _utils2.default.clearUserCache();
+                                    if (!KidaptiveSdkHttpClient.isUserEndpoint(endpoint)) {
+                                        _utils2.default.clearAppCache();
+                                    }
+                                    throw new _error2.default(_error2.default.ERROR_CODES.API_KEY_ERROR, errorMessage);
+                                } else if (status && (status < 200 || status >= 300)) {
+                                    _utils2.default.localStorageRemoveItem(cacheKey);
+                                    throw new _error2.default(_error2.default.ERROR_CODES.WEB_API_ERROR, errorMessage);
+                                } else {
+                                    try {
+                                        return _utils2.default.localStorageGetItem(cacheKey);
+                                    } catch (e) {
+                                        throw new _error2.default(_error2.default.ERROR_CODES.GENERIC_ERROR, "HTTP Client Error" + (errorMessage ? ": " + errorMessage : ""));
+                                    }
+                                }
+                            });
+                        } catch (errorMessage) {
+                            try {
+                                return _utils2.default.localStorageGetItem(cacheKey);
+                            } catch (e) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.GENERIC_ERROR, "HTTP Client Error" + (errorMessage ? ": " + errorMessage : ""));
+                            }
+                        }
+                    });
+                }
+            }, {
+                key: "getCacheKey",
+                value: function getCacheKey(settings) {
+                    return _base2.default.encode(String.fromCharCode.apply(undefined, _jsSha2.default.array(_utils2.default.toJson(settings)))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? _constants2.default.CACHE_KEY.USER : _constants2.default.CACHE_KEY.APP);
+                }
+            }, {
+                key: "getRequestSettings",
+                value: function getRequestSettings(method, endpoint, data) {
+                    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+                    var apiKey = _state2.default.get("apiKey");
+                    var user = _state2.default.get("user");
+                    if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey && !options.defaultApiKey) {
+                        apiKey = user.apiKey;
+                    }
+                    var settings = {
+                        method: method,
+                        host: KidaptiveSdkHttpClient.getHost(),
+                        apiKey: apiKey,
+                        endpoint: endpoint,
+                        data: data
+                    };
+                    if (method === "POST") {
+                        settings.contentType = "application/json";
+                    }
+                    return settings;
+                }
+            } ], [ {
+                key: "getHost",
+                value: function getHost() {
+                    var options = _state2.default.get("options") || {};
+                    if (options.environment === "prod") {
+                        return _constants2.default.HOST.PROD;
+                    }
+                    if (options.environment === "dev") {
+                        return _constants2.default.HOST.DEV;
+                    }
+                    if (options.environment === "custom") {
+                        return options.baseUrl;
+                    }
+                }
+            }, {
+                key: "isUserEndpoint",
+                value: function isUserEndpoint(endpoint) {
+                    return _utils2.default.findItemIndex(_constants2.default.USER_ENDPOINTS, function(item) {
+                        return _constants2.default.ENDPOINT[item] === endpoint;
+                    }) !== -1;
+                }
+            } ]);
+            return KidaptiveSdkHttpClient;
+        }();
+        exports.default = new KidaptiveSdkHttpClient();
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -1548,7 +1803,7 @@
         }();
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
-        var _q = __webpack_require__(5);
+        var _q = __webpack_require__(3);
         var _q2 = _interopRequireDefault(_q);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
@@ -1591,6 +1846,264 @@
             return KidaptiveSdkOperationManager;
         }();
         exports.default = new KidaptiveSdkOperationManager();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _httpClient = __webpack_require__(6);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(3);
+        var _q2 = _interopRequireDefault(_q);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkModelManager = function() {
+            function KidaptiveSdkModelManager() {
+                var _this = this;
+                _classCallCheck(this, KidaptiveSdkModelManager);
+                this.modelParents = {
+                    tier2: {
+                        dimension: [],
+                        game: [],
+                        "local-dimension": [ "dimension", "game" ]
+                    },
+                    tier3: {
+                        dimension: [],
+                        game: [],
+                        "local-dimension": [ "dimension", "game" ],
+                        item: [ "prompt", "local-dimension" ],
+                        prompt: [ "game" ]
+                    }
+                };
+                this.modelOrder = {};
+                Object.keys(this.modelParents).forEach(function(tier) {
+                    _this.modelOrder[tier] = [];
+                    var determineModelOrder = function determineModelOrder(modelTypes) {
+                        modelTypes.forEach(function(modelType) {
+                            determineModelOrder(_this.modelParents[tier][modelType]);
+                            if (_this.modelOrder[tier].indexOf(modelType) === -1) {
+                                _this.modelOrder[tier].push(modelType);
+                            }
+                        });
+                    };
+                    determineModelOrder(Object.keys(_this.modelParents[tier]));
+                });
+            }
+            _createClass(KidaptiveSdkModelManager, [ {
+                key: "getGames",
+                value: function getGames() {
+                    _utils2.default.checkTier(2);
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["game"] || [];
+                    return _utils2.default.copyObject(modelList);
+                }
+            }, {
+                key: "getGameByUri",
+                value: function getGameByUri(gameUri) {
+                    _utils2.default.checkTier(2);
+                    if (!_utils2.default.isString(gameUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri must be a string");
+                    }
+                    var uriToModel = _state2.default.get("uriToModel", false) || {};
+                    var modelMap = uriToModel["game"];
+                    var model = modelMap && modelMap[gameUri];
+                    return _utils2.default.copyObject(model);
+                }
+            }, {
+                key: "getDimensions",
+                value: function getDimensions() {
+                    _utils2.default.checkTier(2);
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["dimension"] || [];
+                    return _utils2.default.copyObject(modelList);
+                }
+            }, {
+                key: "getDimensionByUri",
+                value: function getDimensionByUri(dimensionUri) {
+                    _utils2.default.checkTier(2);
+                    if (!_utils2.default.isString(dimensionUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "dimensionUri must be a string");
+                    }
+                    var uriToModel = _state2.default.get("uriToModel", false) || {};
+                    var modelMap = uriToModel["dimension"];
+                    var model = modelMap && modelMap[dimensionUri];
+                    return _utils2.default.copyObject(model);
+                }
+            }, {
+                key: "getLocalDimensions",
+                value: function getLocalDimensions() {
+                    _utils2.default.checkTier(2);
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["local-dimension"] || [];
+                    return _utils2.default.copyObject(modelList);
+                }
+            }, {
+                key: "getLocalDimensionByUri",
+                value: function getLocalDimensionByUri(localDimensionUri) {
+                    _utils2.default.checkTier(2);
+                    if (!_utils2.default.isString(localDimensionUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "localDimensionUri must be a string");
+                    }
+                    var uriToModel = _state2.default.get("uriToModel", false) || {};
+                    var modelMap = uriToModel["local-dimension"];
+                    var model = modelMap && modelMap[localDimensionUri];
+                    return _utils2.default.copyObject(model);
+                }
+            }, {
+                key: "getItems",
+                value: function getItems() {
+                    _utils2.default.checkTier(3);
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["item"] || [];
+                    return _utils2.default.copyObject(modelList);
+                }
+            }, {
+                key: "getItemByUri",
+                value: function getItemByUri(itemUri) {
+                    _utils2.default.checkTier(3);
+                    if (!_utils2.default.isString(itemUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "itemUri must be a string");
+                    }
+                    var uriToModel = _state2.default.get("uriToModel", false) || {};
+                    var modelMap = uriToModel["item"];
+                    var model = modelMap && modelMap[itemUri];
+                    return _utils2.default.copyObject(model);
+                }
+            }, {
+                key: "getItemsByPromptUri",
+                value: function getItemsByPromptUri(promptUri) {
+                    _utils2.default.checkTier(3);
+                    if (!_utils2.default.isString(promptUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "promptUri must be a string");
+                    }
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["item"] || [];
+                    var filteredModelList = modelList.filter(function(model) {
+                        return model.prompt.uri === promptUri;
+                    });
+                    return _utils2.default.copyObject(filteredModelList);
+                }
+            }, {
+                key: "getPrompts",
+                value: function getPrompts() {
+                    _utils2.default.checkTier(3);
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["prompt"] || [];
+                    return _utils2.default.copyObject(modelList);
+                }
+            }, {
+                key: "getPromptByUri",
+                value: function getPromptByUri(promptUri) {
+                    _utils2.default.checkTier(3);
+                    if (!_utils2.default.isString(promptUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "promptUri must be a string");
+                    }
+                    var uriToModel = _state2.default.get("uriToModel", false) || {};
+                    var modelMap = uriToModel["prompt"];
+                    var model = modelMap && modelMap[promptUri];
+                    return _utils2.default.copyObject(model);
+                }
+            }, {
+                key: "getPromptsByGameUri",
+                value: function getPromptsByGameUri(gameUri) {
+                    _utils2.default.checkTier(3);
+                    if (!_utils2.default.isString(gameUri)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri must be a string");
+                    }
+                    var modelListLookup = _state2.default.get("modelListLookup", false) || {};
+                    var modelList = modelListLookup["prompt"] || [];
+                    var filteredModelList = modelList.filter(function(model) {
+                        return model.game.uri === gameUri;
+                    });
+                    return _utils2.default.copyObject(filteredModelList);
+                }
+            }, {
+                key: "updateModels",
+                value: function updateModels() {
+                    _utils2.default.checkTier(2);
+                    _state2.default.set("uriToModel", {});
+                    _state2.default.set("idToModel", {});
+                    _state2.default.set("modelListLookup", {});
+                    var options = _state2.default.get("options") || {};
+                    var tierKey = "tier" + options.tier;
+                    var modelOrder = this.modelOrder[tierKey];
+                    var modelParents = this.modelParents[tierKey];
+                    var requests = modelOrder.map(function(model) {
+                        return _httpClient2.default.request("GET", "/" + model);
+                    });
+                    return _q2.default.all(requests).then(function(results) {
+                        var uriToModel = {};
+                        var idToModel = {};
+                        var modelListLookup = {};
+                        var _loop = function _loop(i) {
+                            var modelName = modelOrder[i];
+                            var modelUriMap = {};
+                            var modelIdMap = {};
+                            var modelList = [];
+                            var modelArray = results[i] || [];
+                            modelArray.forEach(function(model) {
+                                var modelCopy = _utils2.default.copyObject(model);
+                                modelParents[modelName].forEach(function(modelParentName) {
+                                    var publicModelParentName = modelParentName.replace(/-([a-z])/g, function(matched) {
+                                        return matched[1].toUpperCase();
+                                    });
+                                    var modelParentId = modelCopy[publicModelParentName + "Id"];
+                                    var idToModel = _state2.default.get("idToModel", false) || {};
+                                    modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
+                                    delete modelCopy[publicModelParentName + "Id"];
+                                });
+                                modelUriMap[modelCopy.uri] = modelCopy;
+                                modelIdMap[modelCopy.id] = modelCopy;
+                                modelList.push(modelCopy);
+                            });
+                            uriToModel[modelName] = modelUriMap;
+                            idToModel[modelName] = modelIdMap;
+                            modelListLookup[modelName] = modelList;
+                            _state2.default.set("uriToModel", uriToModel, false);
+                            _state2.default.set("idToModel", idToModel, false);
+                            _state2.default.set("modelListLookup", modelListLookup, false);
+                        };
+                        for (var i = 0; i < results.length; i++) {
+                            _loop(i);
+                        }
+                    }, function(error) {
+                        throw error;
+                    });
+                }
+            } ]);
+            return KidaptiveSdkModelManager;
+        }();
+        exports.default = new KidaptiveSdkModelManager();
     }, function(module, exports) {
         var process = module.exports = {};
         var cachedSetTimeout;
@@ -1747,6 +2260,884 @@
         process.umask = function() {
             return 0;
         };
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkRecommendationManager = function() {
+            function KidaptiveSdkRecommendationManager() {
+                _classCallCheck(this, KidaptiveSdkRecommendationManager);
+            }
+            _createClass(KidaptiveSdkRecommendationManager, [ {
+                key: "registerRecommender",
+                value: function registerRecommender(recommender, key) {
+                    _utils2.default.checkTier(2);
+                    var recommenderError = KidaptiveSdkRecommendationManager.checkRecommender(recommender);
+                    if (recommenderError) {
+                        throw recommenderError;
+                    }
+                    if (key == null) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key is required");
+                    }
+                    if (!_utils2.default.isString(key)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key must be a string");
+                    }
+                    var recommenders = _state2.default.get("recommenders", false) || {};
+                    if (recommenders[key] && _utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                        console.log("Warning: recommender key already exists, recommender will be replaced.");
+                    }
+                    recommenders[key] = _utils2.default.copyObject(recommender);
+                    _state2.default.set("recommenders", recommenders, false);
+                }
+            }, {
+                key: "unregisterRecommender",
+                value: function unregisterRecommender(key) {
+                    _utils2.default.checkTier(2);
+                    if (key == null) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key is required");
+                    }
+                    if (!_utils2.default.isString(key)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key must be a string");
+                    }
+                    var recommenders = _state2.default.get("recommenders", false) || {};
+                    if (!recommenders[key] && _utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                        console.log("Warning: recommender key does not exist.");
+                    }
+                    delete recommenders[key];
+                    _state2.default.set("recommenders", recommenders, false);
+                }
+            }, {
+                key: "getRecommenderKeys",
+                value: function getRecommenderKeys() {
+                    _utils2.default.checkTier(2);
+                    var recommenders = _state2.default.get("recommenders", false) || {};
+                    return Object.keys(recommenders);
+                }
+            }, {
+                key: "getRecommendation",
+                value: function getRecommendation(key) {
+                    var parameters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+                    _utils2.default.checkTier(2);
+                    if (key == null) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key is required");
+                    }
+                    if (!_utils2.default.isString(key)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key must be a string");
+                    }
+                    if (!_utils2.default.isObject(parameters)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Parameters must be an object");
+                    }
+                    var recommenders = _state2.default.get("recommenders", false) || {};
+                    if (!recommenders[key]) {
+                        return {
+                            error: new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "Recommender for the provided key does not exist")
+                        };
+                    }
+                    var recommendationResult = recommenders[key].getRecommendation(parameters);
+                    var recommendationResultError = KidaptiveSdkRecommendationManager.checkRecommendationResult(recommendationResult);
+                    if (recommendationResultError) {
+                        return {
+                            error: recommendationResultError
+                        };
+                    }
+                    return recommendationResult;
+                }
+            } ], [ {
+                key: "checkRecommender",
+                value: function checkRecommender(recommender) {
+                    if (recommender == null) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender is required");
+                    }
+                    if (!_utils2.default.isObject(recommender)) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender must be an object");
+                    }
+                    if (recommender.getRecommendation == null) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender.getRecommendation must be defined");
+                    }
+                    if (!_utils2.default.isFunction(recommender.getRecommendation)) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender.getRecommendation must be a function");
+                    }
+                }
+            }, {
+                key: "checkRecommendationResult",
+                value: function checkRecommendationResult(recommendationResult) {
+                    if (recommendationResult == null) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "No recommendationResult is returned from the recommender");
+                    }
+                    if (!_utils2.default.isObject(recommendationResult)) {
+                        return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "The recommendationResult returned from the recommender must be an object");
+                    }
+                    if (recommendationResult.error) {} else {
+                        var errorPrefix = "The recommendationResult returned from the recommender ";
+                        if (recommendationResult.type == null) {
+                            return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a type property");
+                        }
+                        if (!_utils2.default.isString(recommendationResult.type)) {
+                            return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a type property that is a string");
+                        }
+                        if (recommendationResult.recommendations == null) {
+                            return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a recommendations property");
+                        }
+                        if (!_utils2.default.isArray(recommendationResult.recommendations)) {
+                            return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a recommendations property that is an array");
+                        }
+                        if (recommendationResult.context != null) {
+                            if (!_utils2.default.isObject(recommendationResult.context)) {
+                                return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a context property that is an object");
+                            }
+                            Object.keys(recommendationResult.context).forEach(function(contextKey) {
+                                if (!_utils2.default.isString(recommendationResult.context[contextKey])) {
+                                    return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a context property that is an object of key:value pairs with string values");
+                                }
+                            });
+                        }
+                    }
+                }
+            } ]);
+            return KidaptiveSdkRecommendationManager;
+        }();
+        exports.default = new KidaptiveSdkRecommendationManager();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _eventManager = __webpack_require__(14);
+        var _eventManager2 = _interopRequireDefault(_eventManager);
+        var _httpClient = __webpack_require__(6);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _modelManager = __webpack_require__(8);
+        var _modelManager2 = _interopRequireDefault(_modelManager);
+        var _operationManager = __webpack_require__(7);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _recommendationManager = __webpack_require__(10);
+        var _recommendationManager2 = _interopRequireDefault(_recommendationManager);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(3);
+        var _q2 = _interopRequireDefault(_q);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkLearnerManager = function() {
+            function KidaptiveSdkLearnerManager() {
+                _classCallCheck(this, KidaptiveSdkLearnerManager);
+            }
+            _createClass(KidaptiveSdkLearnerManager, [ {
+                key: "setUser",
+                value: function setUser() {
+                    var _this = this;
+                    var userObject = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var options = _state2.default.get("options") || {};
+                        if (options.authMode === "client") {
+                            if (userObject.providerUserId == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId is required");
+                            }
+                            if (!_utils2.default.isString(userObject.providerUserId)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId must be a string");
+                            }
+                            if (userObject.apiKey != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser apiKey not supported when the SDK authMode is cient");
+                            }
+                            if (userObject.providerId != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser providerId not supported when the SDK authMode is cient");
+                            }
+                            if (userObject.id != null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser id not supported when the SDK authMode is cient");
+                            }
+                        }
+                        if (options.authMode === "server") {
+                            var commonParamError = "Invalid object passed to setUser. Please ensure SDK authmode is correct and the object being passed to setUser is correct.";
+                            if (userObject.apiKey == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey is required");
+                            }
+                            if (!_utils2.default.isString(userObject.apiKey)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey must be a string");
+                            }
+                            if (userObject.id == null) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID is required");
+                            }
+                            if (!_utils2.default.isNumber(userObject.id)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID must be a number");
+                            }
+                            if (!_utils2.default.isArray(userObject.learners)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learners must be an array");
+                            }
+                            userObject.learners.forEach(function(learner) {
+                                if (!_utils2.default.isObject(learner)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner must be an object");
+                                }
+                                if (learner.id == null) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID is required");
+                                }
+                                if (!_utils2.default.isNumber(learner.id)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID must be a number");
+                                }
+                                if (learner.providerId == null) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID is required");
+                                }
+                                if (!_utils2.default.isString(learner.providerId)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID must be a string");
+                                }
+                            });
+                        }
+                        return _eventManager2.default.flushEventQueue().then(function() {
+                            if (options.authMode === "client") {
+                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
+                                    providerUserId: userObject.providerUserId
+                                }, {
+                                    defaultApiKey: true
+                                }).then(function(userObjectResponse) {
+                                    if (KidaptiveSdkLearnerManager.userIdDifferent(userObjectResponse.id)) {
+                                        return _this.logout().then(function() {
+                                            var cacheKey = _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
+                                                providerUserId: userObject.providerUserId
+                                            }, {
+                                                defaultApiKey: true
+                                            }));
+                                            _utils2.default.localStorageSetItem(cacheKey, userObjectResponse);
+                                            KidaptiveSdkLearnerManager.onClientSetUserSuccess(userObjectResponse);
+                                        });
+                                    }
+                                    KidaptiveSdkLearnerManager.onClientSetUserSuccess(userObjectResponse);
+                                });
+                            }
+                            if (options.authMode === "server") {
+                                if (KidaptiveSdkLearnerManager.userIdDifferent(userObject.id)) {
+                                    return _this.logout().then(function() {
+                                        KidaptiveSdkLearnerManager.onServerSetUserSuccess(userObject);
+                                    });
+                                }
+                                KidaptiveSdkLearnerManager.onServerSetUserSuccess(userObject);
+                            }
+                        });
+                    });
+                }
+            }, {
+                key: "selectActiveLearner",
+                value: function selectActiveLearner(providerLearnerId) {
+                    var _this2 = this;
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var options = _state2.default.get("options") || {};
+                        var user = _state2.default.get("user");
+                        var learnerId = _state2.default.get("learnerId");
+                        var singletonLearner = _state2.default.get("singletonLearner") === false ? false : true;
+                        if (providerLearnerId == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId is required");
+                        }
+                        if (!_utils2.default.isString(providerLearnerId)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId must be a string");
+                        }
+                        if (options.authMode === "client") {
+                            var learner = _utils2.default.findItem(_this2.getLearnerList(), function(learner) {
+                                return learner.providerId === providerLearnerId;
+                            });
+                            if (learner) {
+                                _state2.default.set("learnerId", learner.id);
+                                _utils2.default.cacheLearnerId(learner.id);
+                                if (options.tier >= 2) {
+                                    return _this2.updateAbilityEstimates().then(function() {
+                                        return _this2.startTrial();
+                                    });
+                                }
+                                return _this2.startTrial();
+                            }
+                            if (singletonLearner && learnerId != null) {
+                                return _this2.logout().then(function() {
+                                    return _this2.selectActiveLearner(providerLearnerId);
+                                });
+                            }
+                            return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
+                                providerLearnerId: providerLearnerId,
+                                providerUserId: user && user.providerId
+                            }, {
+                                defaultApiKey: true
+                            }).then(function(userObjectResponse) {
+                                var newUserObject = _state2.default.get("user");
+                                if (!singletonLearner) {
+                                    if (userObjectResponse.learners < 1) {
+                                        throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "The client session response is missing learner information");
+                                    }
+                                    newUserObject.learners.push(userObjectResponse.learners[0]);
+                                } else {
+                                    newUserObject = userObjectResponse;
+                                    _utils2.default.cacheSingletonLearnerFlag(true);
+                                }
+                                _state2.default.set("user", newUserObject);
+                                var activeLearner = _utils2.default.findItem(_this2.getLearnerList(), function(learner) {
+                                    return learner.providerId === providerLearnerId;
+                                });
+                                if (!activeLearner) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "A learner with that providerLearnerId does not exist");
+                                }
+                                _state2.default.set("learnerId", activeLearner.id);
+                                _utils2.default.cacheUser(newUserObject);
+                                _utils2.default.cacheLearnerId(activeLearner.id);
+                                if (options.tier >= 2) {
+                                    return _this2.updateAbilityEstimates().then(function() {
+                                        return _this2.startTrial();
+                                    });
+                                }
+                                return _this2.startTrial();
+                            });
+                        }
+                        if (options.authMode === "server") {
+                            if (!user) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before setting an active learner when using server authentication");
+                            }
+                            var activeLearner = _utils2.default.findItem(_this2.getLearnerList(), function(learner) {
+                                return learner.providerId === providerLearnerId;
+                            });
+                            if (!activeLearner) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "A learner with that providerLearnerId does not exist");
+                            }
+                            _state2.default.set("learnerId", activeLearner.id);
+                            _utils2.default.cacheLearnerId(activeLearner.id);
+                            if (options.tier >= 2) {
+                                return _this2.updateAbilityEstimates().then(function() {
+                                    return _this2.startTrial();
+                                });
+                            }
+                            return _this2.startTrial();
+                        }
+                    });
+                }
+            }, {
+                key: "clearActiveLearner",
+                value: function clearActiveLearner() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var options = _state2.default.get("options") || {};
+                        if (options.authMode === "client" && _state2.default.get("providerUserId") == null) {
+                            _utils2.default.clearUserCache();
+                            _state2.default.set("user", undefined);
+                        }
+                        _state2.default.set("learnerId", undefined);
+                        _utils2.default.cacheLearnerId(undefined);
+                    });
+                }
+            }, {
+                key: "logout",
+                value: function logout() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        return _eventManager2.default.flushEventQueue().then(function() {
+                            var options = _state2.default.get("options") || {};
+                            if (options.authMode === "server" && _state2.default.get("user")) {
+                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.LOGOUT, undefined, {
+                                    noCache: true
+                                }).then(function() {}, function() {});
+                            }
+                        }).then(function() {
+                            _utils2.default.clearUserCache();
+                            _state2.default.set("learnerId", undefined);
+                            _state2.default.set("user", undefined);
+                            _state2.default.set("singletonLearner", undefined);
+                        });
+                    });
+                }
+            }, {
+                key: "getUser",
+                value: function getUser() {
+                    _utils2.default.checkTier(1);
+                    return _state2.default.get("user") || undefined;
+                }
+            }, {
+                key: "getActiveLearner",
+                value: function getActiveLearner() {
+                    _utils2.default.checkTier(1);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        return;
+                    }
+                    return _utils2.default.findItem(this.getLearnerList(), function(learner) {
+                        return learner.id === learnerId;
+                    });
+                }
+            }, {
+                key: "getLearnerList",
+                value: function getLearnerList() {
+                    _utils2.default.checkTier(1);
+                    var userObject = _state2.default.get("user") || {};
+                    return _utils2.default.isArray(userObject.learners) ? userObject.learners : [];
+                }
+            }, {
+                key: "getMetricsByUri",
+                value: function getMetricsByUri(metricUri, minTimestamp, maxTimestamp) {
+                    return _q2.default.fcall(function() {
+                        _utils2.default.checkTier(1);
+                        if (metricUri == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "metricUri is required");
+                        }
+                        if (!_utils2.default.isString(metricUri)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "metricUri must be a string");
+                        }
+                        if (minTimestamp != null) {
+                            if (!_utils2.default.isInteger(minTimestamp) || minTimestamp < 0) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be a positive integer");
+                            }
+                        }
+                        if (maxTimestamp != null) {
+                            if (!_utils2.default.isInteger(maxTimestamp) || maxTimestamp < 1) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxTimestamp must be a positive integer greater than 0");
+                            }
+                        }
+                        if (minTimestamp != null && maxTimestamp != null) {
+                            if (minTimestamp >= maxTimestamp) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxTimestamp must be greater than minTimestamp");
+                            }
+                            if (maxTimestamp - minTimestamp > 31536e6) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp and maxTimestamp can only be 1 year (365 days) apart");
+                            }
+                        }
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: getMetricsByUri called with no active learner selected.");
+                            }
+                            return;
+                        }
+                        if (minTimestamp == null && maxTimestamp == null) {
+                            maxTimestamp = Date.now() + 864e5;
+                            minTimestamp = maxTimestamp - 31536e6;
+                        } else if (minTimestamp == null) {
+                            minTimestamp = maxTimestamp - 31536e6;
+                            if (minTimestamp < 0) {
+                                minTimestamp = 0;
+                            }
+                        } else if (maxTimestamp == null) {
+                            maxTimestamp = minTimestamp + 31536e6;
+                        }
+                        var data = {
+                            learnerId: learnerId,
+                            items: [ {
+                                name: metricUri,
+                                start: minTimestamp,
+                                end: maxTimestamp
+                            } ]
+                        };
+                        var options = {
+                            noCache: true
+                        };
+                        return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.METRIC, data, options).then(function(result) {
+                            return result;
+                        });
+                    });
+                }
+            }, {
+                key: "getLatestInsightByUri",
+                value: function getLatestInsightByUri(insightUri, contextKeys) {
+                    return _q2.default.fcall(function() {
+                        _utils2.default.checkTier(1);
+                        if (insightUri == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "insightUri is required");
+                        }
+                        if (!_utils2.default.isString(insightUri)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "insightUri must be a string");
+                        }
+                        if (contextKeys != null) {
+                            if (!_utils2.default.isArray(contextKeys)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "contextKeys must be an array");
+                            } else {
+                                contextKeys.forEach(function(contextKey) {
+                                    if (!_utils2.default.isString(contextKey)) {
+                                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "contextKeys must be an array of strings");
+                                    }
+                                });
+                            }
+                        }
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: getLatestInsightByUri called with no active learner selected.");
+                            }
+                            return;
+                        }
+                        var data = {
+                            learnerId: learnerId,
+                            uri: insightUri,
+                            latest: true
+                        };
+                        if (contextKeys != null) {
+                            data.contextKeys = contextKeys.join(",");
+                        }
+                        var options = {
+                            noCache: true
+                        };
+                        return _httpClient2.default.request("GET", _constants2.default.ENDPOINT.INSIGHT, data, options).then(function(result) {
+                            return result && result.length ? result[0] : undefined;
+                        });
+                    });
+                }
+            }, {
+                key: "getInsights",
+                value: function getInsights(minTimestamp, contextMap) {
+                    return _q2.default.fcall(function() {
+                        _utils2.default.checkTier(1);
+                        if (minTimestamp == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp is required");
+                        }
+                        if (!_utils2.default.isInteger(minTimestamp) || minTimestamp < 0) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be a positive integer");
+                        }
+                        if (contextMap != null) {
+                            if (!_utils2.default.isObject(contextMap)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "contextMap must be an object");
+                            } else {
+                                Object.keys(contextMap).forEach(function(contextKey) {
+                                    if (!_utils2.default.isString(contextMap[contextKey])) {
+                                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "contextMap must be an object of key:value pairs with string values");
+                                    }
+                                });
+                            }
+                        }
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: getInsights called with no active learner selected.");
+                            }
+                            return [];
+                        }
+                        var data = {
+                            learnerId: learnerId,
+                            minDateCreated: minTimestamp
+                        };
+                        if (contextMap != null) {
+                            Object.keys(contextMap).forEach(function(contextKey) {
+                                data["context." + contextKey] = contextMap[contextKey];
+                            });
+                        }
+                        var options = {
+                            noCache: true
+                        };
+                        return _httpClient2.default.request("GET", _constants2.default.ENDPOINT.INSIGHT, data, options).then(function(result) {
+                            return result;
+                        });
+                    });
+                }
+            }, {
+                key: "startTrial",
+                value: function startTrial() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: startTrial called with no active learner selected.");
+                            }
+                            return;
+                        }
+                        var trialTime = Date.now();
+                        var options = _state2.default.get("options");
+                        if (options.tier >= 3) {
+                            var previousLatentAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                            var updatedLatentAbilities = previousLatentAbilities.map(function(latentAbility) {
+                                var updatedLatentAbility = _utils2.default.copyObject(latentAbility);
+                                if (updatedLatentAbility.standardDeviation < .65) {
+                                    updatedLatentAbility.standardDeviation = .65;
+                                    updatedLatentAbility.timestamp = trialTime;
+                                }
+                                return updatedLatentAbility;
+                            });
+                            _state2.default.set("latentAbilities." + learnerId, updatedLatentAbilities);
+                        }
+                        _state2.default.set("trialTime", trialTime);
+                    });
+                }
+            }, {
+                key: "getLatentAbilityEstimates",
+                value: function getLatentAbilityEstimates() {
+                    var _this3 = this;
+                    _utils2.default.checkTier(2);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLatentAbilityEstimates called with no active learner selected.");
+                        }
+                        return [];
+                    }
+                    return _modelManager2.default.getDimensions().map(function(dimension) {
+                        return _this3.getLatentAbilityEstimate(dimension && dimension.uri);
+                    });
+                }
+            }, {
+                key: "getLatentAbilityEstimate",
+                value: function getLatentAbilityEstimate(dimensionUri) {
+                    _utils2.default.checkTier(2);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLatentAbilityEstimate called with no active learner selected.");
+                        }
+                        return;
+                    }
+                    var dimension = _modelManager2.default.getDimensionByUri(dimensionUri);
+                    if (!dimension) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLatentAbilityEstimate called with an invalid dimension.");
+                        }
+                        return;
+                    }
+                    var latentAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                    var latentAbility = _utils2.default.copyObject(_utils2.default.findItem(latentAbilities, function(latentAbility) {
+                        return latentAbility.dimension.id === dimension.id;
+                    }));
+                    if (latentAbility) {
+                        return latentAbility;
+                    } else {
+                        return {
+                            dimension: dimension,
+                            mean: 0,
+                            standardDeviation: 1,
+                            timestamp: 0
+                        };
+                    }
+                }
+            }, {
+                key: "getLocalAbilityEstimates",
+                value: function getLocalAbilityEstimates() {
+                    var _this4 = this;
+                    _utils2.default.checkTier(2);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLatentAbilityEstimates called with no active learner selected.");
+                        }
+                        return [];
+                    }
+                    return _modelManager2.default.getLocalDimensions().map(function(localDimension) {
+                        return _this4.getLocalAbilityEstimate(localDimension && localDimension.uri);
+                    });
+                }
+            }, {
+                key: "getLocalAbilityEstimate",
+                value: function getLocalAbilityEstimate(localDimensionUri) {
+                    _utils2.default.checkTier(2);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLocalAbilityEstimate called with no active learner selected.");
+                        }
+                        return;
+                    }
+                    var localDimension = _modelManager2.default.getLocalDimensionByUri(localDimensionUri);
+                    if (!localDimension) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: getLocalAbilityEstimate called with an invalid local dimension.");
+                        }
+                        return;
+                    }
+                    var dimension = localDimension.dimension || {};
+                    var latentAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                    var latentAbility = _utils2.default.copyObject(_utils2.default.findItem(latentAbilities, function(latentAbility) {
+                        return latentAbility.dimension.id === dimension.id;
+                    }));
+                    if (latentAbility) {
+                        return {
+                            localDimension: localDimension,
+                            mean: latentAbility.mean,
+                            standardDeviation: latentAbility.standardDeviation,
+                            timestamp: latentAbility.timestamp
+                        };
+                    } else {
+                        return {
+                            localDimension: localDimension,
+                            mean: 0,
+                            standardDeviation: 1,
+                            timestamp: 0
+                        };
+                    }
+                }
+            }, {
+                key: "updateAbilityEstimates",
+                value: function updateAbilityEstimates() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(2);
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: updateAbilityEstimates called with no active learner selected.");
+                            }
+                            return;
+                        }
+                        var idToModel = _state2.default.get("idToModel", false) || {};
+                        var idToDimension = idToModel.dimension || {};
+                        var cacheKey = _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("GET", _constants2.default.ENDPOINT.ABILITY, {
+                            learnerId: learnerId
+                        }));
+                        var previousLatentAbilities = void 0;
+                        try {
+                            previousLatentAbilities = _utils2.default.localStorageGetItem(cacheKey) || [];
+                            previousLatentAbilities.forEach(function(previousAbility) {
+                                previousAbility.dimension = idToDimension[previousAbility.dimensionId];
+                                delete previousAbility.dimensionId;
+                            });
+                        } catch (e) {
+                            previousLatentAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                        }
+                        return _httpClient2.default.request("GET", _constants2.default.ENDPOINT.ABILITY, {
+                            learnerId: learnerId
+                        }, {
+                            noCache: true
+                        }).then(function(latentAbilities) {
+                            return latentAbilities;
+                        }, function(error) {
+                            return [];
+                        }).then(function(latentAbilities) {
+                            var newAbilities = [];
+                            latentAbilities.forEach(function(latentAbility) {
+                                var previousLatentAbility = _utils2.default.findItem(previousLatentAbilities, function(previousAbility) {
+                                    return previousAbility.dimension.id === latentAbility.dimensionId;
+                                });
+                                if (!previousLatentAbility || previousLatentAbility.timestamp < latentAbility.timestamp) {
+                                    var newAbility = _utils2.default.copyObject(latentAbility);
+                                    newAbility.dimension = idToDimension[newAbility.dimensionId];
+                                    delete newAbility.dimensionId;
+                                    newAbilities.push(newAbility);
+                                } else {
+                                    newAbilities.push(previousLatentAbility);
+                                }
+                            });
+                            previousLatentAbilities.forEach(function(previousAbility) {
+                                if (!_utils2.default.findItem(newAbilities, function(newAbility) {
+                                    return newAbility.dimension.id === previousAbility.dimension.id;
+                                })) {
+                                    newAbilities.push(previousAbility);
+                                }
+                            });
+                            _state2.default.set("latentAbilities." + learnerId, newAbilities);
+                            newAbilities.forEach(function(newAbility) {
+                                newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
+                                delete newAbility.dimension;
+                            });
+                            _utils2.default.localStorageSetItem(cacheKey, newAbilities);
+                        });
+                    });
+                }
+            }, {
+                key: "getSuggestedPrompts",
+                value: function getSuggestedPrompts(localDimensionUri, targetSuccessProbability, maxResults, excludedPromptUris, includedPromptUris) {
+                    _utils2.default.checkTier(3);
+                    var result = _recommendationManager2.default.getRecommendation("optimalDifficulty", {
+                        localDimensionUri: localDimensionUri,
+                        targetSuccessProbability: targetSuccessProbability,
+                        maxResults: maxResults,
+                        excludedPromptUris: excludedPromptUris,
+                        includedPromptUris: includedPromptUris
+                    });
+                    if (result.error) {
+                        throw result.error;
+                    }
+                    return result.recommendations;
+                }
+            }, {
+                key: "getRandomPromptForGame",
+                value: function getRandomPromptForGame(gameUri, maxResults, excludedPromptUris, includedPromptUris) {
+                    _utils2.default.checkTier(3);
+                    var result = _recommendationManager2.default.getRecommendation("random", {
+                        gameUri: gameUri,
+                        maxResults: maxResults,
+                        excludedPromptUris: excludedPromptUris,
+                        includedPromptUris: includedPromptUris
+                    });
+                    if (result.error) {
+                        throw result.error;
+                    }
+                    return result.recommendations;
+                }
+            } ], [ {
+                key: "onClientSetUserSuccess",
+                value: function onClientSetUserSuccess(userObjectResponse) {
+                    _utils2.default.cacheUser(userObjectResponse);
+                    _utils2.default.cacheSingletonLearnerFlag(false);
+                    _state2.default.set("user", userObjectResponse);
+                    _state2.default.set("learnerId", undefined);
+                    _state2.default.set("singletonLearner", false);
+                }
+            }, {
+                key: "onServerSetUserSuccess",
+                value: function onServerSetUserSuccess(userObject) {
+                    _utils2.default.cacheUser(userObject);
+                    _utils2.default.cacheSingletonLearnerFlag(false);
+                    _state2.default.set("user", userObject);
+                    _state2.default.set("learnerId", undefined);
+                    _state2.default.set("singletonLearner", false);
+                }
+            }, {
+                key: "userIdDifferent",
+                value: function userIdDifferent(userId) {
+                    var user = _state2.default.get("user") || _utils2.default.getCachedUser();
+                    return user ? user.id !== userId : userId != null;
+                }
+            } ]);
+            return KidaptiveSdkLearnerManager;
+        }();
+        exports.default = new KidaptiveSdkLearnerManager();
     }, function(module, exports) {
         function isObject(obj) {
             return null != obj && "object" == typeof obj;
@@ -1795,156 +3186,21 @@
                 return Constructor;
             };
         }();
+        var _attemptProcessor = __webpack_require__(34);
+        var _attemptProcessor2 = _interopRequireDefault(_attemptProcessor);
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(3);
+        var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
-        var _state = __webpack_require__(2);
-        var _state2 = _interopRequireDefault(_state);
-        var _utils = __webpack_require__(0);
-        var _utils2 = _interopRequireDefault(_utils);
-        var _base = __webpack_require__(23);
-        var _base2 = _interopRequireDefault(_base);
-        var _jsSha = __webpack_require__(22);
-        var _jsSha2 = _interopRequireDefault(_jsSha);
-        var _q = __webpack_require__(5);
-        var _q2 = _interopRequireDefault(_q);
-        var _superagentQ = __webpack_require__(18);
-        var _superagentQ2 = _interopRequireDefault(_superagentQ);
-        function _interopRequireDefault(obj) {
-            return obj && obj.__esModule ? obj : {
-                default: obj
-            };
-        }
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkHttpClient = function() {
-            function KidaptiveSdkHttpClient() {
-                _classCallCheck(this, KidaptiveSdkHttpClient);
-            }
-            _createClass(KidaptiveSdkHttpClient, [ {
-                key: "request",
-                value: function request(method, endpoint, data) {
-                    var _this = this;
-                    var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-                    return _q2.default.fcall(function() {
-                        var settings = _this.getRequestSettings(method, endpoint, data);
-                        var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
-                        request.withCredentials();
-                        if (settings.method === "POST") {
-                            request.send(settings.data);
-                        } else {
-                            request.query(settings.data);
-                        }
-                        if (settings.contentType) {
-                            request.set("Content-Type", settings.contentType);
-                        }
-                        request.set("api-key", settings.apiKey);
-                        return request.end().then(function(result) {
-                            return result.body;
-                        }, function(error) {
-                            var parseError = error.parse && "Cannot parse response" || "";
-                            var status = error && (error.status || error.statusCode);
-                            var errorMessage = error.response && error.response.text || parseError;
-                            if (status === 400) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorMessage);
-                            } else if (status === 401) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.API_KEY_ERROR, errorMessage);
-                            } else if (status && (status < 200 || status >= 300)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.WEB_API_ERROR, errorMessage);
-                            } else {
-                                throw new _error2.default(_error2.default.ERROR_CODES.GENERIC_ERROR, "HTTP Client Error" + (errorMessage ? ": " + errorMessage : ""));
-                            }
-                        });
-                    });
-                }
-            }, {
-                key: "getCacheKey",
-                value: function getCacheKey(settings) {
-                    return _base2.default.encode(String.fromCharCode.apply(undefined, _jsSha2.default.array(_utils2.default.toJson(settings)))).replace(/[+]/g, "-").replace(/[/]/g, "_").replace(/=+/, "") + (KidaptiveSdkHttpClient.isUserEndpoint(settings.endpoint) ? ".alpUserData" : ".alpAppData");
-                }
-            }, {
-                key: "getRequestSettings",
-                value: function getRequestSettings(method, endpoint, data) {
-                    var apiKey = _state2.default.get("apiKey");
-                    var user = _state2.default.get("user");
-                    if (KidaptiveSdkHttpClient.isUserEndpoint(endpoint) && user && user.apiKey) {
-                        apiKey = user.apiKey;
-                    }
-                    var settings = {
-                        method: method,
-                        host: KidaptiveSdkHttpClient.getHost(),
-                        apiKey: apiKey,
-                        endpoint: endpoint,
-                        data: data
-                    };
-                    if (method === "POST") {
-                        settings.contentType = "application/json";
-                    }
-                    return settings;
-                }
-            } ], [ {
-                key: "getHost",
-                value: function getHost() {
-                    var options = _state2.default.get("options") || {};
-                    if (options.environment === "prod") {
-                        return _constants2.default.HOST.PROD;
-                    }
-                    if (options.environment === "dev") {
-                        return _constants2.default.HOST.DEV;
-                    }
-                    if (options.environment === "custom") {
-                        return options.baseUrl;
-                    }
-                }
-            }, {
-                key: "isUserEndpoint",
-                value: function isUserEndpoint(endpoint) {
-                    return _utils2.default.findItemIndex(_constants2.default.USER_ENDPOINTS, function(item) {
-                        return _constants2.default.ENDPOINT[item] === endpoint;
-                    }) !== -1;
-                }
-            } ]);
-            return KidaptiveSdkHttpClient;
-        }();
-        exports.default = new KidaptiveSdkHttpClient();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
-        var _constants = __webpack_require__(4);
-        var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(3);
-        var _error2 = _interopRequireDefault(_error);
-        var _httpClient = __webpack_require__(10);
+        var _httpClient = __webpack_require__(6);
         var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _operationManager = __webpack_require__(6);
+        var _operationManager = __webpack_require__(7);
         var _operationManager2 = _interopRequireDefault(_operationManager);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
-        var _q = __webpack_require__(5);
+        var _q = __webpack_require__(3);
         var _q2 = _interopRequireDefault(_q);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
@@ -1992,8 +3248,8 @@
                             eventFields[key] = newValue;
                         });
                         var event = {
-                            name: eventName,
-                            additionalFields: _utils2.default.copyObject(eventFields)
+                            additionalFields: _utils2.default.copyObject(eventFields),
+                            name: eventName
                         };
                         KidaptiveSdkEventManager.addToEventQueue(event);
                     });
@@ -2010,7 +3266,13 @@
                         if (!_utils2.default.isString(rawEvent)) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent must be a string");
                         }
-                        KidaptiveSdkEventManager.addToEventQueue(rawEvent);
+                        var event = {
+                            additionalFields: {
+                                raw_event_payload: rawEvent
+                            },
+                            name: "raw_custom_event"
+                        };
+                        KidaptiveSdkEventManager.addToEventQueue(event);
                     });
                 }
             }, {
@@ -2021,14 +3283,30 @@
                         var eventQueue = KidaptiveSdkEventManager.getEventQueue();
                         if (eventQueue.length) {
                             var requests = [];
+                            var eventBatches = [];
                             eventQueue.forEach(function(event) {
+                                eventBatches.push(event);
                                 requests.push(_httpClient2.default.request("POST", _constants2.default.ENDPOINT.INGESTION, event, {
                                     noCache: true
                                 }));
                             });
                             eventQueue = [];
                             KidaptiveSdkEventManager.setEventQueue(eventQueue);
-                            return _q2.default.allSettled(requests);
+                            return _q2.default.allSettled(requests).then(function(results) {
+                                var requeue = [];
+                                for (var i = 0; i < results.length; i++) {
+                                    var rejected = results[i].state === "rejected";
+                                    var error = results[i].reason || {};
+                                    if (rejected && error.type === _error2.default.ERROR_CODES.GENERIC_ERROR) {
+                                        requeue.push(eventBatches[i]);
+                                    }
+                                    if (requeue.length) {
+                                        var newEventQueue = KidaptiveSdkEventManager.getEventQueue().concat(requeue);
+                                        KidaptiveSdkEventManager.setEventQueue(newEventQueue);
+                                    }
+                                }
+                                return results;
+                            });
                         } else {
                             return _q2.default.fcall(function() {
                                 return [];
@@ -2072,15 +3350,29 @@
                         _autoFlushTimeout = null;
                     });
                 }
+            }, {
+                key: "setEventTransformer",
+                value: function setEventTransformer(eventTransformer) {
+                    _utils2.default.checkTier(3);
+                    if (!_utils2.default.isFunction(eventTransformer)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "eventTransformer must be a function");
+                    }
+                    _state2.default.set("eventTransformer", eventTransformer, false);
+                }
             } ], [ {
                 key: "addToEventQueue",
                 value: function addToEventQueue(event) {
                     var options = _state2.default.get("options") || {};
-                    if (options.authMode === "server" && !_state2.default.get("user")) {
+                    var user = _state2.default.get("user");
+                    if (options.authMode === "server" && !user) {
                         throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication");
                     }
+                    var updatedEvent = _utils2.default.copyObject(event);
+                    updatedEvent.eventTime = Date.now();
+                    updatedEvent.learnerId = _state2.default.get("learnerId");
+                    updatedEvent.trialTime = _state2.default.get("trialTime");
+                    updatedEvent.userId = user && user.id;
                     var appInfo = {
-                        uri: options.appUri,
                         version: options.version,
                         build: options.build
                     };
@@ -2088,24 +3380,36 @@
                         deviceType: window && window.navigator && window.navigator.userAgent,
                         language: window && window.navigator && window.navigator.language
                     };
-                    var user = _state2.default.get("user");
-                    var learner = _state2.default.get("learner");
-                    var learnerInfo = {
-                        userId: user && user.id,
-                        learnerId: learner && learner.id
-                    };
                     var eventQueue = KidaptiveSdkEventManager.getEventQueue();
                     var itemIndex = _utils2.default.findItemIndex(eventQueue, function(item) {
-                        return item.appInfo.uri === appInfo.uri && item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language && item.learnerInfo.userId === learnerInfo.userId && item.learnerInfo.learnerId === learnerInfo.learnerId;
+                        return item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language;
                     });
+                    if (options.tier >= 3) {
+                        var eventTransformer = _state2.default.get("eventTransformer", false);
+                        if (eventTransformer) {
+                            updatedEvent = _utils2.default.copyObject(eventTransformer(updatedEvent));
+                            if (!_utils2.default.isObject(updatedEvent)) {
+                                return;
+                            }
+                            KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
+                            if (_utils2.default.isArray(updatedEvent.attempts)) {
+                                updatedEvent.attempts = updatedEvent.attempts.map(function(attempt) {
+                                    var updatedAttempt = _attemptProcessor2.default.prepareAttempt(attempt);
+                                    if (updatedAttempt && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
+                                        _attemptProcessor2.default.processAttempt(updatedAttempt);
+                                    }
+                                    return updatedAttempt || attempt;
+                                });
+                            }
+                        }
+                    }
                     if (itemIndex !== -1) {
-                        eventQueue[itemIndex].events.push(event);
+                        eventQueue[itemIndex].events.push(updatedEvent);
                     } else {
                         eventQueue.push({
-                            learnerInfo: learnerInfo,
                             appInfo: appInfo,
                             deviceInfo: deviceInfo,
-                            events: [ event ]
+                            events: [ updatedEvent ]
                         });
                     }
                     KidaptiveSdkEventManager.setEventQueue(eventQueue);
@@ -2134,8 +3438,65 @@
             }, {
                 key: "getEventQueueCacheKey",
                 value: function getEventQueueCacheKey() {
-                    var settings = _httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION);
-                    return _httpClient2.default.getCacheKey(settings).replace(/[.].*/, ".alpEventData");
+                    return _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION));
+                }
+            }, {
+                key: "validateTransformedEvent",
+                value: function validateTransformedEvent(event) {
+                    if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                        if (!_utils2.default.isString(event.name) || !event.name.length) {
+                            console.log("Warning: eventTransformer returned an event with name not set as a string.");
+                        }
+                        if (!_utils2.default.isObject(event.additionalFields) || event.additionalFields === null) {
+                            console.log("Warning: eventTransformer returned an event with additionalFields not set as an object.");
+                        }
+                        if (event.userId != null && !_utils2.default.isNumber(event.userId)) {
+                            console.log("Warning: eventTransformer returned an event with userId not set as a number.");
+                        }
+                        if (event.learnerId != null && !_utils2.default.isNumber(event.learnerId)) {
+                            console.log("Warning: eventTransformer returned an event with learnerId not set as a number.");
+                        }
+                        if (!_utils2.default.isNumber(event.eventTime)) {
+                            console.log("Warning: eventTransformer returned an event with eventTime not set as a number.");
+                        }
+                        if (!_utils2.default.isNumber(event.trialTime)) {
+                            console.log("Warning: eventTransformer returned an event with trialTime not set as a number.");
+                        }
+                        if (event.attempts != null) {
+                            if (!_utils2.default.isArray(event.attempts)) {
+                                console.log("Warning: eventTransformer returned an event with attempts not set as an array.");
+                            } else {
+                                event.attempts.forEach(function(attempt) {
+                                    if (!_utils2.default.isObject(attempt)) {
+                                        console.log("Warning: eventTransformer returned an event with an attempt not set as an object.");
+                                    } else {
+                                        if (!_utils2.default.isString(attempt.itemURI) || !attempt.itemURI.length) {
+                                            console.log("Warning: eventTransformer returned an event attempt with itemURI not set as a string.");
+                                        }
+                                        if (!_utils2.default.isNumber(attempt.outcome)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.");
+                                        } else if (attempt.outcome !== 0 && attempt.outcome !== 1) {
+                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as 0 or 1.");
+                                        }
+                                        if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.");
+                                        } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.");
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        if (event.tags != null) {
+                            if (!_utils2.default.isObject(event.tags)) {
+                                console.log("Warning: eventTransformer returned an event with tags not set as an object.");
+                            } else {
+                                if (event.tags.skipIrt != null && !_utils2.default.isBoolean(event.tags.skipIrt)) {
+                                    console.log("Warning: eventTransformer returned an event tag with skipIrt not set as a boolean.");
+                                }
+                            }
+                        }
+                    }
                 }
             } ]);
             return KidaptiveSdkEventManager;
@@ -2162,18 +3523,8 @@
                 return Constructor;
             };
         }();
-        var _constants = __webpack_require__(4);
-        var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(3);
+        var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
-        var _eventManager = __webpack_require__(11);
-        var _eventManager2 = _interopRequireDefault(_eventManager);
-        var _httpClient = __webpack_require__(10);
-        var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _operationManager = __webpack_require__(6);
-        var _operationManager2 = _interopRequireDefault(_operationManager);
-        var _state = __webpack_require__(2);
-        var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
         function _interopRequireDefault(obj) {
@@ -2186,177 +3537,367 @@
                 throw new TypeError("Cannot call a class as a function");
             }
         }
-        var KidaptiveSdkLearnerManager = function() {
-            function KidaptiveSdkLearnerManager() {
-                _classCallCheck(this, KidaptiveSdkLearnerManager);
+        var KidaptiveSdkRecommenderRandom = function() {
+            function KidaptiveSdkRecommenderRandom(sdk) {
+                _classCallCheck(this, KidaptiveSdkRecommenderRandom);
+                this.sdk = sdk;
             }
-            _createClass(KidaptiveSdkLearnerManager, [ {
-                key: "setUser",
-                value: function setUser() {
-                    var userObject = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        var options = _state2.default.get("options") || {};
-                        if (options.authMode === "client") {
-                            if (userObject.providerUserId == null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId is required");
-                            }
-                            if (!_utils2.default.isString(userObject.providerUserId)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId must be a string");
-                            }
-                            if (userObject.apiKey != null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser apiKey not supported when the SDK authMode is server");
-                            }
-                            if (userObject.providerId != null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser providerId not supported when the SDK authMode is server");
-                            }
-                            if (userObject.id != null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser id not supported when the SDK authMode is server");
-                            }
-                        }
-                        if (options.authMode === "server") {
-                            var commonParamError = "Invalid object passed to setUser. Please ensure SDK authmode is correct and the object being passed to setUser is correct.";
-                            if (userObject.apiKey == null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey is required");
-                            }
-                            if (!_utils2.default.isString(userObject.apiKey)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " ApiKey must be a string");
-                            }
-                            if (userObject.id == null) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID is required");
-                            }
-                            if (!_utils2.default.isNumber(userObject.id)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " User ID must be a number");
-                            }
-                            if (!_utils2.default.isArray(userObject.learners)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learners must be an array");
-                            }
-                            userObject.learners.forEach(function(learner) {
-                                if (!_utils2.default.isObject(learner)) {
-                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner must be an object");
-                                }
-                                if (learner.id == null) {
-                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID is required");
-                                }
-                                if (!_utils2.default.isNumber(learner.id)) {
-                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ID must be a number");
-                                }
-                                if (learner.providerId == null) {
-                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID is required");
-                                }
-                                if (!_utils2.default.isString(learner.providerId)) {
-                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, commonParamError + " Learner ProviderID must be a string");
-                                }
-                            });
-                        }
-                        return _eventManager2.default.flushEventQueue().then(function() {
-                            if (options.authMode === "client") {
-                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
-                                    providerUserId: userObject.providerUserId
-                                }, {
-                                    noCache: true
-                                }).then(function(userObjectResponse) {
-                                    _state2.default.set("user", userObjectResponse);
-                                    _state2.default.set("learner", undefined);
-                                });
-                            }
-                            if (options.authMode === "server") {
-                                _state2.default.set("user", userObject);
-                                _state2.default.set("learner", undefined);
-                            }
-                        });
-                    });
-                }
-            }, {
-                key: "selectActiveLearner",
-                value: function selectActiveLearner(providerLearnerId) {
+            _createClass(KidaptiveSdkRecommenderRandom, [ {
+                key: "getRecommendation",
+                value: function getRecommendation(params) {
                     var _this = this;
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        var options = _state2.default.get("options") || {};
-                        var user = _state2.default.get("user");
-                        if (providerLearnerId == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId is required");
+                    try {
+                        if (this.sdk.learnerManager.getActiveLearner() === undefined) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "OptimalDifficulty getRecommendation called with no active learner selected.");
                         }
-                        if (!_utils2.default.isString(providerLearnerId)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerLearnerId must be a string");
+                        if (!_utils2.default.isObject(params)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Params must be an object.");
                         }
-                        if (options.authMode === "client") {
-                            return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
-                                providerLearnerId: providerLearnerId,
-                                providerUserId: user && user.providerId
-                            }, {
-                                noCache: true
-                            }).then(function(userObjectResponse) {
-                                _state2.default.set("user", userObjectResponse);
-                                _state2.default.set("learner", _utils2.default.findItem(_this.getLearnerList(), function(learner) {
-                                    return learner.providerId === providerLearnerId;
-                                }));
+                        var gameUri = params.gameUri, _params$maxResults = params.maxResults, maxResults = _params$maxResults === undefined ? 10 : _params$maxResults, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        if (gameUri == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri is required.");
+                        }
+                        if (!_utils2.default.isString(gameUri)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri must be a string.");
+                        }
+                        var game = this.sdk.modelManager.getGameByUri(gameUri);
+                        if (!game) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri does not map to a game.");
+                        }
+                        if (!_utils2.default.isInteger(maxResults)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxResults must be an integer.");
+                        }
+                        if (maxResults < 1) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxResults must be an integer greater than 0.");
+                        }
+                        if (excludedPromptUris != null) {
+                            if (!_utils2.default.isArray(excludedPromptUris)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "excludedPromptUris must be an array.");
+                            }
+                            excludedPromptUris.forEach(function(promptUri) {
+                                if (!_utils2.default.isString(promptUri)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "excludedPromptUris must be an array of strings.");
+                                }
                             });
                         }
-                        if (options.authMode === "server") {
-                            if (!user) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before setting an active learner when using server authentication");
+                        if (includedPromptUris != null) {
+                            if (!_utils2.default.isArray(includedPromptUris)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "includedPromptUris must be an array.");
                             }
-                            var activeLearner = _utils2.default.findItem(_this.getLearnerList(), function(learner) {
-                                return learner.providerId === providerLearnerId;
+                            includedPromptUris.forEach(function(promptUri) {
+                                if (!_utils2.default.isString(promptUri)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "includedPromptUris must be an array of strings.");
+                                }
                             });
-                            if (!activeLearner) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "A learner with that providerLearnerId does not exist");
-                            }
-                            _state2.default.set("learner", activeLearner);
                         }
-                    });
-                }
-            }, {
-                key: "clearActiveLearner",
-                value: function clearActiveLearner() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        _state2.default.set("learner", undefined);
-                    });
-                }
-            }, {
-                key: "logout",
-                value: function logout() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        return _eventManager2.default.flushEventQueue().then(function() {
-                            var options = _state2.default.get("options") || {};
-                            if (options.authMode === "server" && _state2.default.get("user")) {
-                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.LOGOUT, undefined, {
-                                    noCache: true
-                                }).then(function() {}, function() {});
-                            }
-                        }).then(function() {
-                            _state2.default.set("learner", undefined);
-                            _state2.default.set("user", undefined);
+                        var prompts = void 0;
+                        if (includedPromptUris) {
+                            prompts = includedPromptUris.map(function(promptUri) {
+                                return _this.sdk.modelManager.getPromptByUri(promptUri);
+                            });
+                            prompts = prompts.filter(function(prompt) {
+                                return prompt && prompt.game && prompt.game.uri === gameUri;
+                            });
+                        } else {
+                            prompts = this.sdk.modelManager.getPromptsByGameUri(gameUri);
+                        }
+                        if (excludedPromptUris && excludedPromptUris.length) {
+                            prompts = prompts.filter(function(prompt) {
+                                return excludedPromptUris.indexOf(prompt.uri) === -1;
+                            });
+                        }
+                        prompts = prompts.map(function(prompt) {
+                            return {
+                                sort: Math.random(),
+                                prompt: prompt
+                            };
+                        }).sort(function(objectA, objectB) {
+                            return objectA.sort - objectB.sort;
+                        }).slice(0, maxResults);
+                        var recommendations = prompts.map(function(object) {
+                            return {
+                                promptUri: object.prompt.uri
+                            };
                         });
-                    });
-                }
-            }, {
-                key: "getUser",
-                value: function getUser() {
-                    _utils2.default.checkTier(1);
-                    return _state2.default.get("user") || undefined;
-                }
-            }, {
-                key: "getActiveLearner",
-                value: function getActiveLearner() {
-                    _utils2.default.checkTier(1);
-                    return _state2.default.get("learner") || undefined;
-                }
-            }, {
-                key: "getLearnerList",
-                value: function getLearnerList() {
-                    _utils2.default.checkTier(1);
-                    var userObject = _state2.default.get("user") || {};
-                    return _utils2.default.isArray(userObject.learners) ? userObject.learners : [];
+                        return {
+                            recommendations: recommendations,
+                            type: "prompt"
+                        };
+                    } catch (error) {
+                        return {
+                            error: error
+                        };
+                    }
                 }
             } ]);
-            return KidaptiveSdkLearnerManager;
+            return KidaptiveSdkRecommenderRandom;
         }();
-        exports.default = new KidaptiveSdkLearnerManager();
+        exports.default = KidaptiveSdkRecommenderRandom;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkRecommenderOptimalDifficulty = function() {
+            function KidaptiveSdkRecommenderOptimalDifficulty(sdk) {
+                _classCallCheck(this, KidaptiveSdkRecommenderOptimalDifficulty);
+                this.sdk = sdk;
+            }
+            _createClass(KidaptiveSdkRecommenderOptimalDifficulty, [ {
+                key: "getRecommendation",
+                value: function getRecommendation() {
+                    var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+                    try {
+                        if (this.sdk.learnerManager.getActiveLearner() === undefined) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "No active learner selected.");
+                        }
+                        if (!_utils2.default.isObject(params)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Params must be an object.");
+                        }
+                        var localDimensionUri = params.localDimensionUri, _params$targetSuccess = params.targetSuccessProbability, targetSuccessProbability = _params$targetSuccess === undefined ? .7 : _params$targetSuccess, _params$maxResults = params.maxResults, maxResults = _params$maxResults === undefined ? 10 : _params$maxResults, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        if (localDimensionUri == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "localDimensionUri is required.");
+                        }
+                        if (!_utils2.default.isString(localDimensionUri)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "localDimensionUri must be a string.");
+                        }
+                        var localDimension = this.sdk.modelManager.getLocalDimensionByUri(localDimensionUri);
+                        if (!localDimension) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "localDimensionUri does not map to a local dimension.");
+                        }
+                        if (!_utils2.default.isNumber(targetSuccessProbability)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "targetSuccessProbability must be a number.");
+                        }
+                        if (targetSuccessProbability < 0 || targetSuccessProbability > 1) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "targetSuccessProbability must be a number between  0 and 1.");
+                        }
+                        if (!_utils2.default.isInteger(maxResults)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxResults must be an integer.");
+                        }
+                        if (maxResults < 1) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxResults must be an integer greater than 0.");
+                        }
+                        if (excludedPromptUris != null) {
+                            if (!_utils2.default.isArray(excludedPromptUris)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "excludedPromptUris must be an array.");
+                            }
+                            excludedPromptUris.forEach(function(promptUri) {
+                                if (!_utils2.default.isString(promptUri)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "excludedPromptUris must be an array of strings.");
+                                }
+                            });
+                        }
+                        if (includedPromptUris != null) {
+                            if (!_utils2.default.isArray(includedPromptUris)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "includedPromptUris must be an array.");
+                            }
+                            includedPromptUris.forEach(function(promptUri) {
+                                if (!_utils2.default.isString(promptUri)) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "includedPromptUris must be an array of strings.");
+                                }
+                            });
+                        }
+                        var localAbilityEstimate = this.sdk.learnerManager.getLocalAbilityEstimate(localDimensionUri);
+                        var items = this.sdk.modelManager.getItems().filter(function(item) {
+                            return item.localDimension && item.localDimension.uri === localDimensionUri;
+                        });
+                        if (includedPromptUris) {
+                            items = items.filter(function(item) {
+                                return includedPromptUris.indexOf(item.prompt && item.prompt.uri) !== -1;
+                            });
+                        }
+                        if (excludedPromptUris && excludedPromptUris.length) {
+                            items = items.filter(function(item) {
+                                return excludedPromptUris.indexOf(item.prompt && item.prompt.uri) === -1;
+                            });
+                        }
+                        items = items.map(function(item) {
+                            return {
+                                sort: Math.random(),
+                                item: item
+                            };
+                        }).sort(function(objectA, objectB) {
+                            return objectA.sort - objectB.sort;
+                        }).map(function(object) {
+                            return {
+                                sort: 1 / (1 + Math.exp(Math.sqrt(8 / Math.PI) * (object.item.mean - localAbilityEstimate.mean))),
+                                item: object.item
+                            };
+                        }).sort(function(objectA, objectB) {
+                            return Math.abs(objectA.sort - targetSuccessProbability) - Math.abs(objectB.sort - targetSuccessProbability);
+                        }).slice(0, maxResults);
+                        var recommendations = items.map(function(object) {
+                            return {
+                                itemUri: object.item.uri,
+                                promptUri: object.item.prompt && object.item.prompt.uri,
+                                successProbability: object.sort
+                            };
+                        });
+                        return {
+                            recommendations: recommendations,
+                            type: "prompt"
+                        };
+                    } catch (error) {
+                        return {
+                            error: error
+                        };
+                    }
+                }
+            } ]);
+            return KidaptiveSdkRecommenderOptimalDifficulty;
+        }();
+        exports.default = KidaptiveSdkRecommenderOptimalDifficulty;
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkIrt = function() {
+            function KidaptiveSdkIrt() {
+                _classCallCheck(this, KidaptiveSdkIrt);
+            }
+            _createClass(KidaptiveSdkIrt, [ {
+                key: "estimate",
+                value: function estimate(y, beta, guessing, theta, sigma, post_mean, post_sd) {
+                    return KidaptiveSdkIrt.estimate(y || 0, beta || 0, guessing || 0, theta || 0, sigma || 0, post_mean || 0, post_sd || 0);
+                }
+            } ], [ {
+                key: "normal_dist",
+                value: function normal_dist(x, mu, sigma) {
+                    return Math.exp(-Math.pow(x - mu, 2) / 2 / Math.pow(sigma, 2)) / sigma / Math.sqrt(2 * Math.PI);
+                }
+            }, {
+                key: "logistic_dist",
+                value: function logistic_dist(x, mu, alpha) {
+                    return 1 / (1 + Math.exp(-alpha * (x - mu)));
+                }
+            }, {
+                key: "inv_logis",
+                value: function inv_logis(p) {
+                    return Math.log(1 / p - 1) * Math.sqrt(Math.PI / 8);
+                }
+            }, {
+                key: "estimate",
+                value: function estimate(y, beta, guessing, theta, sigma, post_mean, post_sd) {
+                    var a = Math.sqrt(8 / Math.PI);
+                    var max_sigma = 2 / a;
+                    post_mean = theta;
+                    post_sd = sigma = Math.min(Math.max(sigma, 0), max_sigma);
+                    if (sigma === 0) {
+                        return {
+                            post_mean: post_mean,
+                            post_sd: post_sd
+                        };
+                    }
+                    y = y < .5 ? 0 : 1;
+                    if (guessing >= 1) {
+                        return {
+                            post_mean: post_mean,
+                            post_sd: post_sd
+                        };
+                    } else {
+                        guessing = Math.max(guessing, 0);
+                    }
+                    var dll = void 0;
+                    var ddll = void 0;
+                    var x = void 0;
+                    var high = Infinity;
+                    var low = -Infinity;
+                    var delta = 1;
+                    var p = void 0;
+                    var q = void 0;
+                    var P = void 0;
+                    do {
+                        x = post_mean;
+                        p = KidaptiveSdkIrt.logistic_dist(post_mean, beta, a);
+                        q = 1 - p;
+                        if (y === 0 || guessing === 0) {
+                            dll = a * (y - p) - (post_mean - theta) * Math.pow(sigma, -2);
+                            ddll = -Math.pow(a, 2) * p * q - Math.pow(sigma, -2);
+                        } else {
+                            P = guessing + (1 - guessing) * p;
+                            dll = a * p * (y - P) / P - (post_mean - theta) * Math.pow(sigma, -2);
+                            ddll = Math.pow(a, 2) * p * q * (guessing * y - Math.pow(P, 2)) * Math.pow(P, -2) - Math.pow(sigma, -2);
+                        }
+                        if (dll > 0) {
+                            low = post_mean;
+                        } else if (dll < 0) {
+                            high = post_mean;
+                        }
+                        post_mean -= dll / ddll;
+                        if (post_mean >= high || post_mean <= low) {
+                            if (high < Infinity && low > -Infinity) {
+                                post_mean = (high + low) / 2;
+                            } else if (high < Infinity) {
+                                post_mean -= delta;
+                                delta *= 2;
+                            } else {
+                                post_mean += delta;
+                                delta *= 2;
+                            }
+                        }
+                    } while (x !== post_mean);
+                    post_sd = Math.min(Math.sqrt(-1 / ddll), max_sigma);
+                    return {
+                        post_mean: post_mean,
+                        post_sd: post_sd
+                    };
+                }
+            } ]);
+            return KidaptiveSdkIrt;
+        }();
+        exports.default = new KidaptiveSdkIrt();
     }, function(module, exports) {
         function request(RequestConstructor, method, url) {
             if ("function" == typeof url) {
@@ -2369,7 +3910,7 @@
         }
         module.exports = request;
     }, function(module, exports, __webpack_require__) {
-        var isObject = __webpack_require__(8);
+        var isObject = __webpack_require__(12);
         exports.clearTimeout = function _clearTimeout() {
             this._timeout = 0;
             clearTimeout(this._timer);
@@ -2494,10 +4035,10 @@
             return !!this.listeners(event).length;
         };
     }, function(module, exports, __webpack_require__) {
-        var Emitter = __webpack_require__(16);
-        var reduce = __webpack_require__(15);
-        var requestBase = __webpack_require__(14);
-        var isObject = __webpack_require__(8);
+        var Emitter = __webpack_require__(21);
+        var reduce = __webpack_require__(20);
+        var requestBase = __webpack_require__(19);
+        var isObject = __webpack_require__(12);
         var root;
         if (typeof window !== "undefined") {
             root = window;
@@ -2519,7 +4060,7 @@
                 return false;
             }
         }
-        var request = module.exports = __webpack_require__(13).bind(null, Request);
+        var request = module.exports = __webpack_require__(18).bind(null, Request);
         request.getXHR = function() {
             if (root.XMLHttpRequest && (!root.location || "file:" != root.location.protocol || !root.ActiveXObject)) {
                 return new XMLHttpRequest();
@@ -2944,8 +4485,8 @@
             return req;
         };
     }, function(module, exports, __webpack_require__) {
-        var Q = __webpack_require__(5);
-        var superagent = __webpack_require__(17);
+        var Q = __webpack_require__(3);
+        var superagent = __webpack_require__(22);
         function wrap(item) {
             return function() {
                 var agent = item.apply(superagent, arguments);
@@ -3122,7 +4663,7 @@
                 attachTo.setImmediate = setImmediate;
                 attachTo.clearImmediate = clearImmediate;
             })(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self);
-        }).call(this, __webpack_require__(1), __webpack_require__(7));
+        }).call(this, __webpack_require__(5), __webpack_require__(9));
     }, function(module, exports, __webpack_require__) {
         (function(global) {
             var apply = Function.prototype.apply;
@@ -3162,10 +4703,10 @@
                     }, msecs);
                 }
             };
-            __webpack_require__(19);
+            __webpack_require__(24);
             exports.setImmediate = typeof self !== "undefined" && self.setImmediate || typeof global !== "undefined" && global.setImmediate || this && this.setImmediate;
             exports.clearImmediate = typeof self !== "undefined" && self.clearImmediate || typeof global !== "undefined" && global.clearImmediate || this && this.clearImmediate;
-        }).call(this, __webpack_require__(1));
+        }).call(this, __webpack_require__(5));
     }, function(module, exports) {
         (function(__webpack_amd_options__) {
             module.exports = __webpack_amd_options__;
@@ -3189,7 +4730,7 @@
                     root = self;
                 }
                 var COMMON_JS = !root.JS_SHA256_NO_COMMON_JS && typeof module === "object" && module.exports;
-                var AMD = "function" === "function" && __webpack_require__(21);
+                var AMD = "function" === "function" && __webpack_require__(26);
                 var ARRAY_BUFFER = !root.JS_SHA256_NO_ARRAY_BUFFER && typeof ArrayBuffer !== "undefined";
                 var HEX_CHARS = "0123456789abcdef".split("");
                 var EXTRA = [ -2147483648, 8388608, 32768, 128 ];
@@ -3582,7 +5123,7 @@
                     }
                 }
             })();
-        }).call(this, __webpack_require__(7), __webpack_require__(1));
+        }).call(this, __webpack_require__(9), __webpack_require__(5));
     }, function(module, exports, __webpack_require__) {
         (function(module, global) {
             var __WEBPACK_AMD_DEFINE_RESULT__;
@@ -3672,7 +5213,7 @@
                     var key;
                 }
             })(this);
-        }).call(this, __webpack_require__(9)(module), __webpack_require__(1));
+        }).call(this, __webpack_require__(13)(module), __webpack_require__(5));
     }, function(module, exports) {
         var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, gap, indent, meta = {
             "\b": "\\b",
@@ -3982,10 +5523,10 @@
             }, "") : result;
         };
     }, function(module, exports, __webpack_require__) {
-        exports.parse = __webpack_require__(25);
-        exports.stringify = __webpack_require__(24);
+        exports.parse = __webpack_require__(30);
+        exports.stringify = __webpack_require__(29);
     }, function(module, exports, __webpack_require__) {
-        var json = typeof JSON !== "undefined" ? JSON : __webpack_require__(26);
+        var json = typeof JSON !== "undefined" ? JSON : __webpack_require__(31);
         module.exports = function(obj, opts) {
             if (!opts) opts = {};
             if (typeof opts === "function") opts = {
@@ -4647,7 +6188,7 @@
                 return false;
             }
             module.exports = cloneDeep;
-        }).call(this, __webpack_require__(1), __webpack_require__(9)(module));
+        }).call(this, __webpack_require__(5), __webpack_require__(13)(module));
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -4671,18 +6212,150 @@
         }();
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(3);
-        var _error2 = _interopRequireDefault(_error);
-        var _eventManager = __webpack_require__(11);
-        var _eventManager2 = _interopRequireDefault(_eventManager);
-        var _learnerManager = __webpack_require__(12);
+        var _httpClient = __webpack_require__(6);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _irt = __webpack_require__(17);
+        var _irt2 = _interopRequireDefault(_irt);
+        var _learnerManager = __webpack_require__(11);
         var _learnerManager2 = _interopRequireDefault(_learnerManager);
-        var _operationManager = __webpack_require__(6);
-        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _modelManager = __webpack_require__(8);
+        var _modelManager2 = _interopRequireDefault(_modelManager);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var KidaptiveSdkAttemptProcessor = function() {
+            function KidaptiveSdkAttemptProcessor() {
+                _classCallCheck(this, KidaptiveSdkAttemptProcessor);
+            }
+            _createClass(KidaptiveSdkAttemptProcessor, [ {
+                key: "prepareAttempt",
+                value: function prepareAttempt(attempt) {
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with no active learner selected.");
+                        }
+                        return;
+                    }
+                    if (!_utils2.default.isObject(attempt)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with a non object attempt.");
+                        }
+                        return;
+                    }
+                    if (!_utils2.default.isString(attempt.itemURI)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with an invalid itemUri.");
+                        }
+                        return;
+                    }
+                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
+                    if (!item || !item.localDimension || !item.localDimension.dimension) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with an invalid itemUri.");
+                        }
+                        return;
+                    }
+                    var latentAbility = _learnerManager2.default.getLatentAbilityEstimate(item.localDimension.dimension.uri);
+                    var localAbility = _learnerManager2.default.getLocalAbilityEstimate(item.localDimension && item.localDimension.uri);
+                    var updatedAttempt = _utils2.default.copyObject(attempt);
+                    updatedAttempt.priorLatentMean = latentAbility.mean;
+                    updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
+                    updatedAttempt.priorLocalMean = localAbility.mean;
+                    updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
+                    return updatedAttempt;
+                }
+            }, {
+                key: "processAttempt",
+                value: function processAttempt(attempt) {
+                    var learnerId = _state2.default.get("learnerId");
+                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
+                    var estimation = _irt2.default.estimate(attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
+                    var newAbility = {
+                        dimension: item.localDimension.dimension,
+                        mean: estimation.post_mean,
+                        standardDeviation: estimation.post_sd,
+                        timestamp: _state2.default.get("trialTime") || 0
+                    };
+                    var newAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                    var updateAbilityIndex = _utils2.default.findItemIndex(newAbilities, function(newAbility) {
+                        return newAbility.dimension && newAbility.dimension.uri === item.localDimension.dimension.uri;
+                    });
+                    if (updateAbilityIndex !== -1) {
+                        newAbilities[updateAbilityIndex] = newAbility;
+                    } else {
+                        newAbilities.push(newAbility);
+                    }
+                    _state2.default.set("latentAbilities." + learnerId, newAbilities);
+                    newAbilities.forEach(function(newAbility) {
+                        newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
+                        delete newAbility.dimension;
+                    });
+                    var cacheKey = _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("GET", _constants2.default.ENDPOINT.ABILITY, {
+                        learnerId: learnerId
+                    }));
+                    _utils2.default.localStorageSetItem(cacheKey, newAbilities);
+                }
+            } ]);
+            return KidaptiveSdkAttemptProcessor;
+        }();
+        exports.default = new KidaptiveSdkAttemptProcessor();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _eventManager = __webpack_require__(14);
+        var _eventManager2 = _interopRequireDefault(_eventManager);
+        var _learnerManager = __webpack_require__(11);
+        var _learnerManager2 = _interopRequireDefault(_learnerManager);
+        var _modelManager = __webpack_require__(8);
+        var _modelManager2 = _interopRequireDefault(_modelManager);
+        var _operationManager = __webpack_require__(7);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _recommendationManager = __webpack_require__(10);
+        var _recommendationManager2 = _interopRequireDefault(_recommendationManager);
+        var _optimalDifficulty = __webpack_require__(16);
+        var _optimalDifficulty2 = _interopRequireDefault(_optimalDifficulty);
+        var _random = __webpack_require__(15);
+        var _random2 = _interopRequireDefault(_random);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(3);
+        var _q2 = _interopRequireDefault(_q);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
                 default: obj
@@ -4700,10 +6373,12 @@
                 _state2.default.set("initialized", false);
                 this.eventManager = _eventManager2.default;
                 this.learnerManager = _learnerManager2.default;
+                this.modelManager = _modelManager2.default;
             }
             _createClass(KidaptiveSdk, [ {
                 key: "init",
                 value: function init(apiKey) {
+                    var _this = this;
                     var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
                     return _operationManager2.default.addToQueue(function() {
                         if (_state2.default.get("initialized")) {
@@ -4719,10 +6394,10 @@
                         options.autoFlushInterval = options.autoFlushInterval == null ? _constants2.default.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
                         options.loggingLevel = options.loggingLevel == null ? _constants2.default.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
                         if (apiKey == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Api key is required");
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "API key is required");
                         }
                         if (!_utils2.default.isString(apiKey)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Api key must be a string");
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "API key must be a string");
                         }
                         if (options.environment == null) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Environment option is required");
@@ -4744,7 +6419,7 @@
                         if (!_utils2.default.isNumber(options.tier)) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Tier option must be a number");
                         }
-                        if ([ 1 ].indexOf(options.tier) === -1) {
+                        if ([ 1, 2, 3 ].indexOf(options.tier) === -1) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Tier option is not an accepted value");
                         }
                         if (!_utils2.default.isString(options.authMode)) {
@@ -4752,11 +6427,6 @@
                         }
                         if ([ "client", "server" ].indexOf(options.authMode) === -1) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AuthMode option is not an accepted value");
-                        }
-                        if (options.appUri != null) {
-                            if (!_utils2.default.isString(options.appUri)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "AppUri option must be a string");
-                            }
                         }
                         if (options.version != null) {
                             if (!_utils2.default.isString(options.version)) {
@@ -4787,18 +6457,54 @@
                         if ([ "all", "warn", "none" ].indexOf(options.loggingLevel) === -1) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "LoggingLevel option is not an accepted value");
                         }
+                        if (options.defaultHttpCache != null) {
+                            if (!_utils2.default.isObject(options.defaultHttpCache)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "defaultHttpCache must be an object");
+                            }
+                            Object.keys(options.defaultHttpCache).forEach(function(cacheKey) {
+                                if (!_utils2.default.isString(options.defaultHttpCache[cacheKey])) {
+                                    throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "defaultHttpCache must be an object of key:value pairs with string values");
+                                }
+                            });
+                            Object.keys(options.defaultHttpCache).forEach(function(cacheKey) {
+                                try {
+                                    _utils2.default.localStorageGetItem(cacheKey);
+                                } catch (e) {
+                                    _utils2.default.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
+                                }
+                            });
+                        }
                         _state2.default.set("initialized", true);
                         _state2.default.set("apiKey", apiKey);
                         _state2.default.set("options", options);
-                        if (_state2.default.get("options").tier >= 1) {
-                            _eventManager2.default.startAutoFlush();
+                        _state2.default.set("user", _utils2.default.getCachedUser());
+                        _state2.default.set("learnerId", _utils2.default.getCachedLearnerId());
+                        if (options.authMode === "client") {
+                            _state2.default.set("singletonLearner", _utils2.default.getCachedSingletonLearnerFlag());
                         }
+                        if (options.tier >= 3) {
+                            _recommendationManager2.default.registerRecommender(new _optimalDifficulty2.default(_this), "optimalDifficulty");
+                            _recommendationManager2.default.registerRecommender(new _random2.default(_this), "random");
+                        }
+                        var requests = [];
+                        if (options.tier >= 1) {
+                            requests.push(_eventManager2.default.startAutoFlush());
+                        }
+                        if (options.tier >= 2) {
+                            requests.push(_modelManager2.default.updateModels());
+                        }
+                        return _q2.default.all(requests).then(function(results) {
+                            var activeLearner = _learnerManager2.default.getActiveLearner();
+                            if (activeLearner) {
+                                return _learnerManager2.default.selectActiveLearner(activeLearner.providerId);
+                            }
+                        });
                     });
                 }
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.0.1";
+                    return "1.1.0";
                 }
             }, {
                 key: "destroy",
@@ -4807,7 +6513,7 @@
                         _utils2.default.checkInitialized();
                         if (_state2.default.get("options").tier >= 1) {
                             _eventManager2.default.stopAutoFlush();
-                            return _learnerManager2.default.logout().then(function() {
+                            return _eventManager2.default.flushEventQueue().then(function() {
                                 _state2.default.clear();
                                 _state2.default.set("initialized", false);
                             });
