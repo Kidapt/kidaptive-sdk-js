@@ -1,23 +1,35 @@
-/**
- * Created by cameronperry on 2017-11-07.
- */
 'use strict';
-//import Constants from './spec/constants.js';
-//import Error from './spec/error.js';
-//import Utils from './spec/utils.js';
-//import State from './spec/state.js';
-//import OperationManager from './spec/operation-manager.js';
-//import HttpClient from './spec/http-client.js';
-//import EventManager from './spec/event-manager.js';
+//import AttemptProcessor from './spec/attempt-processor/';
+//import Constants from './spec/constants/';
+//import Core from './spec/core/';
+//import Error from './spec/error/';
+//import EventManager from './spec/event-manager/';
+//import HttpClient from './spec/http-client/';
 import LearnerManager from './spec/learner-manager/';
-//import Core from './spec/core.js';
-//import Tier1 from './spec/tier1.js';
-
+//import OperationManager from './spec/operation-manager/';
+//import RecommendationManager from './spec/recommendation-manager/';
+//import State from './spec/state/';
+//import Tier1 from './spec/tier1/';
+//import Tier2 from './spec/tier2/';
+//import Tier3 from './spec/tier3/';
+import Utils from './spec/utils/';
 
 describe('Kidaptive SDK Tests', () => {
 
+  //Constants();
+  //Error();
+  //State();
+  Utils();
+  //OperationManager();
+  //HttpClient();
+  //AttemptProcessor();
+  //EventManager();
+  //RecommendationManager();
   LearnerManager();
-
+  //Core();
+  //Tier1();
+  //Tier2();
+  //Tier3();
 
 }); //END Kidaptive SDK Tests
 
