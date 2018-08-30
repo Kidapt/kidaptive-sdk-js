@@ -1,8 +1,8 @@
 'use strict';
+import TestUtils from '../test-utils';
 import Error from '../../src/error';
 import OperationManager from '../../src/operation-manager';
 import Should from 'should';
-import Q from 'q';
 
 describe('KidaptiveSdk Operation Manager Unit Tests',  () => {
   it('Queue Should Resolve', () => {
@@ -70,7 +70,7 @@ describe('KidaptiveSdk Operation Manager Unit Tests',  () => {
   it('Queue Properly Waits', () =>  {
     const testVar = [];
     OperationManager.addToQueue(() => {
-      const deferred = Q.defer();
+      const deferred = TestUtils.createDefer();
       setTimeout(() => {
         testVar.push(1);
         deferred.resolve();
