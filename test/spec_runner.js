@@ -9,9 +9,7 @@ import LearnerManager from './spec/learner-manager/';
 import OperationManager from './spec/operation-manager/';
 //import RecommendationManager from './spec/recommendation-manager/';
 import State from './spec/state/';
-//import Tier1 from './spec/tier1/';
-//import Tier2 from './spec/tier2/';
-//import Tier3 from './spec/tier3/';
+import Tiers from './spec/tiers/';
 import Utils from './spec/utils/';
 
 describe('Kidaptive SDK Tests', () => {
@@ -27,9 +25,7 @@ describe('Kidaptive SDK Tests', () => {
   //RecommendationManager();
   LearnerManager();
   Core();
-  //Tier1();
-  //Tier2();
-  //Tier3();
+  Tiers();
 
 }); //END Kidaptive SDK Tests
 
