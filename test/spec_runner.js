@@ -1,7 +1,7 @@
 'use strict';
 //import AttemptProcessor from './spec/attempt-processor/';
 import Constants from './spec/constants/';
-//import Core from './spec/core/';
+import Core from './spec/core/';
 import Error from './spec/error/';
 //import EventManager from './spec/event-manager/';
 //import HttpClient from './spec/http-client/';
@@ -26,7 +26,7 @@ describe('Kidaptive SDK Tests', () => {
   //EventManager();
   //RecommendationManager();
   LearnerManager();
-  //Core();
+  Core();
   //Tier1();
   //Tier2();
   //Tier3();

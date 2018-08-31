@@ -49,6 +49,7 @@ export default () => {
         };
         TestUtils.validateProperty(testFunction, 'string', true);
       });
+      
       describe('ID is required and must be a number', () => {
         const testFunction = parameter => {
           userObject.id = parameter;
@@ -56,6 +57,7 @@ export default () => {
         };
         TestUtils.validateProperty(testFunction, 'number', true);
       });
+
       describe('Learners is required and must be an array', () => {
         const testFunction = parameter => {
           userObject.learners = parameter;
@@ -63,13 +65,15 @@ export default () => {
         };
         TestUtils.validateProperty(testFunction, 'array', true);
       });
+
       describe('Learner must be an object if defined', () => {
         const testFunction = parameter => {
           userObject.learners = [parameter];
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'object', true, [{id:200,providerId:'providerLearnerId'}]);
+        TestUtils.validateProperty(testFunction, 'object', true, [{id:200,providerId:'providerLearnerId'}], [{}]);
       });
+
       describe('Learner ID is required and must be a number', () => {
         const testFunction = parameter => {
           userObject.learners = [{id: parameter, providerId: 'learnerProviderId'}];
@@ -77,6 +81,7 @@ export default () => {
         };
         TestUtils.validateProperty(testFunction, 'number', true);
       });
+
       describe('Learner Provider ID is required and must be a string', () => {
         const testFunction = parameter => {
           userObject.learners = [{id: 100, providerId: parameter}];
