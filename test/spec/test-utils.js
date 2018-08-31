@@ -1,5 +1,5 @@
 'use strict';
-import State from '../src/state';
+import State from '../../src/state';
 import Q from 'q';
 import Should from 'should';
 import Sinon from 'sinon';

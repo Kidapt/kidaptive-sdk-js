@@ -6,13 +6,13 @@ import TypeChecking from './type-checking';
 
 export default () => {
 
-  describe('Learner Manager', () => {
+  describe('Utils', () => {
 
     StateChecking();
     TypeChecking();
     LocalStorage();
     DataManipulation();
 
-  }); //END Learner Manager
+  }); //END Utils
 
 }; //END export

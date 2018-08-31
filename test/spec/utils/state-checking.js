@@ -1,5 +1,5 @@
 'use strict';
-import TestUtils from '../../test-utils';
+import TestUtils from '../test-utils';
 import Constants from '../../../src/constants';
 import Utils from '../../../src/utils';
 import Should from 'should';

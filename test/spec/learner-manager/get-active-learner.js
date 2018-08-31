@@ -1,6 +1,6 @@
 'use strict';
 import TestConstants from './test-constants';
-import TestUtils from '../../test-utils';
+import TestUtils from '../test-utils';
 import LearnerManager from '../../../src/learner-manager';
 import Should from 'should';
 
