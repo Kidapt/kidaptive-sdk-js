@@ -3,7 +3,7 @@
 import Constants from './spec/constants/';
 import Core from './spec/core/';
 import Error from './spec/error/';
-//import EventManager from './spec/event-manager/';
+import EventManager from './spec/event-manager/';
 import HttpClient from './spec/http-client/';
 import LearnerManager from './spec/learner-manager/';
 import OperationManager from './spec/operation-manager/';
@@ -23,7 +23,7 @@ describe('Kidaptive SDK Tests', () => {
   OperationManager();
   HttpClient();
   //AttemptProcessor();
-  //EventManager();
+  EventManager();
   //RecommendationManager();
   LearnerManager();
   Core();

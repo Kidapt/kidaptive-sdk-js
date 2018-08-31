@@ -133,16 +133,12 @@ export default () => {
       });
 
       describe('autoFlushCallback is an optional function, or array of functions', () => {
-        const arrayTestFunction = parameter => {
+        const testFunction = parameter => {
           options.autoFlushCallback = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(arrayTestFunction, 'array', false, [[], [() => {}]], [['randomValue'], [{}], [null]], ['function']);
-        const functionTestFunction = parameter => {
-          options.autoFlushCallback = parameter;
-          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
-        };
-        TestUtils.validateProperty(functionTestFunction, 'function', false, undefined, undefined, ['array']);
+        TestUtils.validateProperty(testFunction, 'array', false, [[], [() => {}]], [['randomValue'], [{}], [null]], ['function']);
+        TestUtils.validateProperty(testFunction, 'function', false, undefined, undefined, ['array']);
       });
 
     }); //END validate option values

@@ -25,16 +25,16 @@ export default () => {
     });
 
     it('GET Settings are Correct', () => {
-      const settings = HttpClient.getRequestSettings(TestConstants.getMethod, TestConstants.defaultEndpoint, data);
-      Should(settings.method).equal(TestConstants.getMethod);
+      const settings = HttpClient.getRequestSettings('GET', TestConstants.defaultEndpoint, data);
+      Should(settings.method).equal('GET');
       Should(settings.endpoint).equal(TestConstants.defaultEndpoint);
       Should(settings.data).equal(data);
       Should(settings.contentType).equal(undefined);
     });
 
     it('POST Settings are Correct', () => {
-      const settings = HttpClient.getRequestSettings(TestConstants.postMethod, TestConstants.defaultEndpoint, data);
-      Should(settings.method).equal(TestConstants.postMethod);
+      const settings = HttpClient.getRequestSettings('POST', TestConstants.defaultEndpoint, data);
+      Should(settings.method).equal('POST');
       Should(settings.endpoint).equal(TestConstants.defaultEndpoint);
       Should(settings.data).equal(data);
       Should(settings.contentType).equal('application/json');
@@ -53,7 +53,7 @@ export default () => {
       });
       Should(HttpClient.getRequestSettings().apiKey).equal(TestConstants.defaultApiKey);
       Should(HttpClient.getRequestSettings(
-        TestConstants.postMethod, 
+        'POST', 
         Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]]
       ).apiKey).equal(TestConstants.defaultApiKey);
       TestUtils.setState({
@@ -61,7 +61,7 @@ export default () => {
       });
       Should(HttpClient.getRequestSettings().apiKey).equal(TestConstants.defaultApiKey);
       Should(HttpClient.getRequestSettings(
-        TestConstants.postMethod, 
+        'POST', 
         Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]]
       ).apiKey).equal(TestConstants.userApiKey);    
     });
@@ -79,7 +79,7 @@ export default () => {
         defaultApiKeyOption
       ).apiKey).equal(TestConstants.defaultApiKey);
       Should(HttpClient.getRequestSettings(
-        TestConstants.postMethod, 
+        'POST', 
         Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]], 
         undefined, 
         defaultApiKeyOption

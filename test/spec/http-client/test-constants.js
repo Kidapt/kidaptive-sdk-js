@@ -6,16 +6,11 @@ const defaultApiKey = 'testApiKey';
 
 const defaultEndpoint = 'testEndpoint';
 
-const getMethod = 'GET';
-
-const postMethod = 'POST';
-
 const userApiKey = 'userApiKey';
 
 export default {
+  customBaseUrl,
   defaultApiKey,
   defaultEndpoint,
-  getMethod,
-  postMethod,
   userApiKey
 }

@@ -1,6 +1,6 @@
 'use strict';
-import GetRequestSettings from './get-request-settings';
 import GetCacheKey from './get-cache-key';
+import GetRequestSettings from './get-request-settings';
 import Request from './request';
 
 export default () => {

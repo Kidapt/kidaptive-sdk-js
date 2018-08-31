@@ -9,7 +9,7 @@ export default () => {
   describe('getCacheKey', () => {
 
     it('Cache Key is String', () => {
-      const settings = HttpClient.getRequestSettings(TestConstants.postMethod, '', {});
+      const settings = HttpClient.getRequestSettings('POST', '', {});
       Should(HttpClient.getCacheKey(settings)).String();
     });
 
@@ -19,7 +19,7 @@ export default () => {
     });
 
     it('Stable User Cache Key', () => {
-      const settings = HttpClient.getRequestSettings(TestConstants.postMethod, Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]], {});
+      const settings = HttpClient.getRequestSettings('POST', Constants.ENDPOINT[Constants.USER_ENDPOINTS[0]], {});
       Should(HttpClient.getCacheKey(settings)).equal('uIk9oUPnvE8cIe82-TF2SQUYtg8v3Xx8c-6wZIfldJo.alpUserData');
     });
 

@@ -8,7 +8,6 @@ import Utils from './utils';
 import Q from 'q';
 
 let _autoFlushTimeout = null;
-let _eventQueue = [];
 
 class KidaptiveSdkEventManager {
 
@@ -315,7 +314,7 @@ class KidaptiveSdkEventManager {
     try {
       result = Utils.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
     } catch (e) {
-      result = Utils.copyObject(_eventQueue);
+      result = State.get('eventQueue');
     }
     if (!(result instanceof Array)) {
       result = [];
@@ -330,8 +329,7 @@ class KidaptiveSdkEventManager {
    *   THe event queue to be stored
    */
   static setEventQueue(eventQueue) {
-    eventQueue = Utils.copyObject(eventQueue);
-    _eventQueue = eventQueue;
+    State.set('eventQueue', eventQueue);
     Utils.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
   }
 

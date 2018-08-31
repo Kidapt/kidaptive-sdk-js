@@ -56,7 +56,7 @@ export default () => {
         Should(parseUrl(request.url).query).equal(requestQueryString);
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.getMethod);
+        Should(request.method).equal('GET');
         Should(request.requestBody).equal(null);
         Should(response).deepEqual(responseData);
       });
@@ -66,14 +66,14 @@ export default () => {
       TestUtils.setStateOptions({
         environment: 'prod'
       });
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
         Should(parseUrl(request.url).query).equal(requestQueryString);
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.getMethod);
+        Should(request.method).equal('GET');
         Should(request.requestBody).equal(null);
         Should(response).deepEqual(responseData);
       });
@@ -84,21 +84,21 @@ export default () => {
         baseUrl: TestConstants.customBaseUrl,
         environment: 'custom'
       });
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
         Should(parseUrl(request.url).query).equal(requestQueryString);
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.getMethod);
+        Should(request.method).equal('GET');
         Should(request.requestBody).equal(null);
         Should(response).deepEqual(responseData);
       });
     });
 
     it('Development POST', () => {
-      return Should(HttpClient.request(TestConstants.postMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+      return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
@@ -106,7 +106,7 @@ export default () => {
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.requestHeaders['Content-Type']).startWith('application/json');
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.postMethod);
+        Should(request.method).equal('POST');
         Should(request.requestBody).equal(JSON.stringify(requestData));
         Should(response).deepEqual(responseData);
       });
@@ -116,7 +116,7 @@ export default () => {
       TestUtils.setStateOptions({
         environment: 'prod'
       });
-      return Should(HttpClient.request(TestConstants.postMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+      return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
@@ -124,7 +124,7 @@ export default () => {
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.requestHeaders['Content-Type']).startWith('application/json');
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.postMethod);
+        Should(request.method).equal('POST');
         Should(request.requestBody).equal(JSON.stringify(requestData));
         Should(response).deepEqual(responseData);
       });
@@ -135,7 +135,7 @@ export default () => {
         baseUrl: TestConstants.customBaseUrl,
         environment: 'custom'
       });
-      return Should(HttpClient.request(TestConstants.postMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+      return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
         Should(server.requests).length(1);
         const request = server.requests[0];
         Should(parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
@@ -143,7 +143,7 @@ export default () => {
         Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
         Should(request.requestHeaders['Content-Type']).startWith('application/json');
         Should(request.withCredentials).equal(true);
-        Should(request.method).equal(TestConstants.postMethod);
+        Should(request.method).equal('POST');
         Should(request.requestBody).equal(JSON.stringify(requestData));
         Should(response).deepEqual(responseData);
       });
@@ -151,7 +151,7 @@ export default () => {
 
     it('Timeout', () => {
       server.respondWith([0, {}, '']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
       });
@@ -159,7 +159,7 @@ export default () => {
 
     it('Bad Request', () => {
       server.respondWith([400, {}, '']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.INVALID_PARAMETER + ')');
       });
@@ -167,7 +167,7 @@ export default () => {
 
     it('Unauthorized', () => {
       server.respondWith([401, {}, '']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.API_KEY_ERROR + ')');
       });
@@ -175,7 +175,7 @@ export default () => {
 
     it('Internal Server Error', () => {
       server.respondWith([500, {}, '']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.WEB_API_ERROR + ')');
       });
@@ -183,7 +183,7 @@ export default () => {
 
     it('Bad Error Response', () => {
       server.respondWith([400, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.INVALID_PARAMETER + ')');
         Should(error.message).endWith('Cannot parse response');
@@ -192,7 +192,7 @@ export default () => {
 
     it('Bad OK Response', () => {
       server.respondWith([200, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
         Should(error.message).endWith('Cannot parse response');
@@ -201,7 +201,7 @@ export default () => {
 
     it('Bad Timeout Response', () => {
       server.respondWith([0, {'Content-Type': 'application/json'}, 'This is not JSON!']);
-      return Should(HttpClient.request(TestConstants.getMethod, TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
+      return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).rejected().then(error => {
         Should(server.requests).length(1);
         Should(error.message).startWith('KidaptiveError (' + Error.ERROR_CODES.GENERIC_ERROR + ')');
         Should(error.message).not.endWith('Cannot parse response');
