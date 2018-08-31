@@ -6,7 +6,7 @@ import Error from './spec/error/';
 //import EventManager from './spec/event-manager/';
 //import HttpClient from './spec/http-client/';
 import LearnerManager from './spec/learner-manager/';
-//import OperationManager from './spec/operation-manager/';
+import OperationManager from './spec/operation-manager/';
 //import RecommendationManager from './spec/recommendation-manager/';
 import State from './spec/state/';
 //import Tier1 from './spec/tier1/';
@@ -20,7 +20,7 @@ describe('Kidaptive SDK Tests', () => {
   Error();
   State();
   Utils();
-  //OperationManager();
+  OperationManager();
   //HttpClient();
   //AttemptProcessor();
   //EventManager();
