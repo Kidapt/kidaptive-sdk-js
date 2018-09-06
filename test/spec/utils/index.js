@@ -1,4 +1,5 @@
 'use strict';
+import Cache from './cache';
 import DataManipulation from './data-manipulation';
 import LocalStorage from './local-storage';
 import StateChecking from './state-checking';
@@ -11,6 +12,7 @@ export default () => {
     StateChecking();
     TypeChecking();
     LocalStorage();
+    Cache();
     DataManipulation();
 
   }); //END Utils

@@ -6,7 +6,7 @@ export default () => {
 
   describe('Type Checking', () => {
 
-    ['isArray', 'isBoolean', 'isFunction', 'isInteger', 'isJson', 'isNumber', 'isObject', 'isString'].forEach(method => {
+    ['isArray', 'isBoolean', 'isFunction', 'isJson', 'isNumber', 'isInteger', 'isObject', 'isString'].forEach(method => {
       describe(method, () => {
         it(method + '() is false', () => {
           Should(Utils[method]()).equal(false);
