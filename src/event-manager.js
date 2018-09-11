@@ -386,13 +386,13 @@ class KidaptiveSdkEventManager {
               }
               if (!Utils.isNumber(attempt.outcome)) {
                 console.log('Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.');   
-              } else if (attempt.outcome !== 0 && attempt.outcome !== 1) {
-                console.log('Warning: eventTransformer returned an event attempt with outcome not set as 0 or 1.');   
+              } else if (attempt.outcome < 0 || attempt.outcome > 1) {
+                console.log('Warning: eventTransformer returned an event attempt with outcome not set as a value between or equal to 0 and 1.');   
               }
               if (attempt.guessingParameter != null && !Utils.isNumber(attempt.guessingParameter)) {
                 console.log('Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.');   
               } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
-                console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.');   
+                console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between or equal to 0 and 1.');   
               }
             }
           });

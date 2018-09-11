@@ -7,7 +7,7 @@ import Sinon from 'sinon';
 
 const createDefer = () => {
   return Q.defer();
-}
+};
 
 const createPromiseChain = (promises) => {
   let chain;
@@ -15,18 +15,18 @@ const createPromiseChain = (promises) => {
     chain = chain ? chain.then(() => Q.fcall(promises[i])) : Q.fcall(promises[i]);
   }
   return chain;
-}
+};
 
 const resetStateAndCache = () => {
   State.clear();
   localStorage.clear();
-}
+};
 
 const setState = (newState) => {
   Object.keys(newState).forEach(key => {
     State.set(key, newState[key]);
   });
-}
+};
 
 const setStateOptions = (newOptions) => {
   const options = State.get('options') || {};
@@ -34,7 +34,7 @@ const setStateOptions = (newOptions) => {
     options[key] = newOptions[key];
   });
   State.set('options', options);
-}
+};
 
 const propertyTypes = {
   array: [[]],
@@ -52,7 +52,7 @@ const stringifyValue = (value, type) => {
     }
     return value;
   });
-}
+};
 
 const validateProperty = (functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes) => {
   if (required) {
@@ -105,7 +105,7 @@ const validateProperty = (functionCall, expectedType, required, acceptableValues
       }
     });
   });
-}
+};
 
 const validatePropertyNotSet = (functionCall, usualType) => {
   let values = propertyTypes[usualType];
@@ -122,7 +122,19 @@ const validatePropertyNotSet = (functionCall, usualType) => {
   it('Value undefined should resolve', () => {
     return Should(functionCall(undefined)).resolved();
   });
-}
+};
+
+const testRunner = (testCases, functionCall, resultTester) => {
+  testCases.forEach(testCase => {
+    const values = testCase.values;
+
+    values.forEach(value => {
+      it(testCase.name + ' with value ' + stringifyValue(value), () => {
+        resultTester(functionCall(value), testCase, value);
+      });
+    });
+  });
+};
 
 export default {
   createDefer,
@@ -130,6 +142,7 @@ export default {
   resetStateAndCache,
   setState,
   setStateOptions,
+  testRunner,
   validateProperty,
   validatePropertyNotSet
 };
