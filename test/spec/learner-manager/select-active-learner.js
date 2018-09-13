@@ -44,7 +44,7 @@ export default () => {
         const testFunction = parameter => {
           return LearnerManager.selectActiveLearner(parameter);
         };
-        TestUtils.validateProperty(testFunction, 'string', true, [learnerId]);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true, [learnerId]);
       });
 
     }); //END Validate providerLearnerId

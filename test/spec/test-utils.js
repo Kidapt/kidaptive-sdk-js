@@ -45,7 +45,7 @@ const propertyTypes = {
   string: ['', 'Test String', '50']
 };
 
-const stringifyValue = (value, type) => {
+const stringifyValue = (value) => {
   return JSON.stringify(value, (name, value) => {
     if (Utils.isFunction(value)) {
       return '() => {}';
@@ -54,20 +54,47 @@ const stringifyValue = (value, type) => {
   });
 };
 
-const validateProperty = (functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes) => {
+const innerValidateProperty = (functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes, isPromise) => {
+  const positiveString = isPromise ? ' should resolve' : ' should not throw error';
+  const negativeString = isPromise ? ' should reject' : ' should throw error';
+
   if (required) {
-    it('Value null should reject', () => {
-      return Should(functionCall(null)).rejected();
+    it('Value null' + negativeString, () => {
+      if (isPromise) {
+        return Should(functionCall(null)).rejected();
+      } else {
+        Should.throws(() => { 
+          functionCall(null);
+        }, Error);
+      }
     });
-    it('Value undefined should reject', () => {
-      return Should(functionCall(undefined)).rejected();
+    it('Value undefined' + negativeString, () => {
+      if (isPromise) {
+        return Should(functionCall(undefined)).rejected();
+      } else {
+        Should.throws(() => { 
+          functionCall(undefined);
+        }, Error);
+      }
     });
   } else {
-    it('Value null should resolve', () => {
-      return Should(functionCall(null)).resolved();
+    it('Value null' + positiveString, () => {
+      if (isPromise) {
+        return Should(functionCall(null)).resolved();
+      } else {
+        Should.doesNotThrow(() => { 
+          functionCall(null);
+        }, Error);
+      }
     });
-    it('Value undefined should resolve', () => {
-      return Should(functionCall(undefined)).resolved();
+    it('Value undefined' + positiveString, () => {
+      if (isPromise) {
+        return Should(functionCall(undefined)).resolved();
+      } else {
+        Should.doesNotThrow(() => { 
+          functionCall(undefined);
+        }, Error);
+      }
     });
   }
 
@@ -86,8 +113,14 @@ const validateProperty = (functionCall, expectedType, required, acceptableValues
       //since there are only a few acceptable values, also test unacceptable values
       if (unacceptableValues) {
         unacceptableValues.forEach(value => {
-          it('Value ' + stringifyValue(value, type) + ' of type ' + type + ' should reject', () => {
-            return Should(functionCall(value)).rejected();
+          it('Value ' + stringifyValue(value) + ' of type ' + type + negativeString, () => {
+            if (isPromise) {
+              return Should(functionCall(value)).rejected();
+            } else {
+              Should.throws(() => { 
+                functionCall(value);
+              }, Error);
+            }
           });
         });
       }
@@ -95,33 +128,83 @@ const validateProperty = (functionCall, expectedType, required, acceptableValues
     //check all values for all types
     values.forEach(value => {
       if (type === expectedType) {
-        it('Value ' + stringifyValue(value, type) + ' of type ' + type + ' should resolve', () => {
-          return Should(functionCall(value)).resolved();
+        it('Value ' + stringifyValue(value) + ' of type ' + type + positiveString, () => {
+          if (isPromise) {
+            return Should(functionCall(value)).resolved();
+          } else {
+            Should.doesNotThrow(() => { 
+              functionCall(value);
+            }, Error);
+          }
         });
       } else {
-        it('Value ' + stringifyValue(value, type) + ' of type ' + type + ' should reject', () => {
-          return Should(functionCall(value)).rejected();
+        it('Value ' + stringifyValue(value) + ' of type ' + type + negativeString, () => {
+          if (isPromise) {
+            return Should(functionCall(value)).rejected();
+          } else {
+            Should.throws(() => { 
+              functionCall(value);
+            }, Error);
+          }
         });
       }
     });
   });
 };
 
-const validatePropertyNotSet = (functionCall, usualType) => {
+const innerValidatePropertyNotSet = (functionCall, usualType, isPromise) => {
+  const positiveString = isPromise ? ' should resolve' : ' should not throw error';
+  const negativeString = isPromise ? ' should reject' : ' should throw error';
+
   let values = propertyTypes[usualType];
 
   values.forEach(value => {
-    it('Value ' + stringifyValue(value, usualType) + ' of type ' + usualType + ' should reject', () => {
-      return Should(functionCall(value)).rejected();
+    it('Value ' + stringifyValue(value, usualType) + ' of type ' + usualType + negativeString, () => {
+      if (isPromise) {
+        return Should(functionCall(value)).rejected();
+      } else {
+        Should.throws(() => { 
+          functionCall(value);
+        }, Error);
+      }
     });
   });
 
-  it('Value null should resolve', () => {
-    return Should(functionCall(null)).resolved();
+  it('Value null' + positiveString, () => {
+    if (isPromise) {
+      return Should(functionCall(null)).resolved();
+    } else {
+      Should.doesNotThrow(() => { 
+        functionCall(null);
+      }, Error);
+    }
   });
-  it('Value undefined should resolve', () => {
-    return Should(functionCall(undefined)).resolved();
+  it('Value undefined' + positiveString, () => {
+    if (isPromise) {
+      return Should(functionCall(undefined)).resolved();
+    } else {
+      Should.doesNotThrow(() => { 
+        functionCall(undefined);
+      }, Error);
+    }
   });
+};
+
+
+const validatePromiseProperty = (functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes) => {
+  innerValidateProperty(functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes, true);
+};
+
+const validateProperty = (functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes) => {
+  innerValidateProperty(functionCall, expectedType, required, acceptableValues, unacceptableValues, skipTypes, false);
+};
+
+const validatePromisePropertyNotSet = (functionCall, usualType) => {
+  innerValidatePropertyNotSet(functionCall, usualType, true);
+};
+
+const validatePropertyNotSet = (functionCall, usualType) => {
+  innerValidatePropertyNotSet(functionCall, usualType, false);
 };
 
 const testRunner = (testCases, functionCall, resultTester) => {
@@ -143,7 +226,9 @@ export default {
   setState,
   setStateOptions,
   testRunner,
+  validatePromiseProperty,
   validateProperty,
+  validatePromisePropertyNotSet,
   validatePropertyNotSet
 };
 

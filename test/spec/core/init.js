@@ -26,7 +26,7 @@ export default () => {
         const testFunction = parameter => {
           return KidaptiveSdk.init(parameter, TestConstants.minimumOptions);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
     }); //END validate apiKey
@@ -42,7 +42,7 @@ export default () => {
         const testFunction = parameter => {
           return KidaptiveSdk.init(TestConstants.defaultApiKey, parameter);
         };
-        TestUtils.validateProperty(testFunction, 'object', true, [TestConstants.minimumOptions]);
+        TestUtils.validatePromiseProperty(testFunction, 'object', true, [TestConstants.minimumOptions]);
       });
 
       describe('environment is required and must be a string (dev, prod, custom)', () => {
@@ -50,7 +50,7 @@ export default () => {
           options.environment = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', true, ['dev', 'prod', 'custom'], ['', 'randomValue']);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true, ['dev', 'prod', 'custom'], ['', 'randomValue']);
       });
 
       describe('baseUrl is an optional string when environment is not custom', () => {
@@ -59,7 +59,7 @@ export default () => {
           options.baseUrl = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', false);
+        TestUtils.validatePromiseProperty(testFunction, 'string', false);
       });
 
       describe('baseUrl is required and must be a string when environment is custom', () => {
@@ -68,7 +68,7 @@ export default () => {
           options.baseUrl = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
       describe('tier is an optional number (1, 2, 3)', () => {
@@ -89,7 +89,7 @@ export default () => {
           options.tier = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'number', false, [1, 2, 3], [0, 4]);
+        TestUtils.validatePromiseProperty(testFunction, 'number', false, [1, 2, 3], [0, 4]);
       });
 
       describe('authmode is an optional string (client, server)', () => {
@@ -97,7 +97,7 @@ export default () => {
           options.authMode = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', false, ['client', 'server'], ['', 'randomValue']);
+        TestUtils.validatePromiseProperty(testFunction, 'string', false, ['client', 'server'], ['', 'randomValue']);
       });
 
       describe('version is an optional string', () => {
@@ -105,7 +105,7 @@ export default () => {
           options.version = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', false);
+        TestUtils.validatePromiseProperty(testFunction, 'string', false);
       });
 
       describe('build is an optional string', () => {
@@ -113,7 +113,7 @@ export default () => {
           options.version = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', false);
+        TestUtils.validatePromiseProperty(testFunction, 'string', false);
       });
 
       describe('autoFlushInterval is an optional number (>=0)', () => {
@@ -121,7 +121,7 @@ export default () => {
           options.autoFlushInterval = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'number', false, [0, 0.5, 1, 1000000], [-1]);
+        TestUtils.validatePromiseProperty(testFunction, 'number', false, [0, 0.5, 1, 1000000], [-1]);
       });
 
       describe('loggingLevel is an optional string (all, warn, none)', () => {
@@ -129,7 +129,7 @@ export default () => {
           options.loggingLevel = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'string', false, ['all', 'warn', 'none'], ['', 'randomValue']);
+        TestUtils.validatePromiseProperty(testFunction, 'string', false, ['all', 'warn', 'none'], ['', 'randomValue']);
       });
 
       describe('autoFlushCallback is an optional function, or array of functions', () => {
@@ -137,8 +137,8 @@ export default () => {
           options.autoFlushCallback = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
-        TestUtils.validateProperty(testFunction, 'array', false, [[], [() => {}]], [['randomValue'], [{}], [null]], ['function']);
-        TestUtils.validateProperty(testFunction, 'function', false, undefined, undefined, ['array']);
+        TestUtils.validatePromiseProperty(testFunction, 'array', false, [[], [() => {}]], [['randomValue'], [{}], [null]], ['function']);
+        TestUtils.validatePromiseProperty(testFunction, 'function', false, undefined, undefined, ['array']);
       });
 
     }); //END validate option values

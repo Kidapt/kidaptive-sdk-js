@@ -26,7 +26,7 @@ export default () => {
         const testFunction = parameter => {
           return EventManager.reportSimpleEvent(parameter, {});
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
     });
@@ -37,7 +37,7 @@ export default () => {
         const testFunction = parameter => {
           return EventManager.reportSimpleEvent('eventName', parameter);
         };
-        TestUtils.validateProperty(testFunction, 'object', false);
+        TestUtils.validatePromiseProperty(testFunction, 'object', false);
       });
 
     });

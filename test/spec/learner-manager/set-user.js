@@ -47,7 +47,7 @@ export default () => {
           userObject.apiKey = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
       
       describe('ID is required and must be a number', () => {
@@ -55,7 +55,7 @@ export default () => {
           userObject.id = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'number', true);
+        TestUtils.validatePromiseProperty(testFunction, 'number', true);
       });
 
       describe('Learners is required and must be an array', () => {
@@ -63,7 +63,7 @@ export default () => {
           userObject.learners = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'array', true);
+        TestUtils.validatePromiseProperty(testFunction, 'array', true);
       });
 
       describe('Learner must be an object if defined', () => {
@@ -71,7 +71,7 @@ export default () => {
           userObject.learners = [parameter];
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'object', true, [{id:200,providerId:'providerLearnerId'}], [{}]);
+        TestUtils.validatePromiseProperty(testFunction, 'object', true, [{id:200,providerId:'providerLearnerId'}], [{}]);
       });
 
       describe('Learner ID is required and must be a number', () => {
@@ -79,7 +79,7 @@ export default () => {
           userObject.learners = [{id: parameter, providerId: 'learnerProviderId'}];
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'number', true);
+        TestUtils.validatePromiseProperty(testFunction, 'number', true);
       });
 
       describe('Learner Provider ID is required and must be a string', () => {
@@ -87,7 +87,7 @@ export default () => {
           userObject.learners = [{id: 100, providerId: parameter}];
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
     }); //END validate userObject for authMode:server
@@ -108,7 +108,7 @@ export default () => {
           userObject.providerUserId = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
       describe('API key must not be defined', () => {
@@ -116,7 +116,7 @@ export default () => {
           userObject.apiKey = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validatePropertyNotSet(testFunction, 'string');
+        TestUtils.validatePromisePropertyNotSet(testFunction, 'string');
       });
 
       describe('Provider ID must not be defined', () => {
@@ -124,7 +124,7 @@ export default () => {
           userObject.providerId = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validatePropertyNotSet(testFunction, 'string');
+        TestUtils.validatePromisePropertyNotSet(testFunction, 'string');
       });
 
       describe('ID must not be defined', () => {
@@ -132,7 +132,7 @@ export default () => {
           userObject.id = parameter;
           return LearnerManager.setUser(userObject);
         };
-        TestUtils.validatePropertyNotSet(testFunction, 'number');
+        TestUtils.validatePromisePropertyNotSet(testFunction, 'number');
       });
 
     }); //END validate userObject for authMode:client

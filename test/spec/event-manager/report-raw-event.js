@@ -24,7 +24,7 @@ export default () => {
         const testFunction = parameter => {
           return EventManager.reportRawEvent(parameter);
         };
-        TestUtils.validateProperty(testFunction, 'string', true);
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
     });

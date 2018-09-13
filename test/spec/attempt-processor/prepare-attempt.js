@@ -150,7 +150,8 @@ export default () => {
         beforeEach(() => {
           preparedAttempt = AttemptProcessor.prepareAttempt({
             itemURI: TestConstants.items[0].uri,
-            outcome: 1
+            outcome: 1,
+            guessingParameter: 0.5
           });
         });
 
@@ -162,6 +163,11 @@ export default () => {
         it('outcome', () => {
           Should(preparedAttempt.outcome).not.equal(undefined);
           Should(preparedAttempt.outcome).equal(1);
+        });
+
+        it('guessingParameter', () => {
+          Should(preparedAttempt.guessingParameter).not.equal(undefined);
+          Should(preparedAttempt.guessingParameter).equal(0.5);
         });
       }); //END revious properties are still there
 
