@@ -66,8 +66,11 @@ class KidaptiveSdkRecommendationManager {
     const recommenders = State.get('recommenders', false) || {};
 
     //if recommender doesn't exists log a warning
-    if (!recommenders[key] && Utils.checkLoggingLevel('warn') && console && console.log) {
-      console.log('Warning: recommender key does not exist.');       
+    if (!recommenders[key]) {
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: recommender key does not exist.');
+      }
+      return;
     }
 
     //unregister
@@ -107,6 +110,11 @@ class KidaptiveSdkRecommendationManager {
    */
   getRecommendation(key, parameters = {}) {
     Utils.checkTier(2);
+
+    //check null parameters
+    if (parameters === null) {
+      parameters = {};
+    }
 
     //validate key
     if (key == null) {
@@ -211,11 +219,16 @@ class KidaptiveSdkRecommendationManager {
         if (!Utils.isObject(recommendationResult.context)) {
           return new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorPrefix + 'must have a context property that is an object');
         }
+        let hasContextStringError = false;
         Object.keys(recommendationResult.context).forEach(contextKey => {
           if (!Utils.isString(recommendationResult.context[contextKey])) {
-            return new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorPrefix + 'must have a context property that is an object of key:value pairs with string values');
+            hasContextStringError = true;
           }
         });
+        //return error outside of foreach context
+        if (hasContextStringError) {
+          return new Error(Error.ERROR_CODES.INVALID_PARAMETER, errorPrefix + 'must have a context property that is an object of key:value pairs with string values');
+        }
       }
     }
   }
