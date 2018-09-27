@@ -20,14 +20,6 @@ export default () => {
     const requestQueryString = 'boolean=false&number=2&string=b&array=1&array=2'
     const responseData = {boolean: true, number: 1, string: "a", array:[]};
 
-    const parseUrl = url => {
-      const parts = url.split('?');
-      return {
-        url: parts[0],
-        query: parts[1] !== undefined ? parts[1] : undefined
-      };
-    }
-
     before(() => {
       server = Sinon.fakeServer.create()
     });
@@ -54,8 +46,8 @@ export default () => {
         return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(requestQueryString);
+          Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
@@ -71,8 +63,8 @@ export default () => {
         return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(requestQueryString);
+          Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
@@ -89,8 +81,8 @@ export default () => {
         return Should(HttpClient.request('GET', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(requestQueryString);
+          Should(TestUtils.parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
@@ -107,8 +99,8 @@ export default () => {
         return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(undefined);
+          Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(undefined);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.requestHeaders['Content-Type']).startWith('application/json');
           Should(request.withCredentials).equal(true);
@@ -125,8 +117,8 @@ export default () => {
         return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(undefined);
+          Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(undefined);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.requestHeaders['Content-Type']).startWith('application/json');
           Should(request.withCredentials).equal(true);
@@ -144,8 +136,8 @@ export default () => {
         return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);
           const request = server.requests[0];
-          Should(parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
-          Should(parseUrl(request.url).query).equal(undefined);
+          Should(TestUtils.parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(undefined);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.requestHeaders['Content-Type']).startWith('application/json');
           Should(request.withCredentials).equal(true);

@@ -17,6 +17,14 @@ const createPromiseChain = (promises) => {
   return chain;
 };
 
+const parseUrl = url => {
+  const parts = url.split('?');
+  return {
+    url: parts[0],
+    query: parts[1] !== undefined ? parts[1] : undefined
+  };
+}
+
 const resetStateAndCache = () => {
   State.clear();
   localStorage.clear();
@@ -222,6 +230,7 @@ const testRunner = (testCases, functionCall, resultTester) => {
 export default {
   createDefer,
   createPromiseChain,
+  parseUrl,
   resetStateAndCache,
   setState,
   setStateOptions,

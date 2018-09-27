@@ -135,15 +135,8 @@ class KidaptiveSdkAttemptProcessor {
     //update latentAbilities in state
     State.set('latentAbilities.' + learnerId, newAbilities);
 
-    //prepare data for local storage cache, removing dimension references
-    newAbilities.forEach(newAbility => {
-      newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
-      delete newAbility.dimension;
-    });
-
-    //update local storage cache
-    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
-    Utils.localStorageSetItem(cacheKey, newAbilities);
+    //update latentAbilities in cache
+    Utils.cacheLatentAbilityEstimates(newAbilities);
   }
 }
 

@@ -1,6 +1,7 @@
 'use strict';
 import TestUtils from '../test-utils';
 import Constants from '../../../src/constants';
+import HttpClient from '../../../src/http-client';
 import Utils from '../../../src/utils';
 import Should from 'should';
 
@@ -105,6 +106,25 @@ export default () => {
         const flag = false;
         Utils.cacheSingletonLearnerFlag(false);
         Should(Utils.localStorageGetItem(singletonLearnerFlagKey)).equal(flag);
+      });
+
+      it('cacheLatentAbilityEstimates processes and caches ability estimates', () => {
+        const learnerId = 100;
+        TestUtils.setState({learnerId});
+        const abilities = [
+          {dimension: {id: 1}, mean: 0, standardDeviation: 1, timestamp: 0},
+          {dimension: {id: 2}, mean: -1, standardDeviation: 1, timestamp: 100},
+          {dimension: {id: 3}, mean: 1, standardDeviation: 1, timestamp: 200}
+        ];
+        const expected = [
+          {dimensionId: 1, mean: 0, standardDeviation: 1, timestamp: 0},
+          {dimensionId: 2, mean: -1, standardDeviation: 1, timestamp: 100},
+          {dimensionId: 3, mean: 1, standardDeviation: 1, timestamp: 200}
+        ];
+        Utils.cacheLatentAbilityEstimates(abilities);
+        const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
+        Should(Utils.localStorageGetItem(cacheKey)).not.deepEqual(abilities);
+        Should(Utils.localStorageGetItem(cacheKey)).deepEqual(expected);
       });
 
     }); //END Set Cache

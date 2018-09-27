@@ -1,5 +1,6 @@
 import Constants from './constants';
 import Error from './error';
+import HttpClient from './http-client';
 import State from './state';
 import CloneDeep from 'lodash.clonedeep';
 import Stringify from 'json-stable-stringify';
@@ -366,6 +367,30 @@ class KidaptiveSdkUtils {
    */
   cacheSingletonLearnerFlag(singletonLearnerFlag) {
     this.localStorageSetItem('SingletonLearnerFlag.' + State.get('apiKey') + Constants.CACHE_KEY.USER, singletonLearnerFlag);
+  }
+
+  /**
+   * Stores the latent ability estimates for the given learner
+   *
+   * @param {array} abilityEstimates
+   *   The ability estimates to process and store
+   */
+  cacheLatentAbilityEstimates(abilityEstimates) {
+    //get learner
+    const learnerId = State.get('learnerId');
+
+    //copy abilties
+    const cacheReadyAbilities = this.copyObject(abilityEstimates);
+
+    //prepare data for cache, replacing dimension references with ID
+    cacheReadyAbilities.forEach(ability => {
+      ability.dimensionId = ability.dimension && ability.dimension.id;
+      delete ability.dimension;
+    });
+
+    //store copy of learner abilities in local storage cache
+    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
+    this.localStorageSetItem(cacheKey, cacheReadyAbilities);
   }
 
   /**

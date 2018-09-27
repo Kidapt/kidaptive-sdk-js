@@ -4,6 +4,7 @@ import TestUtils from '../test-utils';
 import AttemptProcessor from '../../../src/attempt-processor';
 import Irt from '../../../src/irt';
 import State from '../../../src/state';
+import Utils from '../../../src/utils';
 import Should from 'should';
 import Sinon from 'sinon';
 
@@ -91,6 +92,22 @@ export default () => {
       }));
       const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
       Should(updatedAbilities[0].mean).lessThan(abilities[0].mean);
+    });
+
+    it('cacheLatentAbilityEstimates should be called', () => {
+      const spyCacheAbilities = Sinon.spy(Utils, 'cacheLatentAbilityEstimates');
+      AttemptProcessor.processAttempt({
+        itemURI: TestConstants.items[0].uri,
+        outcome: 1,
+        priorLatentMean: 0,
+        priorLatentStandardDeviation: 1,
+        priorLocalMean: 0,
+        priorLocalStandardDeviation: 1
+      });
+      Should(spyCacheAbilities.called).true();
+      const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(spyCacheAbilities.alwaysCalledWith(updatedAbilities)).true();
+      spyCacheAbilities.restore();
     });
 
   }); //END processAttempt
