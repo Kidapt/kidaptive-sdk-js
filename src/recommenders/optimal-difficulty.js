@@ -22,13 +22,9 @@ class KidaptiveSdkRecommenderOptimalDifficulty {
       }
 
       //destructure params with defaults
-      const {
-        localDimensionUri, 
-        targetSuccessProbability = 0.7, 
-        maxResults = 10,
-        excludedPromptUris,
-        includedPromptUris
-      } = params;
+      const {localDimensionUri, excludedPromptUris, includedPromptUris} = params;
+      const maxResults = params.maxResults == null ? 10 : params.maxResults;
+      const targetSuccessProbability = params.targetSuccessProbability == null ? 0.7 : params.targetSuccessProbability;
 
       //validate localDimensionUri
       if (localDimensionUri == null) {

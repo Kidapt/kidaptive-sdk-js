@@ -5,7 +5,7 @@ import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
 import RecommendationManager from './recommendation-manager';
-import RecommenderOptimalDifficulty from './recommenders/optimalDifficulty';
+import RecommenderOptimalDifficulty from './recommenders/optimal-difficulty';
 import RecommenderRandom from './recommenders/random';
 import State from './state';
 import Utils from './utils';

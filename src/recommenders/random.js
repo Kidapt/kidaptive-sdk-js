@@ -22,12 +22,8 @@ class KidaptiveSdkRecommenderRandom {
       }
 
       //destructure params with defaults
-      const {
-        gameUri,
-        maxResults = 10,
-        excludedPromptUris,
-        includedPromptUris
-      } = params;
+      const {gameUri, excludedPromptUris, includedPromptUris} = params;
+      const maxResults = params.maxResults == null ? 10 : params.maxResults;
 
       //validate gameUri
       if (gameUri == null) {
