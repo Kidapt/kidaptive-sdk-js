@@ -734,6 +734,8 @@ skipIRT | boolean | false | false | Determines whether the local IRT module shou
 
 When events are processed by the local IRT module, they will update ability estimates. Server side IRT will also update ability estimates, but this happens less frequently, so having the local IRT module processing your events can help provide a more adaptive experience.
 
+Calling `setEventTransformer` with `undefined` or `null` results in the eventTransformer being removed.
+
 ```javascript
 var eventTransformer = function(event) {
     //PROCESS EVENT HERE

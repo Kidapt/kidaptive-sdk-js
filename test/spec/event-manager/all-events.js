@@ -19,6 +19,7 @@ export default () => {
     const defaultUserId = 100;
     const defaultUserObject = {id: defaultUserId};
     const defaultLearnerId = 200;
+    const defaultTrialTime = 50000;
 
     before(() => {
       server = Sinon.fakeServer.create();
@@ -32,7 +33,8 @@ export default () => {
       TestUtils.setState(TestConstants.defaultState);
       TestUtils.setState({
         user: defaultUserObject,
-        learnerId: defaultLearnerId
+        learnerId: defaultLearnerId,
+        trialTime: defaultTrialTime
       });
       TestUtils.setStateOptions({
         version: defaultVersion,
@@ -57,6 +59,9 @@ export default () => {
         Should(parsed.events).Array();
         var event = parsed.events[0];
         Should(event).Object();
+        Should(event.eventTime).Number();
+        Should(event.trialTime).Number();
+        Should(event.trialTime).equal(defaultTrialTime);
         Should(parsed.appInfo).Object();
         Should(parsed.appInfo.version).equal(defaultVersion);
         Should(parsed.appInfo.build).equal(defaultBuild);

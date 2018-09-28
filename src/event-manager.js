@@ -138,7 +138,7 @@ class KidaptiveSdkEventManager {
 
             //append requeue onto event queue
             if (requeue.length) {
-              const newEventQueue = KidaptiveSdkEventManager.getEventQueue().concat(requeue);
+              const newEventQueue = requeue.concat(KidaptiveSdkEventManager.getEventQueue());
               KidaptiveSdkEventManager.setEventQueue(newEventQueue);
             }
           }
@@ -203,6 +203,12 @@ class KidaptiveSdkEventManager {
    */
   setEventTransformer(eventTransformer) {
     Utils.checkTier(3);
+
+    //if eventTransformer is null or undefined, clear the value
+    if (eventTransformer == null) {
+      State.set('eventTransformer');
+      return;
+    }
 
     //validate eventTransformer
     if (!Utils.isFunction(eventTransformer)) {

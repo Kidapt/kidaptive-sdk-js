@@ -3,6 +3,7 @@ import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
 import Constants from '../../../src/constants';
 import EventManager from '../../../src/event-manager';
+import State from '../../../src/state';
 import Should from 'should';
 import Sinon from 'sinon';
 
@@ -88,6 +89,57 @@ export default () => {
     it('autoFlushCallback option ignored for manually flushed events', () => {
       return Should(EventManager.flushEventQueue()).resolved().then(() => {
         Should(spyAutoFlushCallback.called).false();
+      });
+    });
+
+    it('eventQueue is cleared when successfully flushed', () => {
+      EventManager.reportSimpleEvent('sample event', {});
+      return Should(EventManager.flushEventQueue()).resolved().then(result => {
+        Should(result.length).equal(1);
+        Should(result[0].state).equal('fulfilled');
+        const eventQueue = State.get('eventQueue');
+        Should(eventQueue).deepEqual([]);
+      });
+    });
+
+    it('Requeue events that fail due to generic error (timeout)', () => {
+      EventManager.reportSimpleEvent('sample event', {});
+      server.respondWith([0, {}, '']);
+      return Should(EventManager.flushEventQueue()).resolved().then(result => {
+        Should(result.length).equal(1);
+        Should(result[0].state).equal('rejected');
+        const eventQueue = State.get('eventQueue');
+        Should(eventQueue[0].events[0].name).equal('sample event');
+      });
+    });
+
+    it('Do not requeue events that fail due to server error', () => {
+      EventManager.reportSimpleEvent('sample event', {});
+      server.respondWith([500, {}, 'Some server error']);
+      return Should(EventManager.flushEventQueue()).resolved().then(result => {
+        Should(result.length).equal(1);
+        Should(result[0].state).equal('rejected');
+        const eventQueue = State.get('eventQueue');
+        Should(eventQueue).deepEqual([]);
+      });
+    });
+
+    it('Requeueing events correctly merges with newly added events', () => {
+      EventManager.reportSimpleEvent('initial event', {});
+      server.respondImmediately = false;
+      server.autoRespond = false;
+      server.respondWith([0, {}, '']);
+      setTimeout(() => {
+        EventManager.reportSimpleEvent('second event', {});
+        server.respond()
+      });
+      return Should(EventManager.flushEventQueue()).resolved().then(result => {
+        Should(result.length).equal(1);
+        Should(result[0].state).equal('rejected');
+        const eventQueue = State.get('eventQueue');
+        Should(eventQueue).length(2);
+        Should(eventQueue[0].events[0].name).equal('initial event');
+        Should(eventQueue[1].events[0].name).equal('second event');
       });
     });
 
