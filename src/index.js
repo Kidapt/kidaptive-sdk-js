@@ -195,8 +195,11 @@ class KidaptiveSdk {
         const activeLearner = LearnerManager.getActiveLearner();
         if (activeLearner) {
           return LearnerManager.selectActiveLearner(activeLearner.providerId);
+
+        //otherwise remove learnerId and resolve undefined
+        } else {
+          State.set('learnerId', undefined);
         }
-        //otherwise resolve undefined
       })
 
     });

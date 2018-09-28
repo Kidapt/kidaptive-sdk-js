@@ -3,6 +3,7 @@ import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
 import Constants from '../../../src/constants';
 import KidaptiveSdk from '../../../src/index';
+import LearnerManager from '../../../src/learner-manager';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';
 import Should from 'should';
@@ -11,8 +12,11 @@ import Sinon from 'sinon';
 export default () => {
 
   describe('init', () => {
+    
+    let options;
 
     beforeEach(() => {
+      options = Utils.copyObject(TestConstants.completeOptions);
       TestUtils.resetStateAndCache();
     });
 
@@ -32,11 +36,6 @@ export default () => {
     }); //END validate apiKey
 
     describe('validate option', () => {
-
-      let options;
-      beforeEach(() => {
-        options = Utils.copyObject(TestConstants.completeOptions);
-      });
 
       describe('options is required and must be an object', () => {
         const testFunction = parameter => {
@@ -141,6 +140,22 @@ export default () => {
         TestUtils.validatePromiseProperty(testFunction, 'function', false, undefined, undefined, ['array']);
       });
 
+      describe('defaultHttpCache is an optional object', () => {
+        const testFunction = parameter => {
+          options.defaultHttpCache = parameter;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'object', false);
+      });
+
+      describe('defaultHttpCache object values must be strings', () => {
+        const testFunction = parameter => {
+          options.defaultHttpCache = {someProp: parameter};
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'string', true);
+      });
+
     }); //END validate option values
 
     describe('validate state', () => {
@@ -185,11 +200,6 @@ export default () => {
 
       describe('autoFlushCallback always transformed into an array when provided', () => {
 
-        let options;
-        beforeEach(() => {
-          options = Utils.copyObject(TestConstants.completeOptions);
-        });
-
         it('autoFlushCallback transformed into an array when passed in as a function', () => {
           options.autoFlushCallback = () => {};
           return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
@@ -217,9 +227,134 @@ export default () => {
           });
         });
 
-      });
+      }); //END autoFlushCallback always transformed into an array when provided
+
+      describe('defaultHttpCache sets cache correctly', () => {
+
+        it('Sets cache items', () => {
+          const cacheKey1 = 'someCacheKey';
+          const cacheKey2 = 'anotherCacheKey';
+          Should.throws(() => { 
+            Utils.localStorageGetItem(cacheKey1); 
+          }, Error);
+          Should.throws(() => { 
+            Utils.localStorageGetItem(cacheKey2);
+          }, Error);
+          options.defaultHttpCache = {
+            [cacheKey1]: '"cached value"',
+            [cacheKey2]: '["value1","value2"]'
+          };
+          return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+            Should(Utils.localStorageGetItem(cacheKey1)).equal('cached value');
+            Should(Utils.localStorageGetItem(cacheKey2)).deepEqual(['value1','value2']);
+          });
+        });
+
+        it('Does not override existing cache items', () => {
+          const cacheKey1 = 'someCacheKey';
+          const cacheKey2 = 'anotherCacheKey';
+          Utils.localStorageSetItem(cacheKey1, 'original cached value'); 
+          Should(Utils.localStorageGetItem(cacheKey1)).equal('original cached value');
+          Should.throws(() => { 
+            Utils.localStorageGetItem(cacheKey2);
+          }, Error);
+          options.defaultHttpCache = {
+            [cacheKey1]: '"new cached value"',
+            [cacheKey2]: '["value1","value2"]'
+          };
+          return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+            Should(Utils.localStorageGetItem(cacheKey1)).equal('original cached value');
+            Should(Utils.localStorageGetItem(cacheKey2)).deepEqual(['value1','value2']);
+          });
+        });
+
+      }); //END defaultHttpCache sets cache correctly
 
     }); //END validate state
+
+    describe('Restoring user and learner from cache', () => {
+
+      it('State empty if nothing cached', () => {
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => {
+          Should(State.get('user')).equal(undefined);
+          Should(State.get('learnerId')).equal(undefined);
+        });
+      });
+
+      it('Gets user from cache and assigns to state', () => {
+        const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user)
+        const spyGetCache = Sinon.spy(Utils, 'getCachedUser');
+        Should(spyGetCache.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spyGetCache.called).true();
+          Should(State.get('user')).deepEqual(user);
+          spyGetCache.restore();
+        });
+      });
+
+      it('Gets learnerId from cache and assigns to state', () => {
+        const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user);
+        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user.learners[0].id);
+        const spyGetCache = Sinon.spy(Utils, 'getCachedLearnerId');
+        Should(spyGetCache.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spyGetCache.called).true();
+          Should(State.get('learnerId')).equal(2);
+          spyGetCache.restore();
+        });
+      });
+
+      it('For authmode client, gets singletonLearner from cache and assigns to state', () => {
+        options.authMode = 'client';
+        Utils.localStorageSetItem('SingletonLearnerFlag.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, false)
+        const spyGetCache = Sinon.spy(Utils, 'getCachedSingletonLearnerFlag');
+        Should(spyGetCache.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spyGetCache.called).true();
+          Should(State.get('singletonLearner')).equal(false);
+          spyGetCache.restore();
+        });
+      });
+
+      it('For authmode server, singletonLearner is ignored', () => {
+        options.authMode = 'server';
+        const spyGetCache = Sinon.spy(Utils, 'getCachedSingletonLearnerFlag');
+        Should(spyGetCache.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spyGetCache.called).false();
+          spyGetCache.restore();
+        });
+      });
+
+      it('If an active learner is set, call LearnerManager.selectActiveLearner()', () => {
+        const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user)
+        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user.learners[0].id)
+        const spySelectActiveLearner = Sinon.spy(LearnerManager, 'selectActiveLearner');
+        Should(spySelectActiveLearner.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spySelectActiveLearner.called).true();
+          spySelectActiveLearner.restore();
+        });
+      });
+
+      it('If no active learner, clear the learnerId, and do not call LearnerManager.selectActiveLearner()', () => {
+        const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user);
+        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, 999);
+        const spySelectActiveLearner = Sinon.spy(LearnerManager, 'selectActiveLearner');
+        Should(spySelectActiveLearner.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(spySelectActiveLearner.called).false();
+          Should(State.get('user')).deepEqual(user);
+          Should(State.get('learnerId')).equal(undefined);
+          spySelectActiveLearner.restore();
+        });
+      });
+
+    }); //END Restoring user and learner from cache
 
   }); //END init
 
