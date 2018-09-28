@@ -194,7 +194,7 @@ class KidaptiveSdk {
         //if active learner, update it after models feteched
         const activeLearner = LearnerManager.getActiveLearner();
         if (activeLearner) {
-          return LearnerManager.selectActiveLearner(activeLearner.providerId);
+          return LearnerManager.selectActiveLearner(activeLearner.providerId).then(() => {}, () => {});
 
         //otherwise remove learnerId and resolve undefined
         } else {

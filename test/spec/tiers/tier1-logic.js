@@ -5,12 +5,15 @@ import KidaptiveSdk from '../../../src/index';
 import EventManager from '../../../src/event-manager';
 import LearnerManager from '../../../src/learner-manager';
 import ModelManager from '../../../src/model-manager';
+import OperationManager from '../../../src/operation-manager';
 import Should from 'should';
 import Sinon from 'sinon';
 
 export default () => {
 
   describe('Tier 1 Logic', () => {
+
+    const tier1Options = {tier: 1};
 
     beforeEach(() => {
       TestUtils.resetStateAndCache();
@@ -44,9 +47,12 @@ export default () => {
 
     describe('KidaptiveSdk.destroy()', () => {
 
-      it('calls EventManager.stopAutoFlush()', () => {
+      beforeEach(() => {
         TestUtils.setState(TestConstants.defaultState);
-        TestUtils.setStateOptions({tier: 1});
+        TestUtils.setStateOptions(tier1Options);
+      });
+
+      it('calls EventManager.stopAutoFlush()', () => {
         const spyStopAutoFlush = Sinon.spy(EventManager, 'stopAutoFlush');
         Should(spyStopAutoFlush.called).false();
         return Should(KidaptiveSdk.destroy()).resolved().then(() => {
@@ -56,8 +62,6 @@ export default () => {
       });
 
       it('calls EventManager.flushEventQueue()', () => {
-        TestUtils.setState(TestConstants.defaultState);
-        TestUtils.setStateOptions({tier: 1});
         const spyFlushEventQueue = Sinon.spy(EventManager, 'flushEventQueue');
         Should(spyFlushEventQueue.called).false();
         return Should(KidaptiveSdk.destroy()).resolved().then(() => {
@@ -74,10 +78,15 @@ export default () => {
       const learners = [{providerId: 'providerLearnerId'}];
 
       before(() => {
-        //stub getLearnerList in order to bypass api call / learner validation
+        //stub getLearnerList in order to bypass API call / learner validation
         getLearnerListStub = Sinon.stub(LearnerManager, 'getLearnerList').callsFake(() => {
           return learners;
         });
+      });
+
+      beforeEach(() => {
+        TestUtils.setState(TestConstants.defaultState);
+        TestUtils.setStateOptions(tier1Options);
       });
 
       after(() => {
@@ -85,8 +94,6 @@ export default () => {
       });
 
       it('LearnerManager.startTrial() gets called', () => {
-        TestUtils.setState(TestConstants.defaultState);
-        TestUtils.setStateOptions({tier: 1});
         const spyStartTrial = Sinon.spy(LearnerManager, 'startTrial');
         Should(spyStartTrial.called).false();
         return Should(LearnerManager.selectActiveLearner(learners[0].providerId)).resolved().then(() => {
@@ -96,8 +103,6 @@ export default () => {
       })
 
       it('LearnerManager.updateAbilityEstimates() does not get called', () => {
-        TestUtils.setState(TestConstants.defaultState);
-        TestUtils.setStateOptions({tier: 1});
         const spyUpdateAbilityEstimates = Sinon.spy(LearnerManager, 'updateAbilityEstimates');
         Should(spyUpdateAbilityEstimates.called).false();
         return Should(LearnerManager.selectActiveLearner(learners[0].providerId)).resolved().then(() => {
@@ -111,6 +116,3 @@ export default () => {
   }); //END Tier 1 Logic
 
 }; //END export
-
-/*
-*/

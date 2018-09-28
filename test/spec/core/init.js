@@ -4,6 +4,7 @@ import TestUtils from '../test-utils';
 import Constants from '../../../src/constants';
 import KidaptiveSdk from '../../../src/index';
 import LearnerManager from '../../../src/learner-manager';
+import OperationManager from '../../../src/operation-manager';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';
 import Should from 'should';
@@ -330,13 +331,29 @@ export default () => {
 
       it('If an active learner is set, call LearnerManager.selectActiveLearner()', () => {
         const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
-        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user)
-        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user.learners[0].id)
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user);
+        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user.learners[0].id);
         const spySelectActiveLearner = Sinon.spy(LearnerManager, 'selectActiveLearner');
         Should(spySelectActiveLearner.called).false();
         return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
           Should(spySelectActiveLearner.called).true();
           spySelectActiveLearner.restore();
+        });
+      });
+
+      it('LearnerManager.selectActiveLearner() rejection will not cause init to reject', () => {
+        const user = {id: 1, providerId: 'userProviderId', learners: [{id: 2, providerId: 'learnerProviderId'}]};
+        Utils.localStorageSetItem('User.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user);
+        Utils.localStorageSetItem('LearnerId.' + TestConstants.defaultApiKey + Constants.CACHE_KEY.USER, user.learners[0].id);
+        const selectActiveLearnerStub = Sinon.stub(LearnerManager, 'selectActiveLearner').callsFake(() => {
+          return OperationManager.addToQueue(() => {
+            throw new Error('Random rejection error');
+          });
+        });
+        Should(selectActiveLearnerStub.called).false();
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, options)).resolved().then(() => { 
+          Should(selectActiveLearnerStub.called).true();
+          selectActiveLearnerStub.restore();
         });
       });
 

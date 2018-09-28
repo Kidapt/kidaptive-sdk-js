@@ -56,11 +56,11 @@ export default () => {
 
     it('KidaptiveSdk.learnerManager.selectActiveLearner()', () => {
       const learners = [{providerId: 'providerLearnerId'}];
-      //stub flushEventQueue in order to get accurate checkTier count
+      //stub startTrial in order to get accurate checkTier count
       const startTrialStub = Sinon.stub(LearnerManager, 'startTrial').callsFake(() => {
         return OperationManager.addToQueue(() => {});
       });
-      //stub getLearnerList in order to get accurate checkTier count, and provide learner to bypass api call / learner validation
+      //stub getLearnerList in order to get accurate checkTier count, and provide learner to bypass API call / learner validation
       const getLearnerListStub = Sinon.stub(LearnerManager, 'getLearnerList').callsFake(() => {
         return learners;
       });

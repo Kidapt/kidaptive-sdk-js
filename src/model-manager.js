@@ -1,5 +1,6 @@
 import HttpClient from './http-client';
 import Error from './error';
+import OperationManager from './operation-manager';
 import State from './state';
 import Utils from './utils';
 import Q from 'q';
@@ -338,85 +339,87 @@ class KidaptiveSdkModelManager {
    *   A promise that resolves when the models have all been requested and stored
    */
   updateModels() {
-    Utils.checkTier(2);
+    return OperationManager.addToQueue(() => {
+      Utils.checkTier(2);
 
-    //reset previous models
-    State.set('uriToModel', {});
-    State.set('idToModel', {});
-    State.set('modelListLookup', {});
+      //reset previous models
+      State.set('uriToModel', {});
+      State.set('idToModel', {});
+      State.set('modelListLookup', {});
 
-    //setup reference variables
-    const options = State.get('options') || {};
-    const tierKey = 'tier' + options.tier;
-    const modelOrder = this.modelOrder[tierKey];
-    const modelParents = this.modelParents[tierKey];
+      //setup reference variables
+      const options = State.get('options') || {};
+      const tierKey = 'tier' + options.tier;
+      const modelOrder = this.modelOrder[tierKey];
+      const modelParents = this.modelParents[tierKey];
 
-    //api calls to get models
-    const requests = modelOrder.map(model => {
-      return HttpClient.request('GET', '/' + model);
-    });
+      //api calls to get models
+      const requests = modelOrder.map(model => {
+        return HttpClient.request('GET', '/' + model);
+      });
 
-    //when all api calls complete
-    return Q.all(requests).then(results => {
+      //when all api calls complete
+      return Q.all(requests).then(results => {
 
-      //setup objects used for storing id/uri maps for all models
-      const uriToModel = {};
-      const idToModel = {};
-      const modelListLookup = {};
-
-      //loop through results
-      for (let i = 0; i < results.length; i++) {
-        //get model name from modelOrder
-        const modelName = modelOrder[i];
-
-        //setup objects used for storing id/uri maps for model
-        const modelUriMap = {};
-        const modelIdMap = {};
-        const modelList = [];
+        //setup objects used for storing id/uri maps for all models
+        const uriToModel = {};
+        const idToModel = {};
+        const modelListLookup = {};
 
         //loop through results
-        const modelArray = results[i] || [];
-        modelArray.forEach(model => {
+        for (let i = 0; i < results.length; i++) {
+          //get model name from modelOrder
+          const modelName = modelOrder[i];
 
-          //create copy of model
-          const modelCopy = Utils.copyObject(model);
+          //setup objects used for storing id/uri maps for model
+          const modelUriMap = {};
+          const modelIdMap = {};
+          const modelList = [];
 
-          //append parents to model using modelParents
-          modelParents[modelName].forEach(modelParentName => {
-            //transforme model parent name removing - and camelCase
-            const publicModelParentName = modelParentName.replace(/-([a-z])/g, matched => matched[1].toUpperCase());
+          //loop through results
+          const modelArray = results[i] || [];
+          modelArray.forEach(model => {
 
-            //get modelParentId from model
-            const modelParentId = modelCopy[publicModelParentName + 'Id'];
+            //create copy of model
+            const modelCopy = Utils.copyObject(model);
 
-            //place modelParent object
-            const idToModel = State.get('idToModel', false) || {};
-            modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
+            //append parents to model using modelParents
+            modelParents[modelName].forEach(modelParentName => {
+              //transforme model parent name removing - and camelCase
+              const publicModelParentName = modelParentName.replace(/-([a-z])/g, matched => matched[1].toUpperCase());
 
-            //delete original ID property since it will be contained in parent object
-            delete modelCopy[publicModelParentName + 'Id'];
+              //get modelParentId from model
+              const modelParentId = modelCopy[publicModelParentName + 'Id'];
+
+              //place modelParent object
+              const idToModel = State.get('idToModel', false) || {};
+              modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
+
+              //delete original ID property since it will be contained in parent object
+              delete modelCopy[publicModelParentName + 'Id'];
+            });
+
+            //build id/uri maps to optimize lookups
+            modelUriMap[modelCopy.uri] = modelCopy;
+            modelIdMap[modelCopy.id] = modelCopy;
+            modelList.push(modelCopy);
           });
 
-          //build id/uri maps to optimize lookups
-          modelUriMap[modelCopy.uri] = modelCopy;
-          modelIdMap[modelCopy.id] = modelCopy;
-          modelList.push(modelCopy);
-        });
+          //store model lookups in objects that contain all models
+          uriToModel[modelName] = modelUriMap;
+          idToModel[modelName] = modelIdMap;
+          modelListLookup[modelName] = modelList;
 
-        //store model lookups in objects that contain all models
-        uriToModel[modelName] = modelUriMap;
-        idToModel[modelName] = modelIdMap;
-        modelListLookup[modelName] = modelList;
+          //store model id/uri maps and lists
+          State.set('uriToModel', uriToModel, false);
+          State.set('idToModel', idToModel, false);
+          State.set('modelListLookup', modelListLookup, false);
+        }
 
-        //store model id/uri maps and lists
-        State.set('uriToModel', uriToModel, false);
-        State.set('idToModel', idToModel, false);
-        State.set('modelListLookup', modelListLookup, false);
-      }
-
-    //return first error
-    }, error => {
-      throw error;
+      //return first error
+      }, error => {
+        throw error;
+      });
     });
   }
 

@@ -237,7 +237,7 @@ class KidaptiveSdkLearnerManager {
           
           //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
-            return this.updateAbilityEstimates().then(() => {
+            return this.updateAbilityEstimates().then(() => {}, () => {}).then(() => {
               return this.startTrial();
             });
           }
