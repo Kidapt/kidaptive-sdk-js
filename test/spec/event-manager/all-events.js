@@ -1,6 +1,7 @@
 'use strict';
 import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
+import AttemptProcessor from '../../../src/attempt-processor';
 import Constants from '../../../src/constants';
 import EventManager from '../../../src/event-manager';
 import Should from 'should';
@@ -76,7 +77,7 @@ export default () => {
         Should(event.learnerId).equal(defaultLearnerId);
         Should(event.name).equal(defaultEventName);
         Should(event.additionalFields).deepEqual({});
-      })
+      });
     });
 
     it('events are grouped by app/device info', () => {
@@ -90,7 +91,7 @@ export default () => {
         const parsed = JSON.parse(request.requestBody);
         Should(parsed.events).Array();
         Should(parsed.events.length).equal(2);
-      })
+      });
     });
 
     it('separate events by different app info', () => {
@@ -174,6 +175,210 @@ export default () => {
         return Should(EventManager.reportSimpleEvent('eventName', {})).resolved();
       });
     });
+
+    describe('eventTransformer is applied to event', () => {
+
+      beforeEach(() => { 
+        TestUtils.setStateOptions({
+          tier: 3
+        });
+      });
+
+      it('returned event gets sent to server', () => {
+        EventManager.setEventTransformer(event => {
+          event.name = 'adjusted event name';
+          return event;
+        });
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          return Should(EventManager.flushEventQueue()).resolved();
+        }).then(result => {
+          Should(server.requests).length(1);
+          const request = server.requests[0];
+          const parsed = JSON.parse(request.requestBody);
+          Should(parsed.events).Array();
+          Should(parsed.events.length).equal(1);
+          Should(parsed.events[0].name).equal('adjusted event name');
+        });
+      });
+
+      it('eventTransformer does not return an object, event is discarded', () => {
+        EventManager.setEventTransformer(event => {
+          return false;
+        });
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          return Should(EventManager.flushEventQueue()).resolved();
+        }).then(result => {
+          Should(server.requests).length(0);
+        });
+      });
+
+      it('invalid event still gets sent to server', () => {
+        EventManager.setEventTransformer(event => {
+          return {randomProp: 'value'};
+        });
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          return Should(EventManager.flushEventQueue()).resolved();
+        }).then(result => {
+          Should(server.requests).length(1);
+          const request = server.requests[0];
+          const parsed = JSON.parse(request.requestBody);
+          Should(parsed.events).Array();
+          Should(parsed.events.length).equal(1);
+          Should(parsed.events[0].randomProp).equal('value');
+        });
+      });
+
+    }); //END eventTransformer is applied to event
+
+    describe('prepareAttempt processes attempt with events', () => {
+
+      beforeEach(() => { 
+        TestUtils.setStateOptions({
+          tier: 3
+        });
+      });
+
+      it('AttemptProcessor.prepareAttempt() not called when no attempts', () => {
+        EventManager.setEventTransformer(event => {
+          return event;
+        });
+        const spyPrepareAttempt = Sinon.spy(AttemptProcessor, 'prepareAttempt');
+        Should(spyPrepareAttempt.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(spyPrepareAttempt.called).false();
+          spyPrepareAttempt.restore();
+        });
+      });
+
+      it('AttemptProcessor.prepareAttempt() called for each attempts', () => {
+        EventManager.setEventTransformer(event => {
+          event.attempts = [{}, {}, {}];
+          return event;
+        });
+        const spyPrepareAttempt = Sinon.spy(AttemptProcessor, 'prepareAttempt');
+        Should(spyPrepareAttempt.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(spyPrepareAttempt.called).true();
+          Should(spyPrepareAttempt.callCount).equal(3);
+          return Should(EventManager.flushEventQueue()).resolved();
+        }).then(result => {
+          Should(server.requests).length(1);
+          const request = server.requests[0];
+          const parsed = JSON.parse(request.requestBody);
+          Should(parsed.events).Array();
+          Should(parsed.events.length).equal(1);
+          Should(parsed.events[0].attempts).length(3);
+          spyPrepareAttempt.restore();
+        });
+      });
+
+      it('invalid/discarded attempts are still sent to server', () => {
+        EventManager.setEventTransformer(event => {
+          event.attempts = [{}, {}, {}];
+          return event;
+        });
+        const prepareAttemptStub = Sinon.stub(AttemptProcessor, 'prepareAttempt').callsFake(() => {
+          return;
+        });
+        Should(prepareAttemptStub.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(prepareAttemptStub.callCount).equal(3);
+          return Should(EventManager.flushEventQueue()).resolved();
+        }).then(result => {
+          Should(server.requests).length(1);
+          const request = server.requests[0];
+          const parsed = JSON.parse(request.requestBody);
+          Should(parsed.events).Array();
+          Should(parsed.events.length).equal(1);
+          Should(parsed.events[0].attempts).deepEqual([{}, {}, {}]);
+          prepareAttemptStub.restore();
+        });
+      });
+
+      it('AttemptProcessor.prepareAttempt() still called with skipIrt', () => {
+        EventManager.setEventTransformer(event => {
+          event.attempts = [{}, {}, {}];
+          event.skipIrt = true;
+          return event;
+        });
+        const spyPrepareAttempt = Sinon.spy(AttemptProcessor, 'prepareAttempt');
+        Should(spyPrepareAttempt.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(spyPrepareAttempt.called).true();
+          Should(spyPrepareAttempt.callCount).equal(3);
+          spyPrepareAttempt.restore();
+        });
+      });
+
+    }); //END prepareAttempt processes attempt with events
+
+    describe('processAttempt called for attempts', () => {
+
+      let processAttemptStub;
+
+      before(() => {
+        processAttemptStub = Sinon.stub(AttemptProcessor, 'processAttempt').callsFake(attempt => {
+          return;
+        });
+      });
+
+      beforeEach(() => { 
+        TestUtils.setStateOptions({
+          tier: 3
+        });
+        EventManager.setEventTransformer(event => {
+          event.attempts = [{}, {}, {}];
+          return event;
+        });
+        processAttemptStub.resetHistory();
+      });
+
+      after(() => {
+        processAttemptStub.restore();
+      });
+      
+      it('AttemptProcessor.processAttempt() gets called for each attempt when skipIrt is false', () => {
+        const prepareAttemptStub = Sinon.stub(AttemptProcessor, 'prepareAttempt').callsFake(attempt => {
+          return attempt;
+        });
+        Should(processAttemptStub.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(processAttemptStub.called).true();
+          Should(processAttemptStub.callCount).equal(3);
+          prepareAttemptStub.restore();
+        });
+      });
+      
+      it('AttemptProcessor.processAttempt() is not called when prepareAttempt returns undefined', () => {
+        const prepareAttemptStub = Sinon.stub(AttemptProcessor, 'prepareAttempt').callsFake(attempt => {
+          return;
+        });
+        Should(processAttemptStub.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(processAttemptStub.called).false();
+          Should(processAttemptStub.callCount).equal(0);
+          prepareAttemptStub.restore();
+        }); 
+      });
+
+      it('AttemptProcessor.processAttempt() is not called when attempt skipIrt is true', () => {
+        EventManager.setEventTransformer(event => {
+          event.attempts = [{}, {}, {}];
+          event.tags = {skipIrt: true};
+          return event;
+        });
+        const prepareAttemptStub = Sinon.stub(AttemptProcessor, 'prepareAttempt').callsFake(attempt => {
+          return attempt;
+        });
+        Should(processAttemptStub.called).false();
+        return Should(EventManager.reportSimpleEvent('eventName', {})).resolved().then(() => {
+          Should(processAttemptStub.called).false();
+          Should(processAttemptStub.callCount).equal(0);
+          prepareAttemptStub.restore();
+        });
+      });
+
+    }); //END processAttempt called for attempts
     
   }); //END All Events
 

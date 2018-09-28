@@ -51,19 +51,37 @@ export default () => {
         });
       });
 
-      it('RecommendationManager.registerRecommender() does not get called', () => {
-        //stub updateModels to prevent API call
-        const updateModelsStub = Sinon.stub(ModelManager, 'updateModels').callsFake(() => {
-          return OperationManager.addToQueue(() => {});
+      describe('Recommenders', () => {
+
+        let updateModelsStub;
+
+        before(() => {
+          //stub updateModels to prevent API call
+          updateModelsStub = Sinon.stub(ModelManager, 'updateModels').callsFake(() => {
+            return OperationManager.addToQueue(() => {});
+          });
         });
-        const spyRegisterRecommender = Sinon.spy(RecommendationManager, 'registerRecommender');
-        Should(spyRegisterRecommender.called).false();
-        return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 2})).resolved().then(() => {
-          Should(spyRegisterRecommender.called).false();
-          spyRegisterRecommender.restore();
+
+        after(() => {
           updateModelsStub.restore();
         });
-      });
+
+        it('RecommendationManager.registerRecommender() does not get called', () => {
+          const spyRegisterRecommender = Sinon.spy(RecommendationManager, 'registerRecommender');
+          Should(spyRegisterRecommender.called).false();
+          return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 2})).resolved().then(() => {
+            Should(spyRegisterRecommender.called).false();
+            spyRegisterRecommender.restore();
+          });
+        });
+
+        it('Recommenders are not registered', () => {
+          return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 2})).resolved().then(() => {
+            Should(RecommendationManager.getRecommenderKeys()).deepEqual([]);
+          });
+        });
+
+      }); //END Recommenders
 
     }); //END KidaptiveSdk.init()
 
