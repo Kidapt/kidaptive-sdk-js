@@ -75,6 +75,16 @@ export default () => {
       });
     });
 
+    it('KidaptiveSdk.learnerManager.startTrial()', () => {
+      return Should(KidaptiveSdk.learnerManager.startTrial()).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.learnerManager.startTrial()).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
     it('KidaptiveSdk.learnerManager.clearActiveLearner()', () => {
       return Should(KidaptiveSdk.learnerManager.clearActiveLearner()).rejected().then(() => {
         TestUtils.setStateOptions(tier1Options);
@@ -136,6 +146,36 @@ export default () => {
       Should(spyCheckTier.alwaysCalledWith(1)).true();
     });
 
+    it('KidaptiveSdk.learnerManager.getMetricsByUri()', () => {
+      return Should(KidaptiveSdk.learnerManager.getMetricsByUri('metricUri')).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.learnerManager.getMetricsByUri('metricUri')).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
+    it('KidaptiveSdk.learnerManager.getLatestInsightByUri()', () => {
+      return Should(KidaptiveSdk.learnerManager.getLatestInsightByUri('metricUri')).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.learnerManager.getLatestInsightByUri('metricUri')).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
+    it('KidaptiveSdk.learnerManager.getInsights()', () => {
+      return Should(KidaptiveSdk.learnerManager.getInsights(0)).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.learnerManager.getInsights(0)).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
     it('KidaptiveSdk.eventManager.reportSimpleEvent()', () => {
       return Should(KidaptiveSdk.eventManager.reportSimpleEvent('eventName', {})).rejected().then(() => {
         TestUtils.setStateOptions(tier1Options);
@@ -160,6 +200,26 @@ export default () => {
       return Should(KidaptiveSdk.eventManager.flushEventQueue()).rejected().then(() => {
         TestUtils.setStateOptions(tier1Options);
         return Should(KidaptiveSdk.eventManager.flushEventQueue()).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
+    it('KidaptiveSdk.eventManager.startAutoFlush()', () => {
+      return Should(KidaptiveSdk.eventManager.startAutoFlush()).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.eventManager.startAutoFlush()).resolved().then(() => {
+          Should(spyCheckTier.callCount).equal(2);
+          Should(spyCheckTier.alwaysCalledWith(1)).true();
+        });
+      });
+    });
+
+    it('KidaptiveSdk.eventManager.stopAutoFlush()', () => {
+      return Should(KidaptiveSdk.eventManager.stopAutoFlush()).rejected().then(() => {
+        TestUtils.setStateOptions(tier1Options);
+        return Should(KidaptiveSdk.eventManager.stopAutoFlush()).resolved().then(() => {
           Should(spyCheckTier.callCount).equal(2);
           Should(spyCheckTier.alwaysCalledWith(1)).true();
         });
