@@ -246,7 +246,7 @@ export default () => {
               }
             });
           });
-        });
+        }, 100);
 
         return Should(ModelManager.updateModels()).resolved().then(() => {
           Should(State.get('modelListLookup')).deepEqual(expectedResult.modelListLookup);

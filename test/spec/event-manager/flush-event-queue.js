@@ -132,7 +132,7 @@ export default () => {
       setTimeout(() => {
         EventManager.reportSimpleEvent('second event', {});
         server.respond()
-      });
+      }, 100);
       return Should(EventManager.flushEventQueue()).resolved().then(result => {
         Should(result.length).equal(1);
         Should(result[0].state).equal('rejected');
