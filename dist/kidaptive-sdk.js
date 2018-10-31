@@ -4264,7 +4264,7 @@
         Request.prototype.abort = function() {
             if (this.aborted) return;
             this.aborted = true;
-            this.xhr.abort();
+            this.xhr && this.xhr.abort();
             this.clearTimeout();
             this.emit("abort");
             return this;
@@ -6504,7 +6504,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.0";
+                    return "1.1.1";
                 }
             }, {
                 key: "destroy",
