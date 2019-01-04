@@ -71,6 +71,8 @@
         var _constants2 = _interopRequireDefault(_constants);
         var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
+        var _httpClient = __webpack_require__(6);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
         var _lodash = __webpack_require__(33);
@@ -277,6 +279,20 @@
                 key: "cacheSingletonLearnerFlag",
                 value: function cacheSingletonLearnerFlag(singletonLearnerFlag) {
                     this.localStorageSetItem("SingletonLearnerFlag." + _state2.default.get("apiKey") + _constants2.default.CACHE_KEY.USER, singletonLearnerFlag);
+                }
+            }, {
+                key: "cacheLatentAbilityEstimates",
+                value: function cacheLatentAbilityEstimates(abilityEstimates) {
+                    var learnerId = _state2.default.get("learnerId");
+                    var cacheReadyAbilities = this.copyObject(abilityEstimates);
+                    cacheReadyAbilities.forEach(function(ability) {
+                        ability.dimensionId = ability.dimension && ability.dimension.id;
+                        delete ability.dimension;
+                    });
+                    var cacheKey = _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("GET", _constants2.default.ENDPOINT.ABILITY, {
+                        learnerId: learnerId
+                    }));
+                    this.localStorageSetItem(cacheKey, cacheReadyAbilities);
                 }
             }, {
                 key: "getCachedUser",
@@ -1871,6 +1887,8 @@
         var _httpClient2 = _interopRequireDefault(_httpClient);
         var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
+        var _operationManager = __webpack_require__(7);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
@@ -2050,54 +2068,57 @@
             }, {
                 key: "updateModels",
                 value: function updateModels() {
-                    _utils2.default.checkTier(2);
-                    _state2.default.set("uriToModel", {});
-                    _state2.default.set("idToModel", {});
-                    _state2.default.set("modelListLookup", {});
-                    var options = _state2.default.get("options") || {};
-                    var tierKey = "tier" + options.tier;
-                    var modelOrder = this.modelOrder[tierKey];
-                    var modelParents = this.modelParents[tierKey];
-                    var requests = modelOrder.map(function(model) {
-                        return _httpClient2.default.request("GET", "/" + model);
-                    });
-                    return _q2.default.all(requests).then(function(results) {
-                        var uriToModel = {};
-                        var idToModel = {};
-                        var modelListLookup = {};
-                        var _loop = function _loop(i) {
-                            var modelName = modelOrder[i];
-                            var modelUriMap = {};
-                            var modelIdMap = {};
-                            var modelList = [];
-                            var modelArray = results[i] || [];
-                            modelArray.forEach(function(model) {
-                                var modelCopy = _utils2.default.copyObject(model);
-                                modelParents[modelName].forEach(function(modelParentName) {
-                                    var publicModelParentName = modelParentName.replace(/-([a-z])/g, function(matched) {
-                                        return matched[1].toUpperCase();
+                    var _this2 = this;
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(2);
+                        _state2.default.set("uriToModel", {});
+                        _state2.default.set("idToModel", {});
+                        _state2.default.set("modelListLookup", {});
+                        var options = _state2.default.get("options") || {};
+                        var tierKey = "tier" + options.tier;
+                        var modelOrder = _this2.modelOrder[tierKey];
+                        var modelParents = _this2.modelParents[tierKey];
+                        var requests = modelOrder.map(function(model) {
+                            return _httpClient2.default.request("GET", "/" + model);
+                        });
+                        return _q2.default.all(requests).then(function(results) {
+                            var uriToModel = {};
+                            var idToModel = {};
+                            var modelListLookup = {};
+                            var _loop = function _loop(i) {
+                                var modelName = modelOrder[i];
+                                var modelUriMap = {};
+                                var modelIdMap = {};
+                                var modelList = [];
+                                var modelArray = results[i] || [];
+                                modelArray.forEach(function(model) {
+                                    var modelCopy = _utils2.default.copyObject(model);
+                                    modelParents[modelName].forEach(function(modelParentName) {
+                                        var publicModelParentName = modelParentName.replace(/-([a-z])/g, function(matched) {
+                                            return matched[1].toUpperCase();
+                                        });
+                                        var modelParentId = modelCopy[publicModelParentName + "Id"];
+                                        var idToModel = _state2.default.get("idToModel", false) || {};
+                                        modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
+                                        delete modelCopy[publicModelParentName + "Id"];
                                     });
-                                    var modelParentId = modelCopy[publicModelParentName + "Id"];
-                                    var idToModel = _state2.default.get("idToModel", false) || {};
-                                    modelCopy[publicModelParentName] = idToModel[modelParentName] && idToModel[modelParentName][modelParentId];
-                                    delete modelCopy[publicModelParentName + "Id"];
+                                    modelUriMap[modelCopy.uri] = modelCopy;
+                                    modelIdMap[modelCopy.id] = modelCopy;
+                                    modelList.push(modelCopy);
                                 });
-                                modelUriMap[modelCopy.uri] = modelCopy;
-                                modelIdMap[modelCopy.id] = modelCopy;
-                                modelList.push(modelCopy);
-                            });
-                            uriToModel[modelName] = modelUriMap;
-                            idToModel[modelName] = modelIdMap;
-                            modelListLookup[modelName] = modelList;
-                            _state2.default.set("uriToModel", uriToModel, false);
-                            _state2.default.set("idToModel", idToModel, false);
-                            _state2.default.set("modelListLookup", modelListLookup, false);
-                        };
-                        for (var i = 0; i < results.length; i++) {
-                            _loop(i);
-                        }
-                    }, function(error) {
-                        throw error;
+                                uriToModel[modelName] = modelUriMap;
+                                idToModel[modelName] = modelIdMap;
+                                modelListLookup[modelName] = modelList;
+                                _state2.default.set("uriToModel", uriToModel, false);
+                                _state2.default.set("idToModel", idToModel, false);
+                                _state2.default.set("modelListLookup", modelListLookup, false);
+                            };
+                            for (var i = 0; i < results.length; i++) {
+                                _loop(i);
+                            }
+                        }, function(error) {
+                            throw error;
+                        });
                     });
                 }
             } ]);
@@ -2333,8 +2354,11 @@
                         throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key must be a string");
                     }
                     var recommenders = _state2.default.get("recommenders", false) || {};
-                    if (!recommenders[key] && _utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                        console.log("Warning: recommender key does not exist.");
+                    if (!recommenders[key]) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: recommender key does not exist.");
+                        }
+                        return;
                     }
                     delete recommenders[key];
                     _state2.default.set("recommenders", recommenders, false);
@@ -2351,6 +2375,9 @@
                 value: function getRecommendation(key) {
                     var parameters = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
                     _utils2.default.checkTier(2);
+                    if (parameters === null) {
+                        parameters = {};
+                    }
                     if (key == null) {
                         throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Recommender key is required");
                     }
@@ -2418,11 +2445,15 @@
                             if (!_utils2.default.isObject(recommendationResult.context)) {
                                 return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a context property that is an object");
                             }
+                            var hasContextStringError = false;
                             Object.keys(recommendationResult.context).forEach(function(contextKey) {
                                 if (!_utils2.default.isString(recommendationResult.context[contextKey])) {
-                                    return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a context property that is an object of key:value pairs with string values");
+                                    hasContextStringError = true;
                                 }
                             });
+                            if (hasContextStringError) {
+                                return new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, errorPrefix + "must have a context property that is an object of key:value pairs with string values");
+                            }
                         }
                     }
                 }
@@ -2601,7 +2632,7 @@
                                 _state2.default.set("learnerId", learner.id);
                                 _utils2.default.cacheLearnerId(learner.id);
                                 if (options.tier >= 2) {
-                                    return _this2.updateAbilityEstimates().then(function() {
+                                    return _this2.updateAbilityEstimates().then(function() {}, function() {}).then(function() {
                                         return _this2.startTrial();
                                     });
                                 }
@@ -2626,6 +2657,7 @@
                                     newUserObject.learners.push(userObjectResponse.learners[0]);
                                 } else {
                                     newUserObject = userObjectResponse;
+                                    _state2.default.set("singletonLearner", true);
                                     _utils2.default.cacheSingletonLearnerFlag(true);
                                 }
                                 _state2.default.set("user", newUserObject);
@@ -2639,7 +2671,7 @@
                                 _utils2.default.cacheUser(newUserObject);
                                 _utils2.default.cacheLearnerId(activeLearner.id);
                                 if (options.tier >= 2) {
-                                    return _this2.updateAbilityEstimates().then(function() {
+                                    return _this2.updateAbilityEstimates().then(function() {}, function() {}).then(function() {
                                         return _this2.startTrial();
                                     });
                                 }
@@ -2673,7 +2705,7 @@
                     return _operationManager2.default.addToQueue(function() {
                         _utils2.default.checkTier(1);
                         var options = _state2.default.get("options") || {};
-                        if (options.authMode === "client" && _state2.default.get("providerUserId") == null) {
+                        if (options.authMode === "client" && _state2.default.get("singletonLearner") === true) {
                             _utils2.default.clearUserCache();
                             _state2.default.set("user", undefined);
                         }
@@ -2739,7 +2771,7 @@
                         }
                         if (minTimestamp != null) {
                             if (!_utils2.default.isInteger(minTimestamp) || minTimestamp < 0) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be a positive integer");
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be an integer that is at least 0");
                             }
                         }
                         if (maxTimestamp != null) {
@@ -2843,7 +2875,7 @@
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp is required");
                         }
                         if (!_utils2.default.isInteger(minTimestamp) || minTimestamp < 0) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be a positive integer");
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be an integer that is at least 0");
                         }
                         if (contextMap != null) {
                             if (!_utils2.default.isObject(contextMap)) {
@@ -3071,11 +3103,7 @@
                                 }
                             });
                             _state2.default.set("latentAbilities." + learnerId, newAbilities);
-                            newAbilities.forEach(function(newAbility) {
-                                newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
-                                delete newAbility.dimension;
-                            });
-                            _utils2.default.localStorageSetItem(cacheKey, newAbilities);
+                            _utils2.default.cacheLatentAbilityEstimates(newAbilities);
                         });
                     });
                 }
@@ -3213,7 +3241,6 @@
             }
         }
         var _autoFlushTimeout = null;
-        var _eventQueue = [];
         var KidaptiveSdkEventManager = function() {
             function KidaptiveSdkEventManager() {
                 _classCallCheck(this, KidaptiveSdkEventManager);
@@ -3301,7 +3328,7 @@
                                         requeue.push(eventBatches[i]);
                                     }
                                     if (requeue.length) {
-                                        var newEventQueue = KidaptiveSdkEventManager.getEventQueue().concat(requeue);
+                                        var newEventQueue = requeue.concat(KidaptiveSdkEventManager.getEventQueue());
                                         KidaptiveSdkEventManager.setEventQueue(newEventQueue);
                                     }
                                 }
@@ -3354,6 +3381,10 @@
                 key: "setEventTransformer",
                 value: function setEventTransformer(eventTransformer) {
                     _utils2.default.checkTier(3);
+                    if (eventTransformer == null) {
+                        _state2.default.set("eventTransformer");
+                        return;
+                    }
                     if (!_utils2.default.isFunction(eventTransformer)) {
                         throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "eventTransformer must be a function");
                     }
@@ -3421,7 +3452,7 @@
                     try {
                         result = _utils2.default.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
                     } catch (e) {
-                        result = _utils2.default.copyObject(_eventQueue);
+                        result = _state2.default.get("eventQueue");
                     }
                     if (!(result instanceof Array)) {
                         result = [];
@@ -3431,8 +3462,7 @@
             }, {
                 key: "setEventQueue",
                 value: function setEventQueue(eventQueue) {
-                    eventQueue = _utils2.default.copyObject(eventQueue);
-                    _eventQueue = eventQueue;
+                    _state2.default.set("eventQueue", eventQueue);
                     _utils2.default.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
                 }
             }, {
@@ -3475,13 +3505,13 @@
                                         }
                                         if (!_utils2.default.isNumber(attempt.outcome)) {
                                             console.log("Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.");
-                                        } else if (attempt.outcome !== 0 && attempt.outcome !== 1) {
-                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as 0 or 1.");
+                                        } else if (attempt.outcome < 0 || attempt.outcome > 1) {
+                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a value between or equal to 0 and 1.");
                                         }
                                         if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
                                             console.log("Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.");
                                         } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
-                                            console.log("Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.");
+                                            console.log("Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between or equal to 0 and 1.");
                                         }
                                     }
                                 });
@@ -3553,7 +3583,8 @@
                         if (!_utils2.default.isObject(params)) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Params must be an object.");
                         }
-                        var gameUri = params.gameUri, _params$maxResults = params.maxResults, maxResults = _params$maxResults === undefined ? 10 : _params$maxResults, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        var gameUri = params.gameUri, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        var maxResults = params.maxResults == null ? 10 : params.maxResults;
                         if (gameUri == null) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "gameUri is required.");
                         }
@@ -3684,7 +3715,9 @@
                         if (!_utils2.default.isObject(params)) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Params must be an object.");
                         }
-                        var localDimensionUri = params.localDimensionUri, _params$targetSuccess = params.targetSuccessProbability, targetSuccessProbability = _params$targetSuccess === undefined ? .7 : _params$targetSuccess, _params$maxResults = params.maxResults, maxResults = _params$maxResults === undefined ? 10 : _params$maxResults, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        var localDimensionUri = params.localDimensionUri, excludedPromptUris = params.excludedPromptUris, includedPromptUris = params.includedPromptUris;
+                        var maxResults = params.maxResults == null ? 10 : params.maxResults;
+                        var targetSuccessProbability = params.targetSuccessProbability == null ? .7 : params.targetSuccessProbability;
                         if (localDimensionUri == null) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "localDimensionUri is required.");
                         }
@@ -6241,35 +6274,47 @@
             _createClass(KidaptiveSdkAttemptProcessor, [ {
                 key: "prepareAttempt",
                 value: function prepareAttempt(attempt) {
+                    var updatedAttempt = _utils2.default.copyObject(attempt);
                     var learnerId = _state2.default.get("learnerId");
                     if (learnerId == null) {
                         if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with no active learner selected.");
+                            console.log("Warning: processAttempt called with no active learner selected. Attempt is discarded.");
                         }
                         return;
                     }
                     if (!_utils2.default.isObject(attempt)) {
                         if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with a non object attempt.");
+                            console.log("Warning: processAttempt called with a non object attempt. Attempt will be discarded.");
                         }
                         return;
                     }
                     if (!_utils2.default.isString(attempt.itemURI)) {
                         if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with an invalid itemUri.");
+                            console.log("Warning: processAttempt called with a non string itemUri. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with a non numeric guessingParamter. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    if (!_utils2.default.isNumber(attempt.outcome)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with  a non numeric outcome. Attempt will be discarded.");
                         }
                         return;
                     }
                     var item = _modelManager2.default.getItemByUri(attempt.itemURI);
                     if (!item || !item.localDimension || !item.localDimension.dimension) {
                         if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with an invalid itemUri.");
+                            console.log("Warning: processAttempt called with an invalid itemUri. Attempt will be discarded.");
                         }
                         return;
                     }
                     var latentAbility = _learnerManager2.default.getLatentAbilityEstimate(item.localDimension.dimension.uri);
-                    var localAbility = _learnerManager2.default.getLocalAbilityEstimate(item.localDimension && item.localDimension.uri);
-                    var updatedAttempt = _utils2.default.copyObject(attempt);
+                    var localAbility = _learnerManager2.default.getLocalAbilityEstimate(item.localDimension.uri);
                     updatedAttempt.priorLatentMean = latentAbility.mean;
                     updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
                     updatedAttempt.priorLocalMean = localAbility.mean;
@@ -6298,14 +6343,7 @@
                         newAbilities.push(newAbility);
                     }
                     _state2.default.set("latentAbilities." + learnerId, newAbilities);
-                    newAbilities.forEach(function(newAbility) {
-                        newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
-                        delete newAbility.dimension;
-                    });
-                    var cacheKey = _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("GET", _constants2.default.ENDPOINT.ABILITY, {
-                        learnerId: learnerId
-                    }));
-                    _utils2.default.localStorageSetItem(cacheKey, newAbilities);
+                    _utils2.default.cacheLatentAbilityEstimates(newAbilities);
                 }
             } ]);
             return KidaptiveSdkAttemptProcessor;
@@ -6496,7 +6534,9 @@
                         return _q2.default.all(requests).then(function(results) {
                             var activeLearner = _learnerManager2.default.getActiveLearner();
                             if (activeLearner) {
-                                return _learnerManager2.default.selectActiveLearner(activeLearner.providerId);
+                                return _learnerManager2.default.selectActiveLearner(activeLearner.providerId).then(function() {}, function() {});
+                            } else {
+                                _state2.default.set("learnerId", undefined);
                             }
                         });
                     });
@@ -6504,7 +6544,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.1";
+                    return "1.1.2";
                 }
             }, {
                 key: "destroy",
