@@ -1,6 +1,3 @@
-/**
- * Created by cameronperry on 2018-1-26.
- */
 const express = require('express');
 const app = express();
 var router = express.Router();

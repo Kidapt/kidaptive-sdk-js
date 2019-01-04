@@ -19,12 +19,15 @@ class KidaptiveSdkAttemptProcessor {
    *   The updated attempt object, or undefined if something went wrong
    */
   prepareAttempt(attempt) {
+    //copy atttempt
+    const updatedAttempt = Utils.copyObject(attempt);
+
     //check if learner is set
     const learnerId = State.get('learnerId');
     if (learnerId == null) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
-        console.log('Warning: processAttempt called with no active learner selected.');       
+        console.log('Warning: processAttempt called with no active learner selected. Attempt is discarded.');       
       }
       return;
     }
@@ -33,7 +36,7 @@ class KidaptiveSdkAttemptProcessor {
     if (!Utils.isObject(attempt)) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
-        console.log('Warning: processAttempt called with a non object attempt.');       
+        console.log('Warning: processAttempt called with a non object attempt. Attempt will be discarded.');       
       }
       return;
     }
@@ -42,7 +45,25 @@ class KidaptiveSdkAttemptProcessor {
     if (!Utils.isString(attempt.itemURI)) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
-        console.log('Warning: processAttempt called with an invalid itemUri.');       
+        console.log('Warning: processAttempt called with a non string itemUri. Attempt will be discarded.');       
+      }
+      return
+    }
+
+    //validate guessing paramter is a number
+    if (attempt.guessingParameter != null &&  !Utils.isNumber(attempt.guessingParameter)) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: processAttempt called with a non numeric guessingParamter. Attempt will be discarded.');       
+      }
+      return
+    }
+
+    //validate outcome is a number
+    if (!Utils.isNumber(attempt.outcome)) {
+      //log a warning
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: processAttempt called with  a non numeric outcome. Attempt will be discarded.');       
       }
       return
     }
@@ -54,17 +75,14 @@ class KidaptiveSdkAttemptProcessor {
     if (!item || !item.localDimension || !item.localDimension.dimension) {
       //log a warning
       if (Utils.checkLoggingLevel('warn') && console && console.log) {
-        console.log('Warning: processAttempt called with an invalid itemUri.');       
+        console.log('Warning: processAttempt called with an invalid itemUri. Attempt will be discarded.');       
       }
       return;
     }
 
     //get models
     const latentAbility = LearnerManager.getLatentAbilityEstimate(item.localDimension.dimension.uri);
-    const localAbility = LearnerManager.getLocalAbilityEstimate(item.localDimension && item.localDimension.uri);
-
-    //copy atttempt
-    const updatedAttempt = Utils.copyObject(attempt);
+    const localAbility = LearnerManager.getLocalAbilityEstimate(item.localDimension.uri);
 
     //add prior values
     updatedAttempt.priorLatentMean = latentAbility.mean;
@@ -117,15 +135,8 @@ class KidaptiveSdkAttemptProcessor {
     //update latentAbilities in state
     State.set('latentAbilities.' + learnerId, newAbilities);
 
-    //prepare data for local storage cache, removing dimension references
-    newAbilities.forEach(newAbility => {
-      newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
-      delete newAbility.dimension;
-    });
-
-    //update local storage cache
-    const cacheKey = HttpClient.getCacheKey(HttpClient.getRequestSettings('GET', Constants.ENDPOINT.ABILITY , {learnerId}));
-    Utils.localStorageSetItem(cacheKey, newAbilities);
+    //update latentAbilities in cache
+    Utils.cacheLatentAbilityEstimates(newAbilities);
   }
 }
 

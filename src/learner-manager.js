@@ -237,7 +237,7 @@ class KidaptiveSdkLearnerManager {
           
           //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
-            return this.updateAbilityEstimates().then(() => {
+            return this.updateAbilityEstimates().then(() => {}, () => {}).then(() => {
               return this.startTrial();
             });
           }
@@ -280,6 +280,7 @@ class KidaptiveSdkLearnerManager {
             newUserObject = userObjectResponse;
 
             //since singleton learner truthy value never cached, cache it now
+            State.set('singletonLearner', true);
             Utils.cacheSingletonLearnerFlag(true);
           }
 
@@ -299,7 +300,7 @@ class KidaptiveSdkLearnerManager {
 
           //if tier 2 or greater, update ability estimates for learner before starting trial
           if (options.tier >= 2) {
-            return this.updateAbilityEstimates().then(() => {
+            return this.updateAbilityEstimates().then(() => {}, () => {}).then(() => {
               return this.startTrial();
             });
           }
@@ -352,9 +353,9 @@ class KidaptiveSdkLearnerManager {
     return OperationManager.addToQueue(() => {
       Utils.checkTier(1);
 
-      //if client based auth and providerUserId not defines (setUser hasn't been called)
+      //if client based auth and singletonLearner
       const options = State.get('options') || {};
-      if (options.authMode === 'client' && State.get('providerUserId') == null) {
+      if (options.authMode === 'client' && State.get('singletonLearner') === true) {
         //clear the user cache as the user and learner relationship is one to one
         Utils.clearUserCache();
         //clear the user state
@@ -481,7 +482,7 @@ class KidaptiveSdkLearnerManager {
       //validate minTimestamp
       if (minTimestamp != null) {
         if (!Utils.isInteger(minTimestamp) || minTimestamp < 0) {
-          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be a positive integer');
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be an integer that is at least 0');
         }
       }
 
@@ -642,7 +643,7 @@ class KidaptiveSdkLearnerManager {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp is required');
       }
       if (!Utils.isInteger(minTimestamp) || minTimestamp < 0) {
-        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be a positive integer');
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be an integer that is at least 0');
       }
 
       //validate contextKeys
@@ -1012,14 +1013,8 @@ class KidaptiveSdkLearnerManager {
         //store copy of learner ability estimates in state
         State.set('latentAbilities.' + learnerId, newAbilities);
 
-        //prepare data for cache, removing dimension references
-        newAbilities.forEach(newAbility => {
-          newAbility.dimensionId = newAbility.dimension && newAbility.dimension.id;
-          delete newAbility.dimension;
-        });
-
-        //store copy of learner abilities in local storage cache
-        Utils.localStorageSetItem(cacheKey, newAbilities);
+        //store copy of learner ability estimates in cache
+        Utils.cacheLatentAbilityEstimates(newAbilities);
 
       //resolve error if there was one
       });

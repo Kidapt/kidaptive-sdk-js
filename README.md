@@ -230,7 +230,7 @@ If the `authMode` is configured to `client`, then the learner will be selected o
 
 When `authMode` is configured to `client` and you call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created for that given user. You can create multiple learners for a single user this way. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user that you set will still be logged in. To fully log the learner and user out, you must call [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout). If calling `selectActiveLearner` fails for any reason, the active learner will still be set to its previous value. 
 
-When `authMode` is configured to `client` and you do not call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created under a user that is mapped specifically to that learner. If you call `selectActiveLearner` again, it will log the existing user and learner out, equivalent to calling [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout), and the new learner will be selected or created under a user that is mapped specically to that learner. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user tied to that learner will also be logged out.
+When `authMode` is configured to `client` and you do not call [KidaptiveSdk.learnerManager.setUser()](#kidaptivesdklearnermanagersetuseruserobjectobject) prior to calling `selectActiveLearner`, the learner will be selected or created under a user that is mapped specifically to that learner. If you call `selectActiveLearner` again, it will log the existing user and learner out, equivalent to calling [KidaptiveSdk.learnerManager.logout()](#kidaptivesdklearnermanagerlogout), and the new learner will be selected or created under a user that is mapped specically to that learner. If you call [KidaptiveSdk.learnerManager.clearActiveLearner()](#kidaptivesdklearnermanagerclearactivelearner) the user tied to that learner will also be logged out. If calling `selectActiveLearner` results in an API failure, the active learner will still be logged out.
 
 For all SDK tiers, a trial is created when a learner is selected, equivalent to calling [KidaptiveSdk.learnerManager.startTrial()](#kidaptivesdklearnermanagerstarttrial).
 
@@ -723,7 +723,7 @@ The purpose of the `eventTransformer function` is to add `attempts` for the loca
 Attempt Property | Type | Required | Default | Description
 --- | --- | --- | --- | ---
 itemUri | string | true |  | The uri of the desired item to send an outcome
-outcome | number | true |  | Determines if the outcome of the attempt was positive or negative. Values can be `1` or `0`
+outcome | number | true |  | Determines if the outcome of the attempt was positive or negative. Values can be between or equal to `1` or `0`
 guessingParameter | number | false | 0 | Determines how likely the user was to guess at this item. Values can be between or equal to `0` and `1`
 
 The `eventTransformer function` can also add `tags` that the local IRT module uses to help process `attempts`. The `tags` property on the `event object` is optional, but if it is defined it should be an object with the following properties:
@@ -733,6 +733,8 @@ Tags Property | Type | Required | Default | Description
 skipIRT | boolean | false | false | Determines whether the local IRT module should be skipped for the `attempts` attached to this event. 
 
 When events are processed by the local IRT module, they will update ability estimates. Server side IRT will also update ability estimates, but this happens less frequently, so having the local IRT module processing your events can help provide a more adaptive experience.
+
+Calling `setEventTransformer` with `undefined` or `null` results in the eventTransformer being removed.
 
 ```javascript
 var eventTransformer = function(event) {

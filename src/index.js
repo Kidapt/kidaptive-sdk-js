@@ -5,7 +5,7 @@ import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
 import OperationManager from './operation-manager';
 import RecommendationManager from './recommendation-manager';
-import RecommenderOptimalDifficulty from './recommenders/optimalDifficulty';
+import RecommenderOptimalDifficulty from './recommenders/optimal-difficulty';
 import RecommenderRandom from './recommenders/random';
 import State from './state';
 import Utils from './utils';
@@ -194,9 +194,12 @@ class KidaptiveSdk {
         //if active learner, update it after models feteched
         const activeLearner = LearnerManager.getActiveLearner();
         if (activeLearner) {
-          return LearnerManager.selectActiveLearner(activeLearner.providerId);
+          return LearnerManager.selectActiveLearner(activeLearner.providerId).then(() => {}, () => {});
+
+        //otherwise remove learnerId and resolve undefined
+        } else {
+          State.set('learnerId', undefined);
         }
-        //otherwise resolve undefined
       })
 
     });

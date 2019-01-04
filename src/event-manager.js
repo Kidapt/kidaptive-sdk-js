@@ -8,7 +8,6 @@ import Utils from './utils';
 import Q from 'q';
 
 let _autoFlushTimeout = null;
-let _eventQueue = [];
 
 class KidaptiveSdkEventManager {
 
@@ -139,7 +138,7 @@ class KidaptiveSdkEventManager {
 
             //append requeue onto event queue
             if (requeue.length) {
-              const newEventQueue = KidaptiveSdkEventManager.getEventQueue().concat(requeue);
+              const newEventQueue = requeue.concat(KidaptiveSdkEventManager.getEventQueue());
               KidaptiveSdkEventManager.setEventQueue(newEventQueue);
             }
           }
@@ -204,6 +203,12 @@ class KidaptiveSdkEventManager {
    */
   setEventTransformer(eventTransformer) {
     Utils.checkTier(3);
+
+    //if eventTransformer is null or undefined, clear the value
+    if (eventTransformer == null) {
+      State.set('eventTransformer');
+      return;
+    }
 
     //validate eventTransformer
     if (!Utils.isFunction(eventTransformer)) {
@@ -315,7 +320,7 @@ class KidaptiveSdkEventManager {
     try {
       result = Utils.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
     } catch (e) {
-      result = Utils.copyObject(_eventQueue);
+      result = State.get('eventQueue');
     }
     if (!(result instanceof Array)) {
       result = [];
@@ -330,8 +335,7 @@ class KidaptiveSdkEventManager {
    *   THe event queue to be stored
    */
   static setEventQueue(eventQueue) {
-    eventQueue = Utils.copyObject(eventQueue);
-    _eventQueue = eventQueue;
+    State.set('eventQueue', eventQueue);
     Utils.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
   }
 
@@ -388,13 +392,13 @@ class KidaptiveSdkEventManager {
               }
               if (!Utils.isNumber(attempt.outcome)) {
                 console.log('Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.');   
-              } else if (attempt.outcome !== 0 && attempt.outcome !== 1) {
-                console.log('Warning: eventTransformer returned an event attempt with outcome not set as 0 or 1.');   
+              } else if (attempt.outcome < 0 || attempt.outcome > 1) {
+                console.log('Warning: eventTransformer returned an event attempt with outcome not set as a value between or equal to 0 and 1.');   
               }
               if (attempt.guessingParameter != null && !Utils.isNumber(attempt.guessingParameter)) {
                 console.log('Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.');   
               } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
-                console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between (inclusive) 0 and 1.');   
+                console.log('Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between or equal to 0 and 1.');   
               }
             }
           });
