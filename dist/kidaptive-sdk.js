@@ -3324,7 +3324,7 @@
                                 for (var i = 0; i < results.length; i++) {
                                     var rejected = results[i].state === "rejected";
                                     var error = results[i].reason || {};
-                                    if (rejected && error.type === _error2.default.ERROR_CODES.GENERIC_ERROR) {
+                                    if (rejected && error.type !== _error2.default.ERROR_CODES.INVALID_PARAMETER) {
                                         requeue.push(eventBatches[i]);
                                     }
                                     if (requeue.length) {
@@ -6544,7 +6544,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.2";
+                    return "1.1.3";
                 }
             }, {
                 key: "destroy",
