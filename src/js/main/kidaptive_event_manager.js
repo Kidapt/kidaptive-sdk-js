@@ -53,7 +53,7 @@ define([
             results.forEach(function(r, i) {
                 r.event = KidaptiveUtils.copyObject(eventQueue[i]);
                 //requeue
-                if (!r.resolved && (r.error.code === KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR || r.error.code === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR)) {
+                if (!r.resolved && r.error.type !== KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER) {
                     this.queueEvent(eventQueue[i]);
                 }
             }.bind(this));
