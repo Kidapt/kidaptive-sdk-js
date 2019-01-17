@@ -129,10 +129,10 @@ class KidaptiveSdkEventManager {
           //loop through results and requeue ones that failed
           for (let i = 0; i < results.length; i++) {
             const rejected = results[i].state === 'rejected';
-            const error = results[i].reason || {};;
+            const error = results[i].reason || {};
 
             //requeue events when API unavailable
-            if (rejected && error.type === Error.ERROR_CODES.GENERIC_ERROR) {
+            if (rejected && error.type !== Error.ERROR_CODES.INVALID_PARAMETER) {
               requeue.push(eventBatches[i]);
             }
 

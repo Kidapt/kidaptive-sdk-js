@@ -113,9 +113,20 @@ export default () => {
       });
     });
 
-    it('Do not requeue events that fail due to server error', () => {
+    it('Requeue events that fail due to server error', () => {
+        EventManager.reportSimpleEvent('sample event', {});
+        server.respondWith([500, {}, 'server error']);
+        return Should(EventManager.flushEventQueue()).resolved().then(result => {
+            Should(result.length).equal(1);
+            Should(result[0].state).equal('rejected');
+            const eventQueue = State.get('eventQueue');
+            Should(eventQueue[0].events[0].name).equal('sample event');
+        });
+    });
+
+    it('Do not requeue events that fail due to invalid request parameters (400)', () => {
       EventManager.reportSimpleEvent('sample event', {});
-      server.respondWith([500, {}, 'Some server error']);
+      server.respondWith([400, {}, 'invalid parameter']);
       return Should(EventManager.flushEventQueue()).resolved().then(result => {
         Should(result.length).equal(1);
         Should(result[0].state).equal('rejected');
