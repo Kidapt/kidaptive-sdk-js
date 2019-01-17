@@ -10,7 +10,6 @@
     "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",
     "build": "npm install && npm run build:irt && npm run build:debug && npm run build:minify",
     "version": "npm run build && git add -A",
-    "postversion": "git push --follow-tags kidapt master"
   },
   "repository": {
     "type": "git",

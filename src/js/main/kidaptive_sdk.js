@@ -192,6 +192,7 @@ define([
             this.options = options;
 
             this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
+            this.httpClient.sdk = this;
 
             this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
                 if (appVersion.version < app.minVersion) {
@@ -215,7 +216,6 @@ define([
                 return this.modelManager.refreshAppModels();
             }.bind(this)).then(function() {
                 sdk = this;
-                this.httpClient.sdk = this;
                 defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
                 KidaptiveSdk.startAutoFlush();
                 return refreshUserData().catch(function(){
