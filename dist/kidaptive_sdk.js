@@ -8182,6 +8182,7 @@
                 });
                 this.options = options;
                 this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
+                this.httpClient.sdk = this;
                 this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function(app) {
                     if (appVersion.version < app.minVersion) {
                         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + appVersion.version);
@@ -8199,7 +8200,6 @@
                     return this.modelManager.refreshAppModels();
                 }.bind(this)).then(function() {
                     sdk = this;
-                    this.httpClient.sdk = this;
                     defaultFlushInterval = options.flushInterval === undefined ? 6e4 : options.flushInterval;
                     KidaptiveSdk.startAutoFlush();
                     return refreshUserData().catch(function() {
