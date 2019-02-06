@@ -4,11 +4,10 @@
   "description": "Kidaptive ALP Javascript SDK",
   "main": "./dist/kidaptive_sdk.js",
   "scripts": {
-    "build:irt": "cd src/js/main/irt && (make clean; make)",
     "build:beautify": "uglifyjs dist/kidaptive_sdk.js -b -o dist/kidaptive_sdk.js",
     "build:debug": "r.js -o build.js && npm run build:beautify",
     "build:minify": "uglifyjs dist/kidaptive_sdk.js -m -o dist/kidaptive_sdk.min.js",
-    "build": "npm install && npm run build:irt && npm run build:debug && npm run build:minify",
+    "build": "npm install && npm run build:debug && npm run build:minify",
     "version": "npm run build && git add -A"
   },
   "repository": {

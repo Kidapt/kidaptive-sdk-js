@@ -3,7 +3,7 @@
  */
 
 define([
-    'irt/irt',
+    'kidaptive_irt',
     'kidaptive_utils'
 ], function(
     KidaptiveIrt, 
