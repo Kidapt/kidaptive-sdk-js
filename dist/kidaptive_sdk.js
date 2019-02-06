@@ -6232,6 +6232,22 @@
             } catch (e) {
                 this.eventQueue = [];
             }
+            try {
+                this.batchesPending = KidaptiveUtils.localStorageGetItem(this.getEventQueueCacheKey() + ".pending");
+            } catch (e) {
+                this.batchesPending = {};
+            }
+            var batchKeys = Object.keys(this.batchesPending);
+            if (batchKeys.length) {
+                batchKeys.forEach(function(k) {
+                    this.batchesPending[k].forEach(function(v) {
+                        this.eventQueue.push(v);
+                    }.bind(this));
+                }.bind(this));
+                KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey(), this.eventQueue);
+                this.batchesPending = {};
+                localStorage.removeItem(this.getEventQueueCacheKey() + ".pending");
+            }
         };
         KidaptiveEventManager.prototype.reportBehavior = function(eventName, properties) {
             this.queueEvent(this.createAgentRequest(eventName, "Behavior", properties));
@@ -6251,26 +6267,51 @@
             if (!user) {
                 return KidaptiveUtils.Promise.resolve([]);
             }
+            var flushTime = Date.now();
             var eventQueue = this.eventQueue;
-            var flushResults = KidaptiveUtils.Promise.parallel(eventQueue.map(function(event) {
-                return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.INGESTION, event, {
-                    noCache: true
-                });
-            }.bind(this))).then(function(results) {
-                results.forEach(function(r, i) {
-                    r.event = KidaptiveUtils.copyObject(eventQueue[i]);
-                    if (!r.resolved && r.error.type !== KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER) {
-                        this.queueEvent(eventQueue[i]);
-                    }
-                }.bind(this));
-                return results;
-            }.bind(this));
+            this.batchesPending[flushTime] = eventQueue;
+            KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey() + ".pending", this.batchesPending);
             this.eventQueue = [];
             localStorage.removeItem(this.getEventQueueCacheKey());
+            var flushResultsPromise = KidaptiveUtils.Promise(function(resolve) {
+                var flushResults = [];
+                var queueNext = function() {
+                    if (eventQueue.length) {
+                        var event = eventQueue[0];
+                        this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.INGESTION, event, {
+                            noCache: true
+                        }).then(function(v) {
+                            return {
+                                resolved: true,
+                                value: v
+                            };
+                        }, function(e) {
+                            if (e.type !== KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER) {
+                                this.queueEvent(event);
+                            }
+                            return {
+                                resolved: false,
+                                error: e
+                            };
+                        }.bind(this)).then(function(r) {
+                            eventQueue.splice(0, 1);
+                            KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey() + ".pending", this.batchesPending);
+                            r.event = KidaptiveUtils.copyObject(event);
+                            flushResults.push(r);
+                            queueNext();
+                        }.bind(this));
+                    } else {
+                        delete this.batchesPending[flushTime];
+                        KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey() + ".pending", this.batchesPending);
+                        resolve(flushResults);
+                    }
+                }.bind(this);
+                queueNext();
+            }.bind(this));
             callbacks.forEach(function(c) {
-                c(flushResults);
+                c(flushResultsPromise);
             });
-            return flushResults;
+            return flushResultsPromise;
         };
         KidaptiveEventManager.prototype.getEventQueueCacheKey = function() {
             return this.sdk.httpClient.getCacheKey("POST", KidaptiveConstants.ENDPOINTS.INGESTION).replace(/[.].*/, ".alpEventData");
