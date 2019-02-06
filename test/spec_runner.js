@@ -37,7 +37,8 @@ require([
     // use window.requirejs variable since mocha overwrites window.require on import
     requirejs([
         'spec/kidaptive_sdk_spec.js',
-        'spec/kidaptive_http_client_spec.js'
+        'spec/kidaptive_http_client_spec.js',
+        'spec/kidaptive_event_manager_spec.js'
     ], function () {
         mocha.checkLeaks();
         mocha.run();
