@@ -8,10 +8,9 @@ define([
 ) {
     'use strict';
 
-    return describe('KidaptiveSdk Unit Tests', function() {
-        it('sdk init', function(done) {
-            this.timeout(10000);
-            KidaptiveSdk.init("gPt1fU+pTaNgFv61Qbp3GUiaHsGcu+0h8", {version:"0.0.0"}, {
+    describe('KidaptiveSdk Unit Tests', function() {
+        it('sdk init', function() {
+            return KidaptiveSdk.init("gPt1fU+pTaNgFv61Qbp3GUiaHsGcu+0h8", {version:"0.0.0"}, {
                 dev:true,
                 flushInterval:10000,
                 noOidc:true,
@@ -21,9 +20,8 @@ define([
             }).then(function(sdk) {
                 console.log(sdk);
                 should.exist(sdk);
-                done();
-            }).catch(done);
-        });     
+            });
+        });
     });
 
 });

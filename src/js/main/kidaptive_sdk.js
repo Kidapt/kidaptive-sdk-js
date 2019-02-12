@@ -120,14 +120,21 @@ define([
                 });
             }
             //TODO: decide whether insights refresh should be included
-        ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
+        ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError).catch(function() {}).then(function() {
+            //continue anonymous session if no user was loaded and anonymous session exists
+            if (!sdk.userManager.currentUser && KidaptiveUtils.hasStoredAnonymousSession()) {
+                setAnonymousSession();
+                sdk.modelManager.getStoredLatentAbilities(-1);
+                sdk.modelManager.getStoredLocalAbilities(-1);
+            }
+        });
     };
 
     var setAnonymousSession = function() {
         sdk.learnerManager.idToLearner[-1] = {id:-1};
         sdk.anonymousSession = true;
         KidaptiveUtils.localStorageSetItem('anonymousSession.alpUserData', true);
-    }
+    };
 
     var autoFlush = function() {
         clearTimeout(flushTimeoutId);
@@ -218,13 +225,7 @@ define([
                 sdk = this;
                 defaultFlushInterval = options.flushInterval === undefined ? 60000 : options.flushInterval;
                 KidaptiveSdk.startAutoFlush();
-                return refreshUserData().catch(function(){
-                    if (KidaptiveUtils.hasStoredAnonymousSession()) {
-                        setAnonymousSession();
-                        sdk.modelManager.getStoredLatentAbilities(-1);
-                        sdk.modelManager.getStoredLocalAbilities(-1);
-                    }
-                }); //user data update shouldn't have to complete to initialize sdk
+                return refreshUserData(); //this should never return an error
             }.bind(this)).then(function() {
                 resolve(this);
             }.bind(this), reject);
