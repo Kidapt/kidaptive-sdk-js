@@ -8079,7 +8079,13 @@
                         }
                     });
                 });
-            } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError);
+            } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError).catch(function() {}).then(function() {
+                if (!sdk.userManager.currentUser && KidaptiveUtils.hasStoredAnonymousSession()) {
+                    setAnonymousSession();
+                    sdk.modelManager.getStoredLatentAbilities(-1);
+                    sdk.modelManager.getStoredLocalAbilities(-1);
+                }
+            });
         };
         var setAnonymousSession = function() {
             sdk.learnerManager.idToLearner[-1] = {
@@ -8165,13 +8171,7 @@
                     sdk = this;
                     defaultFlushInterval = options.flushInterval === undefined ? 6e4 : options.flushInterval;
                     KidaptiveSdk.startAutoFlush();
-                    return refreshUserData().catch(function() {
-                        if (KidaptiveUtils.hasStoredAnonymousSession()) {
-                            setAnonymousSession();
-                            sdk.modelManager.getStoredLatentAbilities(-1);
-                            sdk.modelManager.getStoredLocalAbilities(-1);
-                        }
-                    });
+                    return refreshUserData();
                 }.bind(this)).then(function() {
                     resolve(this);
                 }.bind(this), reject);
