@@ -121,11 +121,18 @@ define([
             }
             //TODO: decide whether insights refresh should be included
         ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError).catch(function() {}).then(function() {
-            //continue anonymous session if no user was loaded and anonymous session exists
-            if (!sdk.userManager.currentUser && KidaptiveUtils.hasStoredAnonymousSession()) {
-                setAnonymousSession();
-                sdk.modelManager.getStoredLatentAbilities(-1);
-                sdk.modelManager.getStoredLocalAbilities(-1);
+            if (KidaptiveUtils.hasStoredAnonymousSession()) {
+                if (sdk.userManager.currentUser) {
+                    //remove anonymous session info if user is logged in
+                    delete localStorage['anonymousSession.alpUserData'];
+                    delete localStorage[sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:-1})];
+                    delete localStorage[sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:-1})];
+                } else {
+                    //continue anonymous session if no user was loaded and anonymous session exists
+                    setAnonymousSession();
+                    sdk.modelManager.getStoredLatentAbilities(-1);
+                    sdk.modelManager.getStoredLocalAbilities(-1);
+                }
             }
         });
     };
