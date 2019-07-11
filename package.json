@@ -41,12 +41,12 @@
     "json-stable-stringify": "1.0.1",
     "lodash.clonedeep": "4.5.0",
     "q": "1.5.1",
-    "superagent": "3.8.3",
+    "superagent": "^5.1.0",
     "superagent-q": "0.0.3"
   },
   "devDependencies": {
     "assert": "1.4.1",
-    "babel-core": "6.26.0",
+    "babel-core": "^6.26.3",
     "babel-loader": "7.1.4",
     "babel-preset-es2015": "6.24.1",
     "express": "4.16.2",
