@@ -41,8 +41,7 @@
     "json-stable-stringify": "1.0.1",
     "lodash.clonedeep": "4.5.0",
     "q": "1.5.1",
-    "superagent": "^5.1.0",
-    "superagent-q": "0.0.3"
+    "superagent": "^5.1.0"
   },
   "devDependencies": {
     "assert": "1.4.1",

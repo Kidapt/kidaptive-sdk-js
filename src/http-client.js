@@ -5,7 +5,7 @@ import Utils from './utils';
 import Base64 from 'base-64';
 import Sha256 from 'js-sha256';
 import Q from 'q';
-import Superagent from 'superagent-q';
+import Superagent from './superagent-q';
 
 class KidaptiveSdkHttpClient {
 
