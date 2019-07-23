@@ -1,6 +1,6 @@
 {
   "name": "kidaptive-sdk-js",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Kidaptive ALP Javascript SDK",
   "license": "ISC",
   "author": "Cameron Perry <dev@cameronperry.com>",
@@ -58,7 +58,7 @@
     "webpack": "4.1.1",
     "webpack-cli": "3.1.2"
   },
-  "main": "./dist/kidaptive_sdk.js",
+  "main": "./dist/kidaptive-sdk.js",
   "engines": {
     "node": ">= 4.0"
   }
