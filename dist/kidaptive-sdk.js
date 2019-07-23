@@ -7109,7 +7109,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.4";
+                    return "1.1.5";
                 }
             }, {
                 key: "destroy",
