@@ -206,10 +206,14 @@ KidaptiveSdk.learnerManager.setUser(userObject).then(function() {
 });
 ```
 
-If the `authMode` is `client`, then this method is used to specify a `providerUserId` to be sent along with events. This will create the user on our system for that given `providerUserId` if necessary. Events can be sent for that user, or if desired, a learner can be selected or created through the [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) method.
+If the `authMode` is `client`, then this method is used to specify a `providerUserId` to be sent along with events. This will create the user on our system for that given `providerUserId` if necessary. Events can be sent for that user, or if desired, a learner can be selected or created through the [KidaptiveSdk.learnerManager.selectActiveLearner()](#kidaptivesdklearnermanagerselectactivelearnerproviderlearneridstring) method. If the application's `enforceSingletonLearner` property has been set (1 to 1 linkage between users and learners), then the providerLearnerId property must be specified in the userObject and identical to the providerUserId.
+
 
 ```javascript
-var userObject = {providerUserId:"user123"};
+var userObject = {
+    providerUserId:"user123"
+    //providerLearnerId:"user123" //if enforceSingletonLearnerSpecified
+};
 KidaptiveSdk.learnerManager.setUser(userObject).then(function() {
     //USER SELECTED
 }, function(error) {

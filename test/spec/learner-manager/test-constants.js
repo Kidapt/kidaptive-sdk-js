@@ -1,7 +1,8 @@
 'use strict';
 
 const clientUserObject = {
-  providerUserId: 'userProviderId'
+  providerUserId: 'userProviderId',
+  providerLearnerId: 'userProviderId'
 };
 
 const clientUserObjectResponse = {

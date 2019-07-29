@@ -232,6 +232,14 @@ export default () => {
           TestUtils.validatePromiseProperty(testFunction, 'string', true);
         });
 
+        describe('Able to pass in entire userObject if restricted fields not specified (not just providerUserId)', () => {
+          const testFunction = parameter => {
+            userObject.providerLearnerId = parameter
+            return LearnerManager.setUser(userObject)
+          }
+          TestUtils.validatePromiseProperty(testFunction, 'string');
+        })
+
         describe('API key must not be defined', () => {
           const testFunction = parameter => {
             userObject.apiKey = parameter;
