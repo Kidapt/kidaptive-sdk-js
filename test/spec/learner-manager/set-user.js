@@ -237,7 +237,7 @@ export default () => {
             userObject.providerLearnerId = parameter
             return LearnerManager.setUser(userObject)
           }
-          TestUtils.validatePromiseProperty(testFunction, 'string');
+          TestUtils.validatePromiseProperty(testFunction, 'string', false);
         })
 
         describe('API key must not be defined', () => {
