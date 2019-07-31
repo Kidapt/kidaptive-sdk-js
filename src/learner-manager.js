@@ -38,6 +38,10 @@ class KidaptiveSdkLearnerManager {
           throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'providerUserId must be a string');
         }
 
+        if (userObject.providerLearnerId != null && !Utils.isString(userObject.providerLearnerId)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'if providerLearnerId is specified, it must be a string');
+        }
+
         //if an apiKey is passed in the SDK is likely configured to the wrong auth mode
         if (userObject.apiKey != null) {
           throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser apiKey not supported when the SDK authMode is cient');
@@ -52,6 +56,7 @@ class KidaptiveSdkLearnerManager {
         if (userObject.id != null) {
           throw new Error(Error.ERROR_CODES.ILLEGAL_STATE, 'setUser id not supported when the SDK authMode is cient');
         }
+
       }
 
       //if server level auth
@@ -108,7 +113,7 @@ class KidaptiveSdkLearnerManager {
           return HttpClient.request(
             'POST', 
             Constants.ENDPOINT.CLIENT_SESSION, 
-            {providerUserId: userObject.providerUserId},
+            userObject,
             {defaultApiKey: true}
           ).then((userObjectResponse) => {
 
