@@ -2531,6 +2531,9 @@
                             if (!_utils2.default.isString(userObject.providerUserId)) {
                                 throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "providerUserId must be a string");
                             }
+                            if (userObject.providerLearnerId != null && !_utils2.default.isString(userObject.providerLearnerId)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "if providerLearnerId is specified, it must be a string");
+                            }
                             if (userObject.apiKey != null) {
                                 throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "setUser apiKey not supported when the SDK authMode is cient");
                             }
@@ -2578,9 +2581,7 @@
                         }
                         return _eventManager2.default.flushEventQueue().then(function() {
                             if (options.authMode === "client") {
-                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, {
-                                    providerUserId: userObject.providerUserId
-                                }, {
+                                return _httpClient2.default.request("POST", _constants2.default.ENDPOINT.CLIENT_SESSION, userObject, {
                                     defaultApiKey: true
                                 }).then(function(userObjectResponse) {
                                     if (KidaptiveSdkLearnerManager.userIdDifferent(userObjectResponse.id)) {
@@ -7109,7 +7110,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.5";
+                    return "1.1.6";
                 }
             }, {
                 key: "destroy",
