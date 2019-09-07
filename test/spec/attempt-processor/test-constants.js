@@ -59,6 +59,21 @@ const items = [{
   promptId: 402,
   standardDeviation: 1,
   uri: '/item/test2'
+},{  // additional items for localDimension[0] to exercise response-history-aware IRT
+  id: 103,
+  localDimension: localDimensions[0],
+  mean: -0.5,
+  promptId: 403,
+  standardDeviation: 0.7,
+  uri: '/item/test1_3'
+},
+{
+  id: 104,
+  localDimension: localDimensions[0],
+  mean: 0.8,
+  promptId: 404,
+  standardDeviation: 0.9,
+  uri: '/item/test1_4'
 }];
 
 const uriToModel = {
@@ -72,7 +87,9 @@ const uriToModel = {
   },
   item: {
     [items[0].uri]: items[0],
-    [items[1].uri]: items[1]
+    [items[1].uri]: items[1],
+    [items[2].uri]: items[2],
+    [items[3].uri]: items[3]
   }
 };
 
@@ -81,7 +98,7 @@ const defaultAbility = {
   mean: 0.5,
   standardDeviation: 0.75,
   timestamp: 1000
-}
+};
 
 const defaultState = {
   apiKey: 'testApiKey',
@@ -97,6 +114,7 @@ const defaultState = {
   learnerId,
   trialTime,
   ['latentAbilities.' + learnerId]: [defaultAbility],
+  ['latentAbilitiesAtStartOfTrial.' + learnerId]: [defaultAbility],
   uriToModel
 };
 

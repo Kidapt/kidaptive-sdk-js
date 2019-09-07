@@ -1,11 +1,13 @@
 
 import Constants from './constants';
 import HttpClient from './http-client';
-import Irt from './irt';
 import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
 import State from './state';
 import Utils from './utils';
+import { NormalDistribution, ItemResponse, UnivariateIrtEstimator } from './irt';
+
+const IRT_SCALING_FACTOR = Math.sqrt(8 / Math.PI);
 
 class KidaptiveSdkAttemptProcessor {
   /**
@@ -108,14 +110,37 @@ class KidaptiveSdkAttemptProcessor {
     //get models
     const item = ModelManager.getItemByUri(attempt.itemURI);
 
-    //process data in IRT to get new ability
-    const estimation = Irt.estimate(attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
+    //get initial ability estimates and create prior
+    const priorAbilities = State.get('latentAbilitiesAtStartOfTrial.' + learnerId) || [];
+    const priorAbility = Utils.findItem(priorAbilities, abilty => abilty.dimension && (abilty.dimension.uri === item.localDimension.dimension.uri));
+    const prior = new NormalDistribution(0, 1);
+    if (priorAbility && priorAbility.mean) {
+      prior.mean = priorAbility.mean;
+    }
+    if (priorAbility && priorAbility.standardDeviation) {
+      prior.sd = priorAbility.standardDeviation;
+    }
+
+    //get attempt history
+    const attemptHistory = State.get('trialAttemptHistory.' + learnerId) || [];
+
+    //make new ItemResponse and add to attemptHistory
+    const itemResponse = new ItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+    itemResponse.dimension = item.localDimension.dimension;
+    attemptHistory.push(itemResponse);
+    State.set('trialAttemptHistory.' + learnerId, attemptHistory);
+
+    //create filtered attemptHistory
+    const filteredHistory = attemptHistory.filter(response => response.dimension && (response.dimension.uri === item.localDimension.dimension.uri));
+
+    //process data in IRT to get new ability;
+    const estimation = UnivariateIrtEstimator.estimate(prior, filteredHistory, IRT_SCALING_FACTOR);
 
     //set new ability values
     const newAbility = {
       dimension: item.localDimension.dimension,
-      mean: estimation.post_mean,
-      standardDeviation: estimation.post_sd,
+      mean: estimation.mean,
+      standardDeviation: estimation.sd,
       timestamp: State.get('trialTime') || 0
     };
 

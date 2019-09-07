@@ -248,7 +248,7 @@ class KidaptiveSdkLearnerManager {
           }
 
           //otherwise start trial immediately
-          return this.startTrial()
+          return this.startTrial();
         }
 
         //if singletonLearner (setUser not called), log that learner out before setting new learner
@@ -746,6 +746,12 @@ class KidaptiveSdkLearnerManager {
 
         //update latent abilities in state
         State.set('latentAbilities.' + learnerId, updatedLatentAbilities);
+
+        //stash a copy of updatedLatentAbilities for the entire trial
+        State.set('latentAbilitiesAtStartOfTrial.' + learnerId, updatedLatentAbilities);
+
+        //reset the trialAttemptHistory
+        State.set('trialAttemptHistory.' + learnerId, []);
       }
 
       //save trial start timestamp

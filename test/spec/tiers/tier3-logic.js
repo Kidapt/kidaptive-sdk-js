@@ -92,13 +92,35 @@ export default () => {
         TestUtils.setStateOptions(tier3Options);
       });
 
-      it('Does not adjust latent ability estimate standard deviation', () => {
+      it('Does adjust latent ability estimate standard deviation', () => {
         const abilities = [{standardDeviation: 0.25}];
         const learnerId = 100;
         State.set('learnerId', learnerId);
-        State.set('latentAbilities.' + learnerId, abilities)
+        State.set('latentAbilities.' + learnerId, abilities);
         return Should(LearnerManager.startTrial()).resolved().then(() => {
           Should(State.get('latentAbilities.' + learnerId)[0].standardDeviation).equal(0.65);
+        });
+      });
+
+      it('Does store adjusted latent ability estimate at start of trial', () => {
+        const abilities = [{standardDeviation: 0.25}];
+        const learnerId = 100;
+        State.set('learnerId', learnerId);
+        State.set('latentAbilities.' + learnerId, abilities);
+        State.set('latentAbilitiesAtStartOfTrial.' + learnerId, abilities);
+        return Should(LearnerManager.startTrial()).resolved().then(() => {
+          Should(State.get('latentAbilitiesAtStartOfTrial.' + learnerId)[0].standardDeviation).equal(0.65);
+          Should(State.get('latentAbilitiesAtStartOfTrial.' + learnerId)).deepEqual(State.get('latentAbilities.' + learnerId));
+        });
+      });
+
+      it('Resets trialAttemptHistory at start of trial', () => {
+        const learnerId = 100;
+        State.set('learnerId', learnerId);
+        const oldAttempts = [{outcome: 1}, {outcome: 0}];
+        State.set('trialAttemptHistory.' + learnerId, oldAttempts);
+        return Should(LearnerManager.startTrial()).resolved().then(() => {
+          Should(State.get('trialAttemptHistory.' + learnerId)).deepEqual([]);
         });
       });
 

@@ -3,6 +3,7 @@ import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
 import AttemptProcessor from '../../../src/attempt-processor';
 import Irt from '../../../src/irt';
+import { UnivariateIrtEstimator } from '../../../src/irt/index';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';
 import Should from 'should';
@@ -22,7 +23,7 @@ export default () => {
     });
 
     it('Calls IRT submodule', () => {
-      const spyIrtEstimate = Sinon.spy(Irt, 'estimate');
+      const spyIrtEstimate = Sinon.spy(UnivariateIrtEstimator, 'estimate');
       AttemptProcessor.processAttempt({
         itemURI: TestConstants.items[0].uri,
         outcome: 1,
@@ -46,6 +47,7 @@ export default () => {
         }));
         const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
         Should(updatedAbilities.length).equal(1);
+        Should(updatedAbilities[0].mean).greaterThan(abilities[0].mean);
       });
 
       it('Ability added if it did not exist', () => {
@@ -57,6 +59,25 @@ export default () => {
         }));
         const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
         Should(updatedAbilities.length).equal(2);
+      });
+
+    });
+
+    describe('Ability at trial start is not updated by attempt processor', () => {
+
+      it('Does not update latentAbilitiesAtStartOfTrial', () => {
+        const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+        Should(abilities.length).equal(1);
+        const abilitiesAtStartOfTrial = State.get('latentAbilitiesAtStartOfTrial.' + TestConstants.learnerId);
+        Should(abilitiesAtStartOfTrial.length).equal(1);
+        AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+          itemURI: TestConstants.items[0].uri,
+          outcome: 1,
+        }));
+        const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+        Should(updatedAbilities.length).equal(1);
+        const postProcessingAbilitiesAtStartOfTrial = State.get('latentAbilitiesAtStartOfTrial.' + TestConstants.learnerId);
+        Should(abilitiesAtStartOfTrial).deepEqual(postProcessingAbilitiesAtStartOfTrial);
       });
 
     });
@@ -92,6 +113,60 @@ export default () => {
       }));
       const updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
       Should(updatedAbilities[0].mean).lessThan(abilities[0].mean);
+    });
+
+    //     test_cases, generated from kcat reference code
+    // n_trial n_item a    b    c outcome prior_theta prior_sd posterior_theta  posterior_sd        d conv_crit
+    // 1       0      0 1 -1.0 0.25       1         0.5     0.75       0.5511701     0.7238235 1.595769     1e-12      # TestConstants.items[0].uri
+    //  --- will perform attempt with respect to a different dimension between these                                   # TestConstants.items[1].uri
+    // 2       0      1 1 -0.5 0.25       1         0.5     0.75       0.6360027     0.6890343 1.595769     1e-12      # TestConstants.items[2].uri
+    // 3       0      2 1  0.8 0.25       0         0.5     0.75       0.3841432     0.6004662 1.595769     1e-12      # TestConstants.items[3].uri
+    it('Uses trial response history in IRT estimation', () => {
+      const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(abilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(abilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+      
+      // First attempt 
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[0].uri,
+        outcome: 1,
+        guessingParameter: 0.25,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.5511701)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.7238235)).lessThan(1e-6);
+
+      // Second attempt (different dimension, so expect no change to updatedAbilities[0])
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[1].uri,
+        outcome: 1,
+        guessingParameter: 0.25,
+      }));
+      updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.5511701)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.7238235)).lessThan(1e-6);
+      Should(updatedAbilities.length).equal(2);
+
+      // Third attempt (exercises that we properly filter out the previous attempt when updating the ability estimate)
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[2].uri,
+        outcome: 1,
+        guessingParameter: 0.25,
+      }));
+      updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.6360027)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.6890343)).lessThan(1e-6);
+
+      // // Fourth attempt
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[3].uri,
+        outcome: 0,
+        guessingParameter: 0.25,
+      }));
+      updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.3841432)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.6004662)).lessThan(1e-6);
+
     });
 
     it('cacheLatentAbilityEstimates should be called', () => {
