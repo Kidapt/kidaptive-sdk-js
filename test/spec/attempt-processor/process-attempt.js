@@ -2,7 +2,6 @@
 import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
 import AttemptProcessor from '../../../src/attempt-processor';
-import Irt from '../../../src/irt';
 import { UnivariateIrtEstimator } from '../../../src/irt/index';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';

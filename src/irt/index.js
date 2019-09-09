@@ -1,0 +1,1 @@
+../../../kidaptive-sdk-js-irt/src/index.js
