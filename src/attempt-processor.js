@@ -7,8 +7,6 @@ import State from './state';
 import Utils from './utils';
 import { NormalDistribution, ItemResponse, UnivariateIrtEstimator } from './irt';
 
-const IRT_SCALING_FACTOR = Math.sqrt(8 / Math.PI);
-
 class KidaptiveSdkAttemptProcessor {
   /**
    * Prepares an attempt for processAttempt by validating the object and defining missing prior values
@@ -107,18 +105,38 @@ class KidaptiveSdkAttemptProcessor {
     //get learner
     const learnerId = State.get('learnerId');
 
+    //get method
+    const options = State.get('options');
+    let irtMethod = options.irtMethod;
+    irtMethod = irtMethod == null ? Constants.DEFAULT.IRT_METHOD : irtMethod;
+
+    //get scaling factor
+    let irtScalingFactor = options.irtScalingFactor;
+    irtScalingFactor = irtScalingFactor == null ? Constants.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
+
     //get models
     const item = ModelManager.getItemByUri(attempt.itemURI);
 
     //get initial ability estimates and create prior
-    const priorAbilities = State.get('latentAbilitiesAtStartOfTrial.' + learnerId) || [];
-    const priorAbility = Utils.findItem(priorAbilities, abilty => abilty.dimension && (abilty.dimension.uri === item.localDimension.dimension.uri));
     const prior = new NormalDistribution(0, 1);
-    if (priorAbility && priorAbility.mean) {
-      prior.mean = priorAbility.mean;
-    }
-    if (priorAbility && priorAbility.standardDeviation) {
-      prior.sd = priorAbility.standardDeviation;
+
+    if (irtMethod === 'irt_cat') {
+      // use latentAbilitiesAtStartOfTrial
+      const priorAbilities = State.get('latentAbilitiesAtStartOfTrial.' + learnerId) || [];
+      const priorAbility = Utils.findItem(priorAbilities, abilty => abilty.dimension && (abilty.dimension.uri === item.localDimension.dimension.uri));
+      if (priorAbility && priorAbility.mean) {
+        prior.mean = priorAbility.mean;
+      }
+      if (priorAbility && priorAbility.standardDeviation) {
+        prior.sd = priorAbility.standardDeviation;
+      }
+    } else if (irtMethod === 'irt_learn') {
+      // use prior from previous attempt
+      prior.mean = attempt.priorLocalMean;
+      prior.sd = attempt.priorLocalStandardDeviation;
+    } else {
+      console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      return;
     }
 
     //get attempt history
@@ -131,10 +149,19 @@ class KidaptiveSdkAttemptProcessor {
     State.set('trialAttemptHistory.' + learnerId, attemptHistory);
 
     //create filtered attemptHistory
-    const filteredHistory = attemptHistory.filter(response => response.dimension && (response.dimension.uri === item.localDimension.dimension.uri));
+    let filteredHistory = [];
+    if (irtMethod === 'irt_cat') {
+      filteredHistory = attemptHistory.filter(response => response.dimension && (response.dimension.uri === item.localDimension.dimension.uri));
+    } else if (irtMethod === 'irt_learn') {
+      // For irt_learn implementation, we only use the current response for the IRT calculation.
+      filteredHistory.push(itemResponse);
+    } else {
+      console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      return;
+    }
 
     //process data in IRT to get new ability;
-    const estimation = UnivariateIrtEstimator.estimate(prior, filteredHistory, IRT_SCALING_FACTOR);
+    const estimation = UnivariateIrtEstimator.estimate(prior, filteredHistory, irtScalingFactor);
 
     //set new ability values
     const newAbility = {

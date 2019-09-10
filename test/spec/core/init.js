@@ -152,9 +152,25 @@ export default () => {
       describe('defaultHttpCache object values must be strings', () => {
         const testFunction = parameter => {
           options.defaultHttpCache = {someProp: parameter};
-          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options); 
         };
         TestUtils.validatePromiseProperty(testFunction, 'string', true);
+      });
+
+      describe('irtMethod is an optional string (irt_learn, irt_cat), defaulting to irt_cat', () => {
+        const testFunction = parameter => {
+          options.irtMethod = parameter;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'string', false, ['irt_learn', 'irt_cat'], ['', 'randomValue']);
+      });
+
+      describe('irtScalingFactor is an optional number, in [0.1, 10.0], defaulting to Math.sqrt(8 / Math.PI)', () => {
+        const testFunction = parameter => {
+          options.irtScalingFactor = parameter;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'number', false, [0.1, 1.0, 1.5, 10.0], [-1, 0, 0.09, 10.1, 100]);
       });
 
     }); //END validate option values

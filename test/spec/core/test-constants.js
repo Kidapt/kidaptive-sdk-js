@@ -9,7 +9,9 @@ const completeOptions = {
   build: '1.0.0.100',
   autoFlushInterval: 10000,
   autoFlushCallback: [() => {}, () => {}],
-  loggingLevel: 'none'
+  loggingLevel: 'none',
+  irtMethod: 'irt_learn',
+  irtScalingFactor: 1.5
 };
 
 const defaultApiKey = 'testApiKey';
@@ -22,7 +24,9 @@ const defaultState = {
     authMode: 'client',
     environment: 'dev', 
     autoFlushInterval: 0, 
-    loggingLevel: 'none'
+    loggingLevel: 'none',
+    irtMethod: 'irt_cat',
+    irtScalingFactor: Math.sqrt(8 / Math.PI)
   }
 };
 

@@ -3,7 +3,9 @@ export default {
     AUTH_MODE: 'client',
     AUTO_FLUSH_INTERVAL: 60000,
     LOGGING_LEVEL: 'all',
-    TIER: 1
+    TIER: 1,
+    IRT_METHOD: 'irt_cat',
+    IRT_SCALING_FACTOR:  Math.sqrt(8 / Math.PI)
   },
 
   ENDPOINT: {

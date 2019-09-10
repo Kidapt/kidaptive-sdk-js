@@ -154,6 +154,8 @@ autoFlushInterval | number | false | 60000 | The interval in milliseconds that t
 autoFlushCallback | function or array | false |  | A callback function or an array of callback functions to be called with results of auto event flush.
 loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `minimal`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
+irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. Default is 'irt_cat'. Only used for tier 3 functionality.
+irtScalingFactor | number | false | 1.59577 | Override the IRT scaling factor, if a non-default value is needed. Value must be between 0.1 and 10.0, and will generally be between 0.5 and 2.0. Only used for tier 3 functionality.
 
 ---
 
@@ -836,6 +838,8 @@ The build process depends on node and npm. The build process builds files in the
 ```javascript
 npm run build
 ```
+
+Note: To build from source, it is necessary to have cloned the `kidaptive-sdk-js-irt` repo as a sibling of this one.
 
 ## Testing
 

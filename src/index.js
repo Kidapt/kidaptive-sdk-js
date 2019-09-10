@@ -52,6 +52,8 @@ class KidaptiveSdk {
       options.authMode = options.authMode == null ? Constants.DEFAULT.AUTH_MODE : options.authMode;
       options.autoFlushInterval = options.autoFlushInterval == null ? Constants.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
       options.loggingLevel = options.loggingLevel == null ? Constants.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
+      options.irtMethod = options.irtMethod == null ? Constants.DEFAULT.IRT_METHOD : options.irtMethod;
+      options.irtScalingFactor = options.irtScalingFactor == null ? Constants.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
 
       //validate apiKey
       if (apiKey == null) {
@@ -156,6 +158,22 @@ class KidaptiveSdk {
             Utils.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
           }
         });
+      }
+
+      // validate irtMethod
+      if (!Utils.isString(options.irtMethod)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtMethod option must be a string');
+      }
+      if (['irt_cat', 'irt_learn'].indexOf(options.irtMethod) === -1) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtMethod is not an accepted value');
+      }
+
+      // validate irtScalingFactor
+      if (!Utils.isNumber(options.irtScalingFactor)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtScalingFactor option must be a number');
+      }
+      if (options.irtScalingFactor < 0.1 || options.irtScalingFactor > 10.0) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtScalingFactor option is not an accepted value');
       }
 
       //set state
