@@ -1,6 +1,6 @@
 (function webpackUniversalModuleDefinition(root, factory) {
-    if (typeof exports === "object" && typeof module === "object") module.exports = factory(); else if (typeof define === "function" && define.amd) define("kidaptive-sdk-js", [], factory); else if (typeof exports === "object") exports["kidaptive-sdk-js"] = factory(); else root["KidaptiveSdk"] = factory();
-})(window, function() {
+    if (typeof exports === "object" && typeof module === "object") module.exports = factory(require("kidaptive-irt-js")); else if (typeof define === "function" && define.amd) define("kidaptive-sdk-js", [ "kidaptive-irt-js" ], factory); else if (typeof exports === "object") exports["kidaptive-sdk-js"] = factory(require("kidaptive-irt-js")); else root["KidaptiveSdk"] = factory(root["KidaptiveIrt"]);
+})(window, function(__WEBPACK_EXTERNAL_MODULE__17__) {
     return function(modules) {
         var installedModules = {};
         function __webpack_require__(moduleId) {
@@ -1601,7 +1601,9 @@
                 AUTH_MODE: "client",
                 AUTO_FLUSH_INTERVAL: 6e4,
                 LOGGING_LEVEL: "all",
-                TIER: 1
+                TIER: 1,
+                IRT_METHOD: "irt_cat",
+                IRT_SCALING_FACTOR: Math.sqrt(8 / Math.PI)
             },
             ENDPOINT: {
                 ABILITY: "/ability",
@@ -2938,6 +2940,8 @@
                                 return updatedLatentAbility;
                             });
                             _state2.default.set("latentAbilities." + learnerId, updatedLatentAbilities);
+                            _state2.default.set("latentAbilitiesAtStartOfTrial." + learnerId, updatedLatentAbilities);
+                            _state2.default.set("trialAttemptHistory." + learnerId, []);
                         }
                         _state2.default.set("trialTime", trialTime);
                     });
@@ -3824,127 +3828,8 @@
             return KidaptiveSdkRecommenderOptimalDifficulty;
         }();
         exports.default = KidaptiveSdkRecommenderOptimalDifficulty;
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkIrt = function() {
-            function KidaptiveSdkIrt() {
-                _classCallCheck(this, KidaptiveSdkIrt);
-            }
-            _createClass(KidaptiveSdkIrt, [ {
-                key: "estimate",
-                value: function estimate(y, beta, guessing, theta, sigma, post_mean, post_sd) {
-                    return KidaptiveSdkIrt.estimate(y || 0, beta || 0, guessing || 0, theta || 0, sigma || 0, post_mean || 0, post_sd || 0);
-                }
-            } ], [ {
-                key: "normal_dist",
-                value: function normal_dist(x, mu, sigma) {
-                    return Math.exp(-Math.pow(x - mu, 2) / 2 / Math.pow(sigma, 2)) / sigma / Math.sqrt(2 * Math.PI);
-                }
-            }, {
-                key: "logistic_dist",
-                value: function logistic_dist(x, mu, alpha) {
-                    return 1 / (1 + Math.exp(-alpha * (x - mu)));
-                }
-            }, {
-                key: "inv_logis",
-                value: function inv_logis(p) {
-                    return Math.log(1 / p - 1) * Math.sqrt(Math.PI / 8);
-                }
-            }, {
-                key: "estimate",
-                value: function estimate(y, beta, guessing, theta, sigma, post_mean, post_sd) {
-                    var a = Math.sqrt(8 / Math.PI);
-                    var max_sigma = 2 / a;
-                    post_mean = theta;
-                    post_sd = sigma = Math.min(Math.max(sigma, 0), max_sigma);
-                    if (sigma === 0) {
-                        return {
-                            post_mean: post_mean,
-                            post_sd: post_sd
-                        };
-                    }
-                    y = y < .5 ? 0 : 1;
-                    if (guessing >= 1) {
-                        return {
-                            post_mean: post_mean,
-                            post_sd: post_sd
-                        };
-                    } else {
-                        guessing = Math.max(guessing, 0);
-                    }
-                    var dll = void 0;
-                    var ddll = void 0;
-                    var x = void 0;
-                    var high = Infinity;
-                    var low = -Infinity;
-                    var delta = 1;
-                    var p = void 0;
-                    var q = void 0;
-                    var P = void 0;
-                    do {
-                        x = post_mean;
-                        p = KidaptiveSdkIrt.logistic_dist(post_mean, beta, a);
-                        q = 1 - p;
-                        if (y === 0 || guessing === 0) {
-                            dll = a * (y - p) - (post_mean - theta) * Math.pow(sigma, -2);
-                            ddll = -Math.pow(a, 2) * p * q - Math.pow(sigma, -2);
-                        } else {
-                            P = guessing + (1 - guessing) * p;
-                            dll = a * p * (y - P) / P - (post_mean - theta) * Math.pow(sigma, -2);
-                            ddll = Math.pow(a, 2) * p * q * (guessing * y - Math.pow(P, 2)) * Math.pow(P, -2) - Math.pow(sigma, -2);
-                        }
-                        if (dll > 0) {
-                            low = post_mean;
-                        } else if (dll < 0) {
-                            high = post_mean;
-                        }
-                        post_mean -= dll / ddll;
-                        if (post_mean >= high || post_mean <= low) {
-                            if (high < Infinity && low > -Infinity) {
-                                post_mean = (high + low) / 2;
-                            } else if (high < Infinity) {
-                                post_mean -= delta;
-                                delta *= 2;
-                            } else {
-                                post_mean += delta;
-                                delta *= 2;
-                            }
-                        }
-                    } while (x !== post_mean);
-                    post_sd = Math.min(Math.sqrt(-1 / ddll), max_sigma);
-                    return {
-                        post_mean: post_mean,
-                        post_sd: post_sd
-                    };
-                }
-            } ]);
-            return KidaptiveSdkIrt;
-        }();
-        exports.default = new KidaptiveSdkIrt();
+    }, function(module, exports) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE__17__;
     }, function(module, exports, __webpack_require__) {
         "use strict";
         function _toConsumableArray(arr) {
@@ -6813,8 +6698,6 @@
         var _constants2 = _interopRequireDefault(_constants);
         var _httpClient = __webpack_require__(6);
         var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _irt = __webpack_require__(17);
-        var _irt2 = _interopRequireDefault(_irt);
         var _learnerManager = __webpack_require__(11);
         var _learnerManager2 = _interopRequireDefault(_learnerManager);
         var _modelManager = __webpack_require__(8);
@@ -6823,6 +6706,8 @@
         var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
+        var _kidaptiveIrtJs = __webpack_require__(17);
+        var _kidaptiveIrtJs2 = _interopRequireDefault(_kidaptiveIrtJs);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
                 default: obj
@@ -6891,12 +6776,52 @@
                 key: "processAttempt",
                 value: function processAttempt(attempt) {
                     var learnerId = _state2.default.get("learnerId");
+                    var options = _state2.default.get("options");
+                    var irtMethod = options.irtMethod;
+                    irtMethod = irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : irtMethod;
+                    var irtScalingFactor = options.irtScalingFactor;
+                    irtScalingFactor = irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
                     var item = _modelManager2.default.getItemByUri(attempt.itemURI);
-                    var estimation = _irt2.default.estimate(attempt.outcome, item.mean, attempt.guessingParameter, attempt.priorLocalMean, attempt.priorLocalStandardDeviation);
+                    var prior = _kidaptiveIrtJs2.default.makeNormalDistribution(0, 1);
+                    if (irtMethod === "irt_cat") {
+                        var priorAbilities = _state2.default.get("latentAbilitiesAtStartOfTrial." + learnerId) || [];
+                        var priorAbility = _utils2.default.findItem(priorAbilities, function(abilty) {
+                            return abilty.dimension && abilty.dimension.uri === item.localDimension.dimension.uri;
+                        });
+                        if (priorAbility && priorAbility.mean) {
+                            prior.mean = priorAbility.mean;
+                        }
+                        if (priorAbility && priorAbility.standardDeviation) {
+                            prior.sd = priorAbility.standardDeviation;
+                        }
+                    } else if (irtMethod === "irt_learn") {
+                        prior.mean = attempt.priorLocalMean;
+                        prior.sd = attempt.priorLocalStandardDeviation;
+                    } else {
+                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        return;
+                    }
+                    var attemptHistory = _state2.default.get("trialAttemptHistory." + learnerId) || [];
+                    var itemResponse = _kidaptiveIrtJs2.default.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+                    itemResponse.dimension = item.localDimension.dimension;
+                    attemptHistory.push(itemResponse);
+                    _state2.default.set("trialAttemptHistory." + learnerId, attemptHistory);
+                    var filteredHistory = [];
+                    if (irtMethod === "irt_cat") {
+                        filteredHistory = attemptHistory.filter(function(response) {
+                            return response.dimension && response.dimension.uri === item.localDimension.dimension.uri;
+                        });
+                    } else if (irtMethod === "irt_learn") {
+                        filteredHistory.push(itemResponse);
+                    } else {
+                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        return;
+                    }
+                    var estimation = _kidaptiveIrtJs2.default.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
                     var newAbility = {
                         dimension: item.localDimension.dimension,
-                        mean: estimation.post_mean,
-                        standardDeviation: estimation.post_sd,
+                        mean: estimation.mean,
+                        standardDeviation: estimation.sd,
                         timestamp: _state2.default.get("trialTime") || 0
                     };
                     var newAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
@@ -6997,6 +6922,8 @@
                         options.authMode = options.authMode == null ? _constants2.default.DEFAULT.AUTH_MODE : options.authMode;
                         options.autoFlushInterval = options.autoFlushInterval == null ? _constants2.default.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
                         options.loggingLevel = options.loggingLevel == null ? _constants2.default.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
+                        options.irtMethod = options.irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : options.irtMethod;
+                        options.irtScalingFactor = options.irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
                         if (apiKey == null) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "API key is required");
                         }
@@ -7077,6 +7004,18 @@
                                     _utils2.default.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
                                 }
                             });
+                        }
+                        if (!_utils2.default.isString(options.irtMethod)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtMethod option must be a string");
+                        }
+                        if ([ "irt_cat", "irt_learn" ].indexOf(options.irtMethod) === -1) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtMethod is not an accepted value");
+                        }
+                        if (!_utils2.default.isNumber(options.irtScalingFactor)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtScalingFactor option must be a number");
+                        }
+                        if (options.irtScalingFactor < .1 || options.irtScalingFactor > 10) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtScalingFactor option is not an accepted value");
                         }
                         _state2.default.set("initialized", true);
                         _state2.default.set("apiKey", apiKey);

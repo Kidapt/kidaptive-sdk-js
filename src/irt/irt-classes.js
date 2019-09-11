@@ -1,1 +1,0 @@
-../../../kidaptive-sdk-js-irt/src/irt-classes.js

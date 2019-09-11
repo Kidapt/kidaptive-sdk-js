@@ -10,7 +10,8 @@ var config = Object.assign({}, defaultConfig, {
   },
   stats: {
     warnings: false
-  }
+  },
+  externals: undefined
 });
 
 module.exports = config;

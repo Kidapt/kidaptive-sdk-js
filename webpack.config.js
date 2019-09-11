@@ -21,10 +21,17 @@ var config = {
   optimization: {
     minimize: false
   },
+  externals: {
+    "kidaptive-irt-js": {
+      root: 'KidaptiveIrt',
+      amd: 'kidaptive-irt-js',
+      commonjs: 'kidaptive-irt-js',
+      commonjs2: 'kidaptive-irt-js'
+    }
+  },
   output: {
     path: __dirname + '/dist/',
     filename: '[name].js',
-    library: 'KidaptiveSdk',
     library: {
       root: "KidaptiveSdk",
       amd: "kidaptive-sdk-js",

@@ -2,7 +2,7 @@
 import TestConstants from './test-constants';
 import TestUtils from '../test-utils';
 import AttemptProcessor from '../../../src/attempt-processor';
-import { UnivariateIrtEstimator } from '../../../src/irt/index';
+import KidaptiveIrt from 'kidaptive-irt-js';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';
 import Should from 'should';
@@ -22,7 +22,7 @@ export default () => {
     });
 
     it('Calls IRT submodule', () => {
-      const spyIrtEstimate = Sinon.spy(UnivariateIrtEstimator, 'estimate');
+      const spyIrtEstimate = Sinon.spy(KidaptiveIrt, 'univariateIrtEstimate');
       AttemptProcessor.processAttempt({
         itemURI: TestConstants.items[0].uri,
         outcome: 1,
