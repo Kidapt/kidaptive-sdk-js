@@ -1,6 +1,6 @@
 (function webpackUniversalModuleDefinition(root, factory) {
-    if (typeof exports === "object" && typeof module === "object") module.exports = factory(require("kidaptive-irt-js")); else if (typeof define === "function" && define.amd) define("kidaptive-sdk-js", [ "kidaptive-irt-js" ], factory); else if (typeof exports === "object") exports["kidaptive-sdk-js"] = factory(require("kidaptive-irt-js")); else root["KidaptiveSdk"] = factory(root["KidaptiveIrt"]);
-})(window, function(__WEBPACK_EXTERNAL_MODULE__17__) {
+    if (typeof exports === "object" && typeof module === "object") module.exports = factory(); else if (typeof define === "function" && define.amd) define("kidaptive-sdk-js", [], factory); else if (typeof exports === "object") exports["kidaptive-sdk-js"] = factory(); else root["KidaptiveSdk"] = factory();
+})(window, function() {
     return function(modules) {
         var installedModules = {};
         function __webpack_require__(moduleId) {
@@ -45,7 +45,7 @@
             return Object.prototype.hasOwnProperty.call(object, property);
         };
         __webpack_require__.p = "";
-        return __webpack_require__(__webpack_require__.s = 37);
+        return __webpack_require__(__webpack_require__.s = 36);
     }([ function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -2484,11 +2484,350 @@
                 return Constructor;
             };
         }();
+        var _attemptProcessor = __webpack_require__(15);
+        var _attemptProcessor2 = _interopRequireDefault(_attemptProcessor);
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
         var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
-        var _eventManager = __webpack_require__(14);
+        var _httpClient = __webpack_require__(6);
+        var _httpClient2 = _interopRequireDefault(_httpClient);
+        var _operationManager = __webpack_require__(7);
+        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _state = __webpack_require__(2);
+        var _state2 = _interopRequireDefault(_state);
+        var _utils = __webpack_require__(0);
+        var _utils2 = _interopRequireDefault(_utils);
+        var _q = __webpack_require__(3);
+        var _q2 = _interopRequireDefault(_q);
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                default: obj
+            };
+        }
+        function _classCallCheck(instance, Constructor) {
+            if (!(instance instanceof Constructor)) {
+                throw new TypeError("Cannot call a class as a function");
+            }
+        }
+        var _autoFlushTimeout = null;
+        var KidaptiveSdkEventManager = function() {
+            function KidaptiveSdkEventManager() {
+                _classCallCheck(this, KidaptiveSdkEventManager);
+            }
+            _createClass(KidaptiveSdkEventManager, [ {
+                key: "reportSimpleEvent",
+                value: function reportSimpleEvent(eventName, eventFields) {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        if (eventName == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName is required");
+                        }
+                        if (!_utils2.default.isString(eventName)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName must be a string");
+                        }
+                        eventFields = eventFields == null ? {} : eventFields;
+                        if (!_utils2.default.isObject(eventFields)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventFields must be an object");
+                        }
+                        eventFields = _utils2.default.copyObject(eventFields);
+                        Object.keys(eventFields).forEach(function(key) {
+                            var value = eventFields[key];
+                            if (value !== null && !_utils2.default.isBoolean(value) && !_utils2.default.isNumber(value) && !_utils2.default.isString(value)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventField values must be a boolean, null, number, or string");
+                            }
+                            var newValue = value === null ? null : value.toString();
+                            if (_utils2.default.isNumber(value) && newValue.indexOf("e") !== -1) {
+                                if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                    console.log("Warning: Numeric value with large number of significant digits was converted to scientific notation.");
+                                }
+                            }
+                            eventFields[key] = newValue;
+                        });
+                        var event = {
+                            additionalFields: _utils2.default.copyObject(eventFields),
+                            name: eventName
+                        };
+                        KidaptiveSdkEventManager.addToEventQueue(event);
+                    });
+                }
+            }, {
+                key: "reportRawEvent",
+                value: function reportRawEvent(rawEvent) {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        rawEvent = _utils2.default.copyObject(rawEvent);
+                        if (rawEvent == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent is required");
+                        }
+                        if (!_utils2.default.isString(rawEvent)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent must be a string");
+                        }
+                        var event = {
+                            additionalFields: {
+                                raw_event_payload: rawEvent
+                            },
+                            name: "raw_custom_event"
+                        };
+                        KidaptiveSdkEventManager.addToEventQueue(event);
+                    });
+                }
+            }, {
+                key: "flushEventQueue",
+                value: function flushEventQueue() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        var eventQueue = KidaptiveSdkEventManager.getEventQueue();
+                        if (eventQueue.length) {
+                            var requests = [];
+                            var eventBatches = [];
+                            eventQueue.forEach(function(event) {
+                                eventBatches.push(event);
+                                requests.push(_httpClient2.default.request("POST", _constants2.default.ENDPOINT.INGESTION, event, {
+                                    noCache: true
+                                }));
+                            });
+                            eventQueue = [];
+                            KidaptiveSdkEventManager.setEventQueue(eventQueue);
+                            return _q2.default.allSettled(requests).then(function(results) {
+                                var requeue = [];
+                                for (var i = 0; i < results.length; i++) {
+                                    var rejected = results[i].state === "rejected";
+                                    var error = results[i].reason || {};
+                                    if (rejected && error.type !== _error2.default.ERROR_CODES.INVALID_PARAMETER) {
+                                        requeue.push(eventBatches[i]);
+                                    }
+                                    if (requeue.length) {
+                                        var newEventQueue = requeue.concat(KidaptiveSdkEventManager.getEventQueue());
+                                        KidaptiveSdkEventManager.setEventQueue(newEventQueue);
+                                    }
+                                }
+                                return results;
+                            });
+                        } else {
+                            return _q2.default.fcall(function() {
+                                return [];
+                            });
+                        }
+                    });
+                }
+            }, {
+                key: "startAutoFlush",
+                value: function startAutoFlush() {
+                    var _this = this;
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        clearTimeout(_autoFlushTimeout);
+                        var options = _state2.default.get("options") || {};
+                        if (options.autoFlushInterval) {
+                            _autoFlushTimeout = setTimeout(function() {
+                                _this.flushEventQueue().then(function(results) {
+                                    var options = _state2.default.get("options") || {};
+                                    if (options.autoFlushCallback) {
+                                        options.autoFlushCallback.forEach(function(callback) {
+                                            callback(results);
+                                        });
+                                    }
+                                    _this.startAutoFlush();
+                                });
+                            }, options.autoFlushInterval);
+                        } else {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: ALP SDK autoFlushInterval is configured to 0. Auto flush is disabled.");
+                            }
+                        }
+                    });
+                }
+            }, {
+                key: "stopAutoFlush",
+                value: function stopAutoFlush() {
+                    return _operationManager2.default.addToQueue(function() {
+                        _utils2.default.checkTier(1);
+                        clearTimeout(_autoFlushTimeout);
+                        _autoFlushTimeout = null;
+                    });
+                }
+            }, {
+                key: "setEventTransformer",
+                value: function setEventTransformer(eventTransformer) {
+                    _utils2.default.checkTier(3);
+                    if (eventTransformer == null) {
+                        _state2.default.set("eventTransformer");
+                        return;
+                    }
+                    if (!_utils2.default.isFunction(eventTransformer)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "eventTransformer must be a function");
+                    }
+                    _state2.default.set("eventTransformer", eventTransformer, false);
+                }
+            } ], [ {
+                key: "addToEventQueue",
+                value: function addToEventQueue(event) {
+                    var options = _state2.default.get("options") || {};
+                    var user = _state2.default.get("user");
+                    if (options.authMode === "server" && !user) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication");
+                    }
+                    var updatedEvent = _utils2.default.copyObject(event);
+                    updatedEvent.eventTime = Date.now();
+                    updatedEvent.learnerId = _state2.default.get("learnerId");
+                    updatedEvent.trialTime = _state2.default.get("trialTime");
+                    updatedEvent.userId = user && user.id;
+                    var appInfo = {
+                        version: options.version,
+                        build: options.build
+                    };
+                    var deviceInfo = {
+                        deviceType: window && window.navigator && window.navigator.userAgent,
+                        language: window && window.navigator && window.navigator.language
+                    };
+                    var eventQueue = KidaptiveSdkEventManager.getEventQueue();
+                    var itemIndex = _utils2.default.findItemIndex(eventQueue, function(item) {
+                        return item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language;
+                    });
+                    if (options.tier >= 3) {
+                        var eventTransformer = _state2.default.get("eventTransformer", false);
+                        if (eventTransformer) {
+                            updatedEvent = _utils2.default.copyObject(eventTransformer(updatedEvent));
+                            if (!_utils2.default.isObject(updatedEvent)) {
+                                return;
+                            }
+                            KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
+                            if (_utils2.default.isArray(updatedEvent.attempts)) {
+                                updatedEvent.attempts = updatedEvent.attempts.map(function(attempt) {
+                                    var updatedAttempt = _attemptProcessor2.default.prepareAttempt(attempt);
+                                    if (updatedAttempt && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
+                                        _attemptProcessor2.default.processAttempt(updatedAttempt);
+                                    }
+                                    return updatedAttempt || attempt;
+                                });
+                            }
+                        }
+                    }
+                    if (itemIndex !== -1) {
+                        eventQueue[itemIndex].events.push(updatedEvent);
+                    } else {
+                        eventQueue.push({
+                            appInfo: appInfo,
+                            deviceInfo: deviceInfo,
+                            events: [ updatedEvent ]
+                        });
+                    }
+                    KidaptiveSdkEventManager.setEventQueue(eventQueue);
+                }
+            }, {
+                key: "getEventQueue",
+                value: function getEventQueue() {
+                    var result = void 0;
+                    try {
+                        result = _utils2.default.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
+                    } catch (e) {
+                        result = _state2.default.get("eventQueue");
+                    }
+                    if (!(result instanceof Array)) {
+                        result = [];
+                    }
+                    return result;
+                }
+            }, {
+                key: "setEventQueue",
+                value: function setEventQueue(eventQueue) {
+                    _state2.default.set("eventQueue", eventQueue);
+                    _utils2.default.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
+                }
+            }, {
+                key: "getEventQueueCacheKey",
+                value: function getEventQueueCacheKey() {
+                    return _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION));
+                }
+            }, {
+                key: "validateTransformedEvent",
+                value: function validateTransformedEvent(event) {
+                    if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                        if (!_utils2.default.isString(event.name) || !event.name.length) {
+                            console.log("Warning: eventTransformer returned an event with name not set as a string.");
+                        }
+                        if (!_utils2.default.isObject(event.additionalFields) || event.additionalFields === null) {
+                            console.log("Warning: eventTransformer returned an event with additionalFields not set as an object.");
+                        }
+                        if (event.userId != null && !_utils2.default.isNumber(event.userId)) {
+                            console.log("Warning: eventTransformer returned an event with userId not set as a number.");
+                        }
+                        if (event.learnerId != null && !_utils2.default.isNumber(event.learnerId)) {
+                            console.log("Warning: eventTransformer returned an event with learnerId not set as a number.");
+                        }
+                        if (!_utils2.default.isNumber(event.eventTime)) {
+                            console.log("Warning: eventTransformer returned an event with eventTime not set as a number.");
+                        }
+                        if (!_utils2.default.isNumber(event.trialTime)) {
+                            console.log("Warning: eventTransformer returned an event with trialTime not set as a number.");
+                        }
+                        if (event.attempts != null) {
+                            if (!_utils2.default.isArray(event.attempts)) {
+                                console.log("Warning: eventTransformer returned an event with attempts not set as an array.");
+                            } else {
+                                event.attempts.forEach(function(attempt) {
+                                    if (!_utils2.default.isObject(attempt)) {
+                                        console.log("Warning: eventTransformer returned an event with an attempt not set as an object.");
+                                    } else {
+                                        if (!_utils2.default.isString(attempt.itemURI) || !attempt.itemURI.length) {
+                                            console.log("Warning: eventTransformer returned an event attempt with itemURI not set as a string.");
+                                        }
+                                        if (!_utils2.default.isNumber(attempt.outcome)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.");
+                                        } else if (attempt.outcome < 0 || attempt.outcome > 1) {
+                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a value between or equal to 0 and 1.");
+                                        }
+                                        if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.");
+                                        } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
+                                            console.log("Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between or equal to 0 and 1.");
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                        if (event.tags != null) {
+                            if (!_utils2.default.isObject(event.tags)) {
+                                console.log("Warning: eventTransformer returned an event with tags not set as an object.");
+                            } else {
+                                if (event.tags.skipIrt != null && !_utils2.default.isBoolean(event.tags.skipIrt)) {
+                                    console.log("Warning: eventTransformer returned an event tag with skipIrt not set as a boolean.");
+                                }
+                            }
+                        }
+                    }
+                }
+            } ]);
+            return KidaptiveSdkEventManager;
+        }();
+        exports.default = new KidaptiveSdkEventManager();
+    }, function(module, exports, __webpack_require__) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        var _createClass = function() {
+            function defineProperties(target, props) {
+                for (var i = 0; i < props.length; i++) {
+                    var descriptor = props[i];
+                    descriptor.enumerable = descriptor.enumerable || false;
+                    descriptor.configurable = true;
+                    if ("value" in descriptor) descriptor.writable = true;
+                    Object.defineProperty(target, descriptor.key, descriptor);
+                }
+            }
+            return function(Constructor, protoProps, staticProps) {
+                if (protoProps) defineProperties(Constructor.prototype, protoProps);
+                if (staticProps) defineProperties(Constructor, staticProps);
+                return Constructor;
+            };
+        }();
+        var _constants = __webpack_require__(4);
+        var _constants2 = _interopRequireDefault(_constants);
+        var _error = __webpack_require__(1);
+        var _error2 = _interopRequireDefault(_error);
+        var _eventManager = __webpack_require__(11);
         var _eventManager2 = _interopRequireDefault(_eventManager);
         var _httpClient = __webpack_require__(6);
         var _httpClient2 = _interopRequireDefault(_httpClient);
@@ -3232,22 +3571,18 @@
                 return Constructor;
             };
         }();
-        var _attemptProcessor = __webpack_require__(36);
-        var _attemptProcessor2 = _interopRequireDefault(_attemptProcessor);
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
-        var _error = __webpack_require__(1);
-        var _error2 = _interopRequireDefault(_error);
         var _httpClient = __webpack_require__(6);
         var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _operationManager = __webpack_require__(7);
-        var _operationManager2 = _interopRequireDefault(_operationManager);
+        var _learnerManager = __webpack_require__(12);
+        var _learnerManager2 = _interopRequireDefault(_learnerManager);
+        var _modelManager = __webpack_require__(8);
+        var _modelManager2 = _interopRequireDefault(_modelManager);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
         var _utils = __webpack_require__(0);
         var _utils2 = _interopRequireDefault(_utils);
-        var _q = __webpack_require__(3);
-        var _q2 = _interopRequireDefault(_q);
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
                 default: obj
@@ -3258,298 +3593,138 @@
                 throw new TypeError("Cannot call a class as a function");
             }
         }
-        var _autoFlushTimeout = null;
-        var KidaptiveSdkEventManager = function() {
-            function KidaptiveSdkEventManager() {
-                _classCallCheck(this, KidaptiveSdkEventManager);
+        var KidaptiveSdkAttemptProcessor = function() {
+            function KidaptiveSdkAttemptProcessor() {
+                _classCallCheck(this, KidaptiveSdkAttemptProcessor);
             }
-            _createClass(KidaptiveSdkEventManager, [ {
-                key: "reportSimpleEvent",
-                value: function reportSimpleEvent(eventName, eventFields) {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        if (eventName == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName is required");
-                        }
-                        if (!_utils2.default.isString(eventName)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventName must be a string");
-                        }
-                        eventFields = eventFields == null ? {} : eventFields;
-                        if (!_utils2.default.isObject(eventFields)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventFields must be an object");
-                        }
-                        eventFields = _utils2.default.copyObject(eventFields);
-                        Object.keys(eventFields).forEach(function(key) {
-                            var value = eventFields[key];
-                            if (value !== null && !_utils2.default.isBoolean(value) && !_utils2.default.isNumber(value) && !_utils2.default.isString(value)) {
-                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "EventField values must be a boolean, null, number, or string");
-                            }
-                            var newValue = value === null ? null : value.toString();
-                            if (_utils2.default.isNumber(value) && newValue.indexOf("e") !== -1) {
-                                if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                                    console.log("Warning: Numeric value with large number of significant digits was converted to scientific notation.");
-                                }
-                            }
-                            eventFields[key] = newValue;
-                        });
-                        var event = {
-                            additionalFields: _utils2.default.copyObject(eventFields),
-                            name: eventName
-                        };
-                        KidaptiveSdkEventManager.addToEventQueue(event);
-                    });
+            _createClass(KidaptiveSdkAttemptProcessor, [ {
+                key: "validateIrtModule",
+                value: function validateIrtModule(irt) {
+                    return irt && _utils2.default.isObject(irt) && _utils2.default.isFunction(irt.univariateIrtEstimate) && _utils2.default.isFunction(irt.makeItemResponse) && _utils2.default.isFunction(irt.makeNormalDistribution);
                 }
             }, {
-                key: "reportRawEvent",
-                value: function reportRawEvent(rawEvent) {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        rawEvent = _utils2.default.copyObject(rawEvent);
-                        if (rawEvent == null) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent is required");
+                key: "prepareAttempt",
+                value: function prepareAttempt(attempt) {
+                    var updatedAttempt = _utils2.default.copyObject(attempt);
+                    var learnerId = _state2.default.get("learnerId");
+                    if (learnerId == null) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with no active learner selected. Attempt is discarded.");
                         }
-                        if (!_utils2.default.isString(rawEvent)) {
-                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "RawEvent must be a string");
-                        }
-                        var event = {
-                            additionalFields: {
-                                raw_event_payload: rawEvent
-                            },
-                            name: "raw_custom_event"
-                        };
-                        KidaptiveSdkEventManager.addToEventQueue(event);
-                    });
-                }
-            }, {
-                key: "flushEventQueue",
-                value: function flushEventQueue() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        var eventQueue = KidaptiveSdkEventManager.getEventQueue();
-                        if (eventQueue.length) {
-                            var requests = [];
-                            var eventBatches = [];
-                            eventQueue.forEach(function(event) {
-                                eventBatches.push(event);
-                                requests.push(_httpClient2.default.request("POST", _constants2.default.ENDPOINT.INGESTION, event, {
-                                    noCache: true
-                                }));
-                            });
-                            eventQueue = [];
-                            KidaptiveSdkEventManager.setEventQueue(eventQueue);
-                            return _q2.default.allSettled(requests).then(function(results) {
-                                var requeue = [];
-                                for (var i = 0; i < results.length; i++) {
-                                    var rejected = results[i].state === "rejected";
-                                    var error = results[i].reason || {};
-                                    if (rejected && error.type !== _error2.default.ERROR_CODES.INVALID_PARAMETER) {
-                                        requeue.push(eventBatches[i]);
-                                    }
-                                    if (requeue.length) {
-                                        var newEventQueue = requeue.concat(KidaptiveSdkEventManager.getEventQueue());
-                                        KidaptiveSdkEventManager.setEventQueue(newEventQueue);
-                                    }
-                                }
-                                return results;
-                            });
-                        } else {
-                            return _q2.default.fcall(function() {
-                                return [];
-                            });
-                        }
-                    });
-                }
-            }, {
-                key: "startAutoFlush",
-                value: function startAutoFlush() {
-                    var _this = this;
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        clearTimeout(_autoFlushTimeout);
-                        var options = _state2.default.get("options") || {};
-                        if (options.autoFlushInterval) {
-                            _autoFlushTimeout = setTimeout(function() {
-                                _this.flushEventQueue().then(function(results) {
-                                    var options = _state2.default.get("options") || {};
-                                    if (options.autoFlushCallback) {
-                                        options.autoFlushCallback.forEach(function(callback) {
-                                            callback(results);
-                                        });
-                                    }
-                                    _this.startAutoFlush();
-                                });
-                            }, options.autoFlushInterval);
-                        } else {
-                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                                console.log("Warning: ALP SDK autoFlushInterval is configured to 0. Auto flush is disabled.");
-                            }
-                        }
-                    });
-                }
-            }, {
-                key: "stopAutoFlush",
-                value: function stopAutoFlush() {
-                    return _operationManager2.default.addToQueue(function() {
-                        _utils2.default.checkTier(1);
-                        clearTimeout(_autoFlushTimeout);
-                        _autoFlushTimeout = null;
-                    });
-                }
-            }, {
-                key: "setEventTransformer",
-                value: function setEventTransformer(eventTransformer) {
-                    _utils2.default.checkTier(3);
-                    if (eventTransformer == null) {
-                        _state2.default.set("eventTransformer");
                         return;
                     }
-                    if (!_utils2.default.isFunction(eventTransformer)) {
-                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "eventTransformer must be a function");
-                    }
-                    _state2.default.set("eventTransformer", eventTransformer, false);
-                }
-            } ], [ {
-                key: "addToEventQueue",
-                value: function addToEventQueue(event) {
-                    var options = _state2.default.get("options") || {};
-                    var user = _state2.default.get("user");
-                    if (options.authMode === "server" && !user) {
-                        throw new _error2.default(_error2.default.ERROR_CODES.ILLEGAL_STATE, "KidaptiveSdk.leanerManager.setUser must be called before sending events when using server authentication");
-                    }
-                    var updatedEvent = _utils2.default.copyObject(event);
-                    updatedEvent.eventTime = Date.now();
-                    updatedEvent.learnerId = _state2.default.get("learnerId");
-                    updatedEvent.trialTime = _state2.default.get("trialTime");
-                    updatedEvent.userId = user && user.id;
-                    var appInfo = {
-                        version: options.version,
-                        build: options.build
-                    };
-                    var deviceInfo = {
-                        deviceType: window && window.navigator && window.navigator.userAgent,
-                        language: window && window.navigator && window.navigator.language
-                    };
-                    var eventQueue = KidaptiveSdkEventManager.getEventQueue();
-                    var itemIndex = _utils2.default.findItemIndex(eventQueue, function(item) {
-                        return item.appInfo.version === appInfo.version && item.appInfo.build === appInfo.build && item.deviceInfo.deviceType === deviceInfo.deviceType && item.deviceInfo.language === deviceInfo.language;
-                    });
-                    if (options.tier >= 3) {
-                        var eventTransformer = _state2.default.get("eventTransformer", false);
-                        if (eventTransformer) {
-                            updatedEvent = _utils2.default.copyObject(eventTransformer(updatedEvent));
-                            if (!_utils2.default.isObject(updatedEvent)) {
-                                return;
-                            }
-                            KidaptiveSdkEventManager.validateTransformedEvent(updatedEvent);
-                            if (_utils2.default.isArray(updatedEvent.attempts)) {
-                                updatedEvent.attempts = updatedEvent.attempts.map(function(attempt) {
-                                    var updatedAttempt = _attemptProcessor2.default.prepareAttempt(attempt);
-                                    if (updatedAttempt && (!updatedEvent.tags || !updatedEvent.tags.skipIrt)) {
-                                        _attemptProcessor2.default.processAttempt(updatedAttempt);
-                                    }
-                                    return updatedAttempt || attempt;
-                                });
-                            }
+                    if (!_utils2.default.isObject(attempt)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with a non object attempt. Attempt will be discarded.");
                         }
+                        return;
                     }
-                    if (itemIndex !== -1) {
-                        eventQueue[itemIndex].events.push(updatedEvent);
-                    } else {
-                        eventQueue.push({
-                            appInfo: appInfo,
-                            deviceInfo: deviceInfo,
-                            events: [ updatedEvent ]
+                    if (!_utils2.default.isString(attempt.itemURI)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with a non string itemUri. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with a non numeric guessingParamter. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    if (!_utils2.default.isNumber(attempt.outcome)) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with  a non numeric outcome. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
+                    if (!item || !item.localDimension || !item.localDimension.dimension) {
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt called with an invalid itemUri. Attempt will be discarded.");
+                        }
+                        return;
+                    }
+                    var latentAbility = _learnerManager2.default.getLatentAbilityEstimate(item.localDimension.dimension.uri);
+                    var localAbility = _learnerManager2.default.getLocalAbilityEstimate(item.localDimension.uri);
+                    updatedAttempt.priorLatentMean = latentAbility.mean;
+                    updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
+                    updatedAttempt.priorLocalMean = localAbility.mean;
+                    updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
+                    return updatedAttempt;
+                }
+            }, {
+                key: "processAttempt",
+                value: function processAttempt(attempt) {
+                    var learnerId = _state2.default.get("learnerId");
+                    var options = _state2.default.get("options");
+                    var irtMethod = options.irtMethod;
+                    irtMethod = irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : irtMethod;
+                    var irtScalingFactor = options.irtScalingFactor;
+                    irtScalingFactor = irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
+                    var irtModule = _state2.default.get("irtModule", false);
+                    if (!irtModule) {
+                        console.log("Warning: processAttempt unable to load irt module");
+                        return;
+                    }
+                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
+                    var prior = irtModule.makeNormalDistribution(0, 1);
+                    if (irtMethod === "irt_cat") {
+                        var priorAbilities = _state2.default.get("latentAbilitiesAtStartOfTrial." + learnerId) || [];
+                        var priorAbility = _utils2.default.findItem(priorAbilities, function(abilty) {
+                            return abilty.dimension && abilty.dimension.uri === item.localDimension.dimension.uri;
                         });
+                        if (priorAbility && priorAbility.mean) {
+                            prior.mean = priorAbility.mean;
+                        }
+                        if (priorAbility && priorAbility.standardDeviation) {
+                            prior.sd = priorAbility.standardDeviation;
+                        }
+                    } else if (irtMethod === "irt_learn") {
+                        prior.mean = attempt.priorLocalMean;
+                        prior.sd = attempt.priorLocalStandardDeviation;
+                    } else {
+                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        return;
                     }
-                    KidaptiveSdkEventManager.setEventQueue(eventQueue);
-                }
-            }, {
-                key: "getEventQueue",
-                value: function getEventQueue() {
-                    var result = void 0;
-                    try {
-                        result = _utils2.default.localStorageGetItem(KidaptiveSdkEventManager.getEventQueueCacheKey());
-                    } catch (e) {
-                        result = _state2.default.get("eventQueue");
+                    var attemptHistory = _state2.default.get("trialAttemptHistory." + learnerId) || [];
+                    var itemResponse = irtModule.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+                    itemResponse.dimension = item.localDimension.dimension;
+                    attemptHistory.push(itemResponse);
+                    _state2.default.set("trialAttemptHistory." + learnerId, attemptHistory);
+                    var filteredHistory = [];
+                    if (irtMethod === "irt_cat") {
+                        filteredHistory = attemptHistory.filter(function(response) {
+                            return response.dimension && response.dimension.uri === item.localDimension.dimension.uri;
+                        });
+                    } else if (irtMethod === "irt_learn") {
+                        filteredHistory.push(itemResponse);
+                    } else {
+                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        return;
                     }
-                    if (!(result instanceof Array)) {
-                        result = [];
+                    var estimation = irtModule.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
+                    var newAbility = {
+                        dimension: item.localDimension.dimension,
+                        mean: estimation.mean,
+                        standardDeviation: estimation.sd,
+                        timestamp: _state2.default.get("trialTime") || 0
+                    };
+                    var newAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
+                    var updateAbilityIndex = _utils2.default.findItemIndex(newAbilities, function(newAbility) {
+                        return newAbility.dimension && newAbility.dimension.uri === item.localDimension.dimension.uri;
+                    });
+                    if (updateAbilityIndex !== -1) {
+                        newAbilities[updateAbilityIndex] = newAbility;
+                    } else {
+                        newAbilities.push(newAbility);
                     }
-                    return result;
-                }
-            }, {
-                key: "setEventQueue",
-                value: function setEventQueue(eventQueue) {
-                    _state2.default.set("eventQueue", eventQueue);
-                    _utils2.default.localStorageSetItem(KidaptiveSdkEventManager.getEventQueueCacheKey(), eventQueue);
-                }
-            }, {
-                key: "getEventQueueCacheKey",
-                value: function getEventQueueCacheKey() {
-                    return _httpClient2.default.getCacheKey(_httpClient2.default.getRequestSettings("POST", _constants2.default.ENDPOINT.INGESTION));
-                }
-            }, {
-                key: "validateTransformedEvent",
-                value: function validateTransformedEvent(event) {
-                    if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                        if (!_utils2.default.isString(event.name) || !event.name.length) {
-                            console.log("Warning: eventTransformer returned an event with name not set as a string.");
-                        }
-                        if (!_utils2.default.isObject(event.additionalFields) || event.additionalFields === null) {
-                            console.log("Warning: eventTransformer returned an event with additionalFields not set as an object.");
-                        }
-                        if (event.userId != null && !_utils2.default.isNumber(event.userId)) {
-                            console.log("Warning: eventTransformer returned an event with userId not set as a number.");
-                        }
-                        if (event.learnerId != null && !_utils2.default.isNumber(event.learnerId)) {
-                            console.log("Warning: eventTransformer returned an event with learnerId not set as a number.");
-                        }
-                        if (!_utils2.default.isNumber(event.eventTime)) {
-                            console.log("Warning: eventTransformer returned an event with eventTime not set as a number.");
-                        }
-                        if (!_utils2.default.isNumber(event.trialTime)) {
-                            console.log("Warning: eventTransformer returned an event with trialTime not set as a number.");
-                        }
-                        if (event.attempts != null) {
-                            if (!_utils2.default.isArray(event.attempts)) {
-                                console.log("Warning: eventTransformer returned an event with attempts not set as an array.");
-                            } else {
-                                event.attempts.forEach(function(attempt) {
-                                    if (!_utils2.default.isObject(attempt)) {
-                                        console.log("Warning: eventTransformer returned an event with an attempt not set as an object.");
-                                    } else {
-                                        if (!_utils2.default.isString(attempt.itemURI) || !attempt.itemURI.length) {
-                                            console.log("Warning: eventTransformer returned an event attempt with itemURI not set as a string.");
-                                        }
-                                        if (!_utils2.default.isNumber(attempt.outcome)) {
-                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a numeric value.");
-                                        } else if (attempt.outcome < 0 || attempt.outcome > 1) {
-                                            console.log("Warning: eventTransformer returned an event attempt with outcome not set as a value between or equal to 0 and 1.");
-                                        }
-                                        if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
-                                            console.log("Warning: eventTransformer returned an event attempt with guessingParameter not set as a numeric value.");
-                                        } else if (attempt.guessingParameter != null && (attempt.guessingParameter < 0 || attempt.guessingParameter > 1)) {
-                                            console.log("Warning: eventTransformer returned an event attempt with a guessingParameter not set as a value between or equal to 0 and 1.");
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                        if (event.tags != null) {
-                            if (!_utils2.default.isObject(event.tags)) {
-                                console.log("Warning: eventTransformer returned an event with tags not set as an object.");
-                            } else {
-                                if (event.tags.skipIrt != null && !_utils2.default.isBoolean(event.tags.skipIrt)) {
-                                    console.log("Warning: eventTransformer returned an event tag with skipIrt not set as a boolean.");
-                                }
-                            }
-                        }
-                    }
+                    _state2.default.set("latentAbilities." + learnerId, newAbilities);
+                    _utils2.default.cacheLatentAbilityEstimates(newAbilities);
                 }
             } ]);
-            return KidaptiveSdkEventManager;
+            return KidaptiveSdkAttemptProcessor;
         }();
-        exports.default = new KidaptiveSdkEventManager();
+        exports.default = new KidaptiveSdkAttemptProcessor();
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -3828,8 +4003,6 @@
             return KidaptiveSdkRecommenderOptimalDifficulty;
         }();
         exports.default = KidaptiveSdkRecommenderOptimalDifficulty;
-    }, function(module, exports) {
-        module.exports = __WEBPACK_EXTERNAL_MODULE__17__;
     }, function(module, exports, __webpack_require__) {
         "use strict";
         function _toConsumableArray(arr) {
@@ -3969,7 +4142,7 @@
             }
             return _typeof(obj);
         }
-        var isObject = __webpack_require__(12);
+        var isObject = __webpack_require__(13);
         module.exports = RequestBase;
         function RequestBase(obj) {
             if (obj) return mixin(obj);
@@ -4497,7 +4670,7 @@
         var Emitter = __webpack_require__(23);
         var safeStringify = __webpack_require__(22);
         var RequestBase = __webpack_require__(21);
-        var isObject = __webpack_require__(12);
+        var isObject = __webpack_require__(13);
         var ResponseBase = __webpack_require__(20);
         var Agent = __webpack_require__(18);
         function noop() {}
@@ -5697,7 +5870,7 @@
                     var key;
                 }
             })(this);
-        }).call(this, __webpack_require__(13)(module), __webpack_require__(5));
+        }).call(this, __webpack_require__(14)(module), __webpack_require__(5));
     }, function(module, exports) {
         var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g, gap, indent, meta = {
             "\b": "\\b",
@@ -6672,7 +6845,7 @@
                 return false;
             }
             module.exports = cloneDeep;
-        }).call(this, __webpack_require__(5), __webpack_require__(13)(module));
+        }).call(this, __webpack_require__(5), __webpack_require__(14)(module));
     }, function(module, exports, __webpack_require__) {
         "use strict";
         Object.defineProperty(exports, "__esModule", {
@@ -6694,180 +6867,15 @@
                 return Constructor;
             };
         }();
-        var _constants = __webpack_require__(4);
-        var _constants2 = _interopRequireDefault(_constants);
-        var _httpClient = __webpack_require__(6);
-        var _httpClient2 = _interopRequireDefault(_httpClient);
-        var _learnerManager = __webpack_require__(11);
-        var _learnerManager2 = _interopRequireDefault(_learnerManager);
-        var _modelManager = __webpack_require__(8);
-        var _modelManager2 = _interopRequireDefault(_modelManager);
-        var _state = __webpack_require__(2);
-        var _state2 = _interopRequireDefault(_state);
-        var _utils = __webpack_require__(0);
-        var _utils2 = _interopRequireDefault(_utils);
-        var _kidaptiveIrtJs = __webpack_require__(17);
-        var _kidaptiveIrtJs2 = _interopRequireDefault(_kidaptiveIrtJs);
-        function _interopRequireDefault(obj) {
-            return obj && obj.__esModule ? obj : {
-                default: obj
-            };
-        }
-        function _classCallCheck(instance, Constructor) {
-            if (!(instance instanceof Constructor)) {
-                throw new TypeError("Cannot call a class as a function");
-            }
-        }
-        var KidaptiveSdkAttemptProcessor = function() {
-            function KidaptiveSdkAttemptProcessor() {
-                _classCallCheck(this, KidaptiveSdkAttemptProcessor);
-            }
-            _createClass(KidaptiveSdkAttemptProcessor, [ {
-                key: "prepareAttempt",
-                value: function prepareAttempt(attempt) {
-                    var updatedAttempt = _utils2.default.copyObject(attempt);
-                    var learnerId = _state2.default.get("learnerId");
-                    if (learnerId == null) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with no active learner selected. Attempt is discarded.");
-                        }
-                        return;
-                    }
-                    if (!_utils2.default.isObject(attempt)) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with a non object attempt. Attempt will be discarded.");
-                        }
-                        return;
-                    }
-                    if (!_utils2.default.isString(attempt.itemURI)) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with a non string itemUri. Attempt will be discarded.");
-                        }
-                        return;
-                    }
-                    if (attempt.guessingParameter != null && !_utils2.default.isNumber(attempt.guessingParameter)) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with a non numeric guessingParamter. Attempt will be discarded.");
-                        }
-                        return;
-                    }
-                    if (!_utils2.default.isNumber(attempt.outcome)) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with  a non numeric outcome. Attempt will be discarded.");
-                        }
-                        return;
-                    }
-                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
-                    if (!item || !item.localDimension || !item.localDimension.dimension) {
-                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
-                            console.log("Warning: processAttempt called with an invalid itemUri. Attempt will be discarded.");
-                        }
-                        return;
-                    }
-                    var latentAbility = _learnerManager2.default.getLatentAbilityEstimate(item.localDimension.dimension.uri);
-                    var localAbility = _learnerManager2.default.getLocalAbilityEstimate(item.localDimension.uri);
-                    updatedAttempt.priorLatentMean = latentAbility.mean;
-                    updatedAttempt.priorLatentStandardDeviation = latentAbility.standardDeviation;
-                    updatedAttempt.priorLocalMean = localAbility.mean;
-                    updatedAttempt.priorLocalStandardDeviation = localAbility.standardDeviation;
-                    return updatedAttempt;
-                }
-            }, {
-                key: "processAttempt",
-                value: function processAttempt(attempt) {
-                    var learnerId = _state2.default.get("learnerId");
-                    var options = _state2.default.get("options");
-                    var irtMethod = options.irtMethod;
-                    irtMethod = irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : irtMethod;
-                    var irtScalingFactor = options.irtScalingFactor;
-                    irtScalingFactor = irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
-                    var item = _modelManager2.default.getItemByUri(attempt.itemURI);
-                    var prior = _kidaptiveIrtJs2.default.makeNormalDistribution(0, 1);
-                    if (irtMethod === "irt_cat") {
-                        var priorAbilities = _state2.default.get("latentAbilitiesAtStartOfTrial." + learnerId) || [];
-                        var priorAbility = _utils2.default.findItem(priorAbilities, function(abilty) {
-                            return abilty.dimension && abilty.dimension.uri === item.localDimension.dimension.uri;
-                        });
-                        if (priorAbility && priorAbility.mean) {
-                            prior.mean = priorAbility.mean;
-                        }
-                        if (priorAbility && priorAbility.standardDeviation) {
-                            prior.sd = priorAbility.standardDeviation;
-                        }
-                    } else if (irtMethod === "irt_learn") {
-                        prior.mean = attempt.priorLocalMean;
-                        prior.sd = attempt.priorLocalStandardDeviation;
-                    } else {
-                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
-                        return;
-                    }
-                    var attemptHistory = _state2.default.get("trialAttemptHistory." + learnerId) || [];
-                    var itemResponse = _kidaptiveIrtJs2.default.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
-                    itemResponse.dimension = item.localDimension.dimension;
-                    attemptHistory.push(itemResponse);
-                    _state2.default.set("trialAttemptHistory." + learnerId, attemptHistory);
-                    var filteredHistory = [];
-                    if (irtMethod === "irt_cat") {
-                        filteredHistory = attemptHistory.filter(function(response) {
-                            return response.dimension && response.dimension.uri === item.localDimension.dimension.uri;
-                        });
-                    } else if (irtMethod === "irt_learn") {
-                        filteredHistory.push(itemResponse);
-                    } else {
-                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
-                        return;
-                    }
-                    var estimation = _kidaptiveIrtJs2.default.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
-                    var newAbility = {
-                        dimension: item.localDimension.dimension,
-                        mean: estimation.mean,
-                        standardDeviation: estimation.sd,
-                        timestamp: _state2.default.get("trialTime") || 0
-                    };
-                    var newAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
-                    var updateAbilityIndex = _utils2.default.findItemIndex(newAbilities, function(newAbility) {
-                        return newAbility.dimension && newAbility.dimension.uri === item.localDimension.dimension.uri;
-                    });
-                    if (updateAbilityIndex !== -1) {
-                        newAbilities[updateAbilityIndex] = newAbility;
-                    } else {
-                        newAbilities.push(newAbility);
-                    }
-                    _state2.default.set("latentAbilities." + learnerId, newAbilities);
-                    _utils2.default.cacheLatentAbilityEstimates(newAbilities);
-                }
-            } ]);
-            return KidaptiveSdkAttemptProcessor;
-        }();
-        exports.default = new KidaptiveSdkAttemptProcessor();
-    }, function(module, exports, __webpack_require__) {
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        var _createClass = function() {
-            function defineProperties(target, props) {
-                for (var i = 0; i < props.length; i++) {
-                    var descriptor = props[i];
-                    descriptor.enumerable = descriptor.enumerable || false;
-                    descriptor.configurable = true;
-                    if ("value" in descriptor) descriptor.writable = true;
-                    Object.defineProperty(target, descriptor.key, descriptor);
-                }
-            }
-            return function(Constructor, protoProps, staticProps) {
-                if (protoProps) defineProperties(Constructor.prototype, protoProps);
-                if (staticProps) defineProperties(Constructor, staticProps);
-                return Constructor;
-            };
-        }();
+        var _attemptProcessor = __webpack_require__(15);
+        var _attemptProcessor2 = _interopRequireDefault(_attemptProcessor);
         var _constants = __webpack_require__(4);
         var _constants2 = _interopRequireDefault(_constants);
         var _error = __webpack_require__(1);
         var _error2 = _interopRequireDefault(_error);
-        var _eventManager = __webpack_require__(14);
+        var _eventManager = __webpack_require__(11);
         var _eventManager2 = _interopRequireDefault(_eventManager);
-        var _learnerManager = __webpack_require__(11);
+        var _learnerManager = __webpack_require__(12);
         var _learnerManager2 = _interopRequireDefault(_learnerManager);
         var _modelManager = __webpack_require__(8);
         var _modelManager2 = _interopRequireDefault(_modelManager);
@@ -6875,9 +6883,9 @@
         var _operationManager2 = _interopRequireDefault(_operationManager);
         var _recommendationManager = __webpack_require__(10);
         var _recommendationManager2 = _interopRequireDefault(_recommendationManager);
-        var _optimalDifficulty = __webpack_require__(16);
+        var _optimalDifficulty = __webpack_require__(17);
         var _optimalDifficulty2 = _interopRequireDefault(_optimalDifficulty);
-        var _random = __webpack_require__(15);
+        var _random = __webpack_require__(16);
         var _random2 = _interopRequireDefault(_random);
         var _state = __webpack_require__(2);
         var _state2 = _interopRequireDefault(_state);
@@ -7017,6 +7025,16 @@
                         if (options.irtScalingFactor < .1 || options.irtScalingFactor > 10) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtScalingFactor option is not an accepted value");
                         }
+                        if (options.tier === 3 && !options.irtModule) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Missing IRT module - required for Tier 3 features");
+                        }
+                        if (options.irtModule != null && !_attemptProcessor2.default.validateIrtModule(options.irtModule)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Invalid IRT module");
+                        }
+                        if (options.irtModule) {
+                            _state2.default.set("irtModule", options.irtModule);
+                            options.irtModule = undefined;
+                        }
                         _state2.default.set("initialized", true);
                         _state2.default.set("apiKey", apiKey);
                         _state2.default.set("options", options);
@@ -7049,7 +7067,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.6";
+                    return "1.2.0";
                 }
             }, {
                 key: "destroy",
