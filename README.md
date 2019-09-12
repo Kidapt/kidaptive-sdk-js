@@ -840,8 +840,6 @@ The build process depends on node and npm. The build process builds files in the
 npm run build
 ```
 
-Note: To build from source, it is necessary to have cloned the `kidaptive-sdk-js-irt` repo as a sibling of this one.
-
 ## Testing
 
 The testing process builds a test file, hosts the test on `localhost:8080`, and runs the tests in a PhantomJs headerless browser. All test related files are located in the `/test` directory. The configuration used for the test build process is in `/test/webpack.test.config.js`
@@ -849,6 +847,8 @@ The testing process builds a test file, hosts the test on `localhost:8080`, and 
 ```javascript
 npm run test
 ```
+
+Note: To run tests, it is necessary to have access to the `kidaptive-sdk-js-irt` repo.
 
 ## Publishing
 

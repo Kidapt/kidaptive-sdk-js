@@ -1,1 +1,6 @@
-test/*
+test/
+node_modules/
+.idea/
+nohup.out
+npm-debug.log
+.DS_Store
