@@ -5,9 +5,25 @@ import LearnerManager from './learner-manager';
 import ModelManager from './model-manager';
 import State from './state';
 import Utils from './utils';
-import KidaptiveIrt from 'kidaptive-irt-js';
 
 class KidaptiveSdkAttemptProcessor {
+  
+  /**
+   * Checks the provided IRT module is valid.
+   * 
+   * @param {object} irt 
+   * @return
+   *   boolean, indicating whether or not the module is valid. 
+   */
+  validateIrtModule(irt) {
+    return (irt && 
+            Utils.isObject(irt) &&
+            Utils.isFunction(irt.univariateIrtEstimate) &&
+            Utils.isFunction(irt.makeItemResponse) &&
+            Utils.isFunction(irt.makeNormalDistribution)
+           ); 
+  }
+  
   /**
    * Prepares an attempt for processAttempt by validating the object and defining missing prior values
    * This function is a private function within the SDK called when events with attempts are processed
@@ -114,11 +130,18 @@ class KidaptiveSdkAttemptProcessor {
     let irtScalingFactor = options.irtScalingFactor;
     irtScalingFactor = irtScalingFactor == null ? Constants.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
 
+    //get irt module
+    const irtModule = State.get('irtModule', false);
+    if (!irtModule) {
+      console.log('Warning: processAttempt unable to load irt module');
+      return;
+    }
+
     //get models
     const item = ModelManager.getItemByUri(attempt.itemURI);
 
     //get initial ability estimates and create prior
-    const prior = KidaptiveIrt.makeNormalDistribution(0, 1);
+    const prior = irtModule.makeNormalDistribution(0, 1);
 
     if (irtMethod === 'irt_cat') {
       // use latentAbilitiesAtStartOfTrial
@@ -143,7 +166,7 @@ class KidaptiveSdkAttemptProcessor {
     const attemptHistory = State.get('trialAttemptHistory.' + learnerId) || [];
 
     //make new ItemResponse and add to attemptHistory
-    const itemResponse = KidaptiveIrt.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+    const itemResponse = irtModule.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
     itemResponse.dimension = item.localDimension.dimension;
     attemptHistory.push(itemResponse);
     State.set('trialAttemptHistory.' + learnerId, attemptHistory);
@@ -161,7 +184,7 @@ class KidaptiveSdkAttemptProcessor {
     }
 
     //process data in IRT to get new ability;
-    const estimation = KidaptiveIrt.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
+    const estimation = irtModule.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
 
     //set new ability values
     const newAbility = {

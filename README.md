@@ -156,6 +156,7 @@ loggingLevel | string | false | all | Defines the logging level to use. Values c
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
 irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. Default is 'irt_cat'. Only used for tier 3 functionality.
 irtScalingFactor | number | false | 1.59577 | Override the IRT scaling factor, if a non-default value is needed. Value must be between 0.1 and 10.0, and will generally be between 0.5 and 2.0. Only used for tier 3 functionality.
+irtModule | object | false |  The IRT module instance to be used by the SDK. Generally imported from the access-controlled kidaptive-irt-js package. Only used for tier 3 functionality.
 
 ---
 

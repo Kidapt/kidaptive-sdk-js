@@ -1,3 +1,4 @@
+import AttemptProcessor from './attempt-processor';
 import Constants from './constants';
 import Error from './error';
 import EventManager from './event-manager';
@@ -174,6 +175,22 @@ class KidaptiveSdk {
       }
       if (options.irtScalingFactor < 0.1 || options.irtScalingFactor > 10.0) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtScalingFactor option is not an accepted value');
+      }
+
+      // validate irtModule is provided if tier is set to 3
+      if (options.tier === 3 && !options.irtModule) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Missing IRT module - required for Tier 3 features');
+      }
+
+      // validate irtModule, if provided
+      if (options.irtModule != null && !AttemptProcessor.validateIrtModule(options.irtModule)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'Invalid IRT module');
+      }
+
+      // extract irtModule from options before we set (to avoid unneccessary copies of irtModule)
+      if (options.irtModule) {
+        State.set('irtModule', options.irtModule);
+        options.irtModule = undefined;
       }
 
       //set state

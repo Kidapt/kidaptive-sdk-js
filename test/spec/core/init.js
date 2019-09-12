@@ -7,6 +7,7 @@ import LearnerManager from '../../../src/learner-manager';
 import OperationManager from '../../../src/operation-manager';
 import State from '../../../src/state';
 import Utils from '../../../src/utils';
+import KidaptiveIrt from 'kidaptive-irt-js';
 import Should from 'should';
 import Sinon from 'sinon';
 
@@ -87,6 +88,9 @@ export default () => {
 
         const testFunction = parameter => {
           options.tier = parameter;
+          if (parameter === 3) {
+            options.irtModule = KidaptiveIrt;
+          }
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
         TestUtils.validatePromiseProperty(testFunction, 'number', false, [1, 2, 3], [0, 4]);
@@ -171,6 +175,49 @@ export default () => {
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
         TestUtils.validatePromiseProperty(testFunction, 'number', false, [0.1, 1.0, 1.5, 10.0], [-1, 0, 0.09, 10.1, 100]);
+      });
+
+      describe('irtModule is an object, passing AttemptProcessor validation, required if tier equals 3', () => {
+        let server;
+
+        before(() => {
+          server = Sinon.fakeServer.create();
+          server.respondImmediately = true;
+          server.respondWith([200, {'Content-Type': 'application/json'}, '']);
+        });
+
+        after(() => {
+          server.restore();
+        });
+        
+        const testFunction = parameter => {
+          options.irtModule = parameter;
+          options.tier = 3;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'object', true, [KidaptiveIrt], [{somekey: 'some_value'}]);
+      });
+
+      describe('irtModule is an object, passing AttemptProcessor validation, optional if tier equals 1 or 2', () => {
+        let server;
+
+        before(() => {
+          server = Sinon.fakeServer.create();
+          server.respondImmediately = true;
+          server.respondWith([200, {'Content-Type': 'application/json'}, '']);
+        });
+
+        after(() => {
+          server.restore();
+        });
+        
+        const testFunction = tier => parameter => {
+          options.irtModule = parameter;
+          options.tier = tier;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction(1), 'object', false, [KidaptiveIrt], [{somekey: 'some_value'}]);
+        TestUtils.validatePromiseProperty(testFunction(2), 'object', false, [KidaptiveIrt], [{somekey: 'some_value'}]);
       });
 
     }); //END validate option values

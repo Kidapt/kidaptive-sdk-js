@@ -15,6 +15,7 @@ export default () => {
     beforeEach(() => {
       TestUtils.resetStateAndCache();
       TestUtils.setState(TestConstants.defaultState);
+      State.set('irtModule', KidaptiveIrt);
     });
 
     after(() => {
@@ -22,7 +23,7 @@ export default () => {
     });
 
     it('Calls IRT submodule', () => {
-      const spyIrtEstimate = Sinon.spy(KidaptiveIrt, 'univariateIrtEstimate');
+      const spyIrtEstimate = Sinon.spy(State.get('irtModule', false), 'univariateIrtEstimate');
       AttemptProcessor.processAttempt({
         itemURI: TestConstants.items[0].uri,
         outcome: 1,

@@ -8,6 +8,7 @@ import ModelManager from '../../../src/model-manager';
 import OperationManager from '../../../src/operation-manager';
 import RecommendationManager from '../../../src/recommendation-manager';
 import State from '../../../src/state';
+import KidaptiveIrt from 'kidaptive-irt-js';
 import Should from 'should';
 import Sinon from 'sinon';
 
@@ -47,14 +48,14 @@ export default () => {
       it('RecommendationManager.registerRecommender() is called', () => {
         const spyRegisterRecommender = Sinon.spy(RecommendationManager, 'registerRecommender');
         Should(spyRegisterRecommender.called).false();
-        return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 3})).resolved().then(() => {
+        return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 3, irtModule: KidaptiveIrt})).resolved().then(() => {
           Should(spyRegisterRecommender.called).true();
           spyRegisterRecommender.restore();
         });
       });
 
       it('Recommenders are registered', () => {
-        return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 3})).resolved().then(() => {
+        return Should(KidaptiveSdk.init('testApiKey', {environment: 'dev', tier: 3, irtModule: KidaptiveIrt})).resolved().then(() => {
           Should(RecommendationManager.getRecommenderKeys().sort()).deepEqual(['optimalDifficulty', 'random']);
         });
       });
