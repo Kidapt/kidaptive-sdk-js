@@ -138,15 +138,87 @@ export default () => {
       Should(latentAbilitiesAtStartOfTrial[0].mean).equal(10.0);
       Should(latentAbilitiesAtStartOfTrial[0].standardDeviation).equal(2.0);
       
-      // // First attempt 
       AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
         itemURI: TestConstants.items[4].uri,
         outcome: 1,
         guessingParameter: 0.0,
       }));
       let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
-      Should(Math.abs(updatedAbilities[0].mean - 10.015756640379546)).lessThan(1e-6);
-      Should(Math.abs(updatedAbilities[0].standardDeviation - 1.2369533939990132)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].mean - 10.038604070573403)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 1.937774949176907)).lessThan(1e-6);
+    });
+
+    it('No change in ability estimate if irtDefaultItemDifficulty == "no_default" and item attempt is passed to IRT module with null difficulty', () => {
+      let options = State.get('options');
+      options.irtDefaultItemDifficulty = 'no_default';
+      State.set('options', options);
+
+      const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(abilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(abilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[5].uri,   // has null mean and std dev
+        outcome: 0,
+        guessingParameter: 0.0,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(updatedAbilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(updatedAbilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+    });
+
+    it('No change in ability estimate if irtDefaultItemDifficulty == "no_default" and item attempt is passed to IRT module with undefined difficulty', () => {
+      let options = State.get('options');
+      options.irtDefaultItemDifficulty = 'no_default';
+      State.set('options', options);
+      
+      const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(abilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(abilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[6].uri,   // has undefined mean and std dev
+        outcome: 1,
+        guessingParameter: 0.0,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(updatedAbilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(updatedAbilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+    });
+
+    it('Uses non-default item difficulty option in IRT estimation', () => {
+      let options = State.get('options');
+      options.irtDefaultItemDifficulty = 1.0;
+      State.set('options', options);
+
+      const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(abilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(abilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[5].uri,   // has null mean and std dev
+        outcome: 1,
+        guessingParameter: 0.0,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.9623046496521339)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.6436464500478744)).lessThan(1e-6);
+    });
+
+
+    it('Uses default item difficulty option in IRT estimation', () => {
+      const abilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(abilities[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(abilities[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[5].uri,   // has null mean and std dev
+        outcome: 1,
+        guessingParameter: 0.0,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 0.7168619511364127)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 0.6675033189113975)).lessThan(1e-6);
     });
 
     //     test_cases, generated from kcat reference code

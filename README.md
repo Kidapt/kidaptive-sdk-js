@@ -156,6 +156,7 @@ loggingLevel | string | false | all | Defines the logging level to use. Values c
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
 irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. Default is 'irt_cat'. Only used for tier 3 functionality.
 irtScalingFactor | number | false | 1.59577 | Override the IRT scaling factor, if a non-default value is needed. Value must be between 0.1 and 10.0, and will generally be between 0.5 and 2.0. Only used for tier 3 functionality.
+irtDefaultItemDifficulty | number or 'no_default' | false | 0 | Override the default IRT item difficulty. This is the value used for items that do not have a calibrated difficulty value. Use a string value of 'no_default' to prevent any default value from being used.
 irtModule | object | false |  The IRT module instance to be used by the SDK. Generally imported from the access-controlled kidaptive-irt-js package. Only used for tier 3 functionality.
 
 ---
@@ -745,7 +746,7 @@ The `eventTransformer function` can also add `tags` that the local IRT module us
 
 Tags Property | Type | Required | Default | Description
 --- | --- | --- | --- | ---
-skipIRT | boolean | false | false | Determines whether the local IRT module should be skipped for the `attempts` attached to this event. 
+skipIrt | boolean | false | false | Determines whether the local IRT module should be skipped for the `attempts` attached to this event. 
 
 When events are processed by the local IRT module, they will update ability estimates. Server side IRT will also update ability estimates, but this happens less frequently, so having the local IRT module processing your events can help provide a more adaptive experience.
 

@@ -161,7 +161,7 @@ export default () => {
         TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
-      describe('irtMethod is an optional string (irt_learn, irt_cat), defaulting to irt_cat', () => {
+      describe('irtMethod is an optional string (irt_learn, irt_cat)', () => {
         const testFunction = parameter => {
           options.irtMethod = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
@@ -169,12 +169,31 @@ export default () => {
         TestUtils.validatePromiseProperty(testFunction, 'string', false, ['irt_learn', 'irt_cat'], ['', 'randomValue']);
       });
 
-      describe('irtScalingFactor is an optional number, in [0.1, 10.0], defaulting to Math.sqrt(8 / Math.PI)', () => {
+      describe('irtScalingFactor is an optional number, in [0.1, 10.0]', () => {
         const testFunction = parameter => {
           options.irtScalingFactor = parameter;
           return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
         };
         TestUtils.validatePromiseProperty(testFunction, 'number', false, [0.1, 1.0, 1.5, 10.0], [-1, 0, 0.09, 10.1, 100]);
+      });
+
+      describe('irtDefaultItemDifficulty is an optional number or the string "no_default"', () => {
+        const testFunction1 = parameter => {
+          options.irtDefaultItemDifficulty = parameter;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction1, 'number', false, [-5.0, 0.0, 1.0, 7.0], []);
+        
+        const testFunction2 = parameter => {
+          if (!Utils.isNumber(parameter)) {
+            options.irtDefaultItemDifficulty = parameter;
+          } else {
+            // coerce incoming numbers to a rejectable string, as we've already tested these cases
+            options.irtDefaultItemDifficulty = 'don_t_care';
+          }
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction2, 'string', false, ['no_default'], ['random_value']);
       });
 
       describe('irtModule is an object, passing AttemptProcessor validation, required if tier equals 3', () => {
@@ -259,6 +278,9 @@ export default () => {
           Should(setOptions.authMode).equal(Constants.DEFAULT.AUTH_MODE);
           Should(setOptions.autoFlushInterval).equal(Constants.DEFAULT.AUTO_FLUSH_INTERVAL);
           Should(setOptions.loggingLevel).equal(Constants.DEFAULT.LOGGING_LEVEL);
+          Should(setOptions.irtMethod).equal(Constants.DEFAULT.IRT_METHOD);
+          Should(setOptions.irtScalingFactor).equal(Constants.DEFAULT.IRT_SCALING_FACTOR);
+          Should(setOptions.irtDefaultItemDifficulty).equal(Constants.DEFAULT.IRT_DEFAULT_ITEM_DIFFICULTY);
         });
       });
 

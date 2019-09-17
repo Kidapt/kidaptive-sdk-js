@@ -133,7 +133,9 @@ class KidaptiveSdkAttemptProcessor {
     //get irt module
     const irtModule = State.get('irtModule', false);
     if (!irtModule) {
-      console.log('Warning: processAttempt unable to load irt module');
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: processAttempt unable to load irt module');
+      }
       return;
     }
 
@@ -158,15 +160,24 @@ class KidaptiveSdkAttemptProcessor {
       prior.mean = attempt.priorLocalMean;
       prior.sd = attempt.priorLocalStandardDeviation;
     } else {
-      console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      }
       return;
     }
 
     //get attempt history
     const attemptHistory = State.get('trialAttemptHistory.' + learnerId) || [];
 
-    //make new ItemResponse and add to attemptHistory
-    const itemResponse = irtModule.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+    //make new ItemResponse and add to attemptHistory (include assignment of itemDifficulty from irtDefaultItemDifficulty, if needed)
+    let itemDifficulty = item.mean;
+    if (itemDifficulty == null) {
+      // use irtDefaultItemDifficulty iff itemDifficulty is null or undefined
+      if(Utils.isNumber(options.irtDefaultItemDifficulty)) {
+        itemDifficulty = options.irtDefaultItemDifficulty;
+      }
+    }
+    const itemResponse = irtModule.makeItemResponse(attempt.outcome, itemDifficulty, attempt.guessingParameter);
     itemResponse.dimension = item.localDimension.dimension;
     attemptHistory.push(itemResponse);
     State.set('trialAttemptHistory.' + learnerId, attemptHistory);
@@ -179,7 +190,9 @@ class KidaptiveSdkAttemptProcessor {
       // For irt_learn implementation, we only use the current response for the IRT calculation.
       filteredHistory.push(itemResponse);
     } else {
-      console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      if (Utils.checkLoggingLevel('warn') && console && console.log) {
+        console.log('Warning: processAttempt encountered an unsupported IRT method (' + irtMethod + '). Attempt will be discarded.');
+      }
       return;
     }
 

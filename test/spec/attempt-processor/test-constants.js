@@ -82,6 +82,22 @@ const items = [{
   promptId: 405,
   standardDeviation: 1.0,
   uri: '/item/test1_5'
+},
+{
+  id: 106,
+  localDimension: localDimensions[0],
+  mean: null,
+  promptId: 406,
+  standardDeviation: null,
+  uri: '/item/test1_6'
+},
+{
+  id: 107,
+  localDimension: localDimensions[0],
+  mean: undefined,
+  promptId: 407,
+  standardDeviation: undefined,
+  uri: '/item/test1_7'
 }];
 
 const uriToModel = {
@@ -98,7 +114,9 @@ const uriToModel = {
     [items[1].uri]: items[1],
     [items[2].uri]: items[2],
     [items[3].uri]: items[3],
-    [items[4].uri]: items[4]
+    [items[4].uri]: items[4],
+    [items[5].uri]: items[5],
+    [items[6].uri]: items[6]
   }
 };
 
@@ -117,7 +135,10 @@ const defaultState = {
     authMode: 'client',
     environment: 'dev', 
     autoFlushInterval: 0, 
-    loggingLevel: 'none'
+    loggingLevel: 'none',
+    irtMethod: 'irt_cat',
+    irtScalingFactor: Math.sqrt(8 / Math.PI),
+    irtDefaultItemDifficulty: 0
   },
   user,
   learnerId,

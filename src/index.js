@@ -55,6 +55,7 @@ class KidaptiveSdk {
       options.loggingLevel = options.loggingLevel == null ? Constants.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
       options.irtMethod = options.irtMethod == null ? Constants.DEFAULT.IRT_METHOD : options.irtMethod;
       options.irtScalingFactor = options.irtScalingFactor == null ? Constants.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
+      options.irtDefaultItemDifficulty = options.irtDefaultItemDifficulty == null ? Constants.DEFAULT.IRT_DEFAULT_ITEM_DIFFICULTY : options.irtDefaultItemDifficulty;
 
       //validate apiKey
       if (apiKey == null) {
@@ -175,6 +176,11 @@ class KidaptiveSdk {
       }
       if (options.irtScalingFactor < 0.1 || options.irtScalingFactor > 10.0) {
         throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtScalingFactor option is not an accepted value');
+      }
+
+      // validate irtDefaultItemDifficulty
+      if (!Utils.isNumber(options.irtDefaultItemDifficulty) && options.irtDefaultItemDifficulty !== 'no_default') {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IrtDefaultItemDifficulty option must be a number or "no_default"');
       }
 
       // validate irtModule is provided if tier is set to 3

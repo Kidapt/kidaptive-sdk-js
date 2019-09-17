@@ -5,7 +5,8 @@ export default {
     LOGGING_LEVEL: 'all',
     TIER: 1,
     IRT_METHOD: 'irt_cat',
-    IRT_SCALING_FACTOR:  Math.sqrt(8 / Math.PI)
+    IRT_SCALING_FACTOR:  Math.sqrt(8 / Math.PI),
+    IRT_DEFAULT_ITEM_DIFFICULTY: 0
   },
 
   ENDPOINT: {

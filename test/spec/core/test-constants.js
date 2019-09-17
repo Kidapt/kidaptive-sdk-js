@@ -11,7 +11,8 @@ const completeOptions = {
   autoFlushCallback: [() => {}, () => {}],
   loggingLevel: 'none',
   irtMethod: 'irt_learn',
-  irtScalingFactor: 1.5
+  irtScalingFactor: 1.5,
+  irtDefaultItemDifficulty: 7.0
 };
 
 const defaultApiKey = 'testApiKey';
@@ -26,8 +27,9 @@ const defaultState = {
     autoFlushInterval: 0, 
     loggingLevel: 'none',
     irtMethod: 'irt_cat',
-    irtScalingFactor: Math.sqrt(8 / Math.PI)
-  }
+    irtScalingFactor: Math.sqrt(8 / Math.PI),
+    irtDefaultItemDifficulty: 0
+    }
 };
 
 const minimumOptions = {
