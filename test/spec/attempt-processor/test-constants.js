@@ -74,6 +74,14 @@ const items = [{
   promptId: 404,
   standardDeviation: 0.9,
   uri: '/item/test1_4'
+},
+{
+  id: 105,
+  localDimension: localDimensions[0],
+  mean: 7.0,
+  promptId: 405,
+  standardDeviation: 1.0,
+  uri: '/item/test1_5'
 }];
 
 const uriToModel = {
@@ -89,7 +97,8 @@ const uriToModel = {
     [items[0].uri]: items[0],
     [items[1].uri]: items[1],
     [items[2].uri]: items[2],
-    [items[3].uri]: items[3]
+    [items[3].uri]: items[3],
+    [items[4].uri]: items[4]
   }
 };
 

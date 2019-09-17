@@ -115,6 +115,40 @@ export default () => {
       Should(updatedAbilities[0].mean).lessThan(abilities[0].mean);
     });
 
+    it('Matches debugging test case', () => {
+      // Test case matching a test case in the irt module codebase
+      // (See 'test single response' in <irt-repo>/test/univariate-irt-single-response.test.js)
+      // 
+      // outcome, difficulty, guessing, priorMean, priorSd, expMean, expSd, scalingParam
+      // const testCase = new IRTTestCase(1, 7.0, null, 10.0, 2.0, 10.015756640379546, 1.2369533939990132, 1.7);
+
+      let options = State.get('options');
+      options.irtScalingFactor = 1.7;
+      State.set('options', options);
+
+      let latentAbilitiesAtStartOfTrial = State.get('latentAbilitiesAtStartOfTrial.' + TestConstants.learnerId);
+      Should(latentAbilitiesAtStartOfTrial[0].mean).equal(TestConstants.defaultAbility.mean);
+      Should(latentAbilitiesAtStartOfTrial[0].standardDeviation).equal(TestConstants.defaultAbility.standardDeviation);
+
+      latentAbilitiesAtStartOfTrial[0].mean = 10.0;
+      latentAbilitiesAtStartOfTrial[0].standardDeviation = 2.0;
+      State.set('latentAbilitiesAtStartOfTrial.' + TestConstants.learnerId, latentAbilitiesAtStartOfTrial);
+
+      latentAbilitiesAtStartOfTrial = State.get('latentAbilitiesAtStartOfTrial.' + TestConstants.learnerId);
+      Should(latentAbilitiesAtStartOfTrial[0].mean).equal(10.0);
+      Should(latentAbilitiesAtStartOfTrial[0].standardDeviation).equal(2.0);
+      
+      // // First attempt 
+      AttemptProcessor.processAttempt(AttemptProcessor.prepareAttempt({
+        itemURI: TestConstants.items[4].uri,
+        outcome: 1,
+        guessingParameter: 0.0,
+      }));
+      let updatedAbilities = State.get('latentAbilities.' + TestConstants.learnerId);
+      Should(Math.abs(updatedAbilities[0].mean - 10.015756640379546)).lessThan(1e-6);
+      Should(Math.abs(updatedAbilities[0].standardDeviation - 1.2369533939990132)).lessThan(1e-6);
+    });
+
     //     test_cases, generated from kcat reference code
     //   n_trial n_item a    b    c outcome prior_theta prior_sd posterior_theta  posterior_sd        d conv_crit
     // 1       0      0 1 -1.0 0.25       1         0.5     0.75       0.5511701     0.7238235 1.595769     1e-12      # TestConstants.items[0].uri
