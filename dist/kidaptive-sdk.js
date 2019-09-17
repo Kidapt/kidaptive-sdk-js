@@ -1603,7 +1603,8 @@
                 LOGGING_LEVEL: "all",
                 TIER: 1,
                 IRT_METHOD: "irt_cat",
-                IRT_SCALING_FACTOR: Math.sqrt(8 / Math.PI)
+                IRT_SCALING_FACTOR: Math.sqrt(8 / Math.PI),
+                IRT_DEFAULT_ITEM_DIFFICULTY: 0
             },
             ENDPOINT: {
                 ABILITY: "/ability",
@@ -3663,7 +3664,9 @@
                     irtScalingFactor = irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : irtScalingFactor;
                     var irtModule = _state2.default.get("irtModule", false);
                     if (!irtModule) {
-                        console.log("Warning: processAttempt unable to load irt module");
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt unable to load irt module");
+                        }
                         return;
                     }
                     var item = _modelManager2.default.getItemByUri(attempt.itemURI);
@@ -3683,11 +3686,19 @@
                         prior.mean = attempt.priorLocalMean;
                         prior.sd = attempt.priorLocalStandardDeviation;
                     } else {
-                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        }
                         return;
                     }
                     var attemptHistory = _state2.default.get("trialAttemptHistory." + learnerId) || [];
-                    var itemResponse = irtModule.makeItemResponse(attempt.outcome, item.mean, attempt.guessingParameter);
+                    var itemDifficulty = item.mean;
+                    if (itemDifficulty == null) {
+                        if (_utils2.default.isNumber(options.irtDefaultItemDifficulty)) {
+                            itemDifficulty = options.irtDefaultItemDifficulty;
+                        }
+                    }
+                    var itemResponse = irtModule.makeItemResponse(attempt.outcome, itemDifficulty, attempt.guessingParameter);
                     itemResponse.dimension = item.localDimension.dimension;
                     attemptHistory.push(itemResponse);
                     _state2.default.set("trialAttemptHistory." + learnerId, attemptHistory);
@@ -3699,7 +3710,9 @@
                     } else if (irtMethod === "irt_learn") {
                         filteredHistory.push(itemResponse);
                     } else {
-                        console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                            console.log("Warning: processAttempt encountered an unsupported IRT method (" + irtMethod + "). Attempt will be discarded.");
+                        }
                         return;
                     }
                     var estimation = irtModule.univariateIrtEstimate(prior, filteredHistory, irtScalingFactor);
@@ -6932,6 +6945,7 @@
                         options.loggingLevel = options.loggingLevel == null ? _constants2.default.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
                         options.irtMethod = options.irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : options.irtMethod;
                         options.irtScalingFactor = options.irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
+                        options.irtDefaultItemDifficulty = options.irtDefaultItemDifficulty == null ? _constants2.default.DEFAULT.IRT_DEFAULT_ITEM_DIFFICULTY : options.irtDefaultItemDifficulty;
                         if (apiKey == null) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "API key is required");
                         }
@@ -7025,6 +7039,9 @@
                         if (options.irtScalingFactor < .1 || options.irtScalingFactor > 10) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtScalingFactor option is not an accepted value");
                         }
+                        if (!_utils2.default.isNumber(options.irtDefaultItemDifficulty) && options.irtDefaultItemDifficulty !== "no_default") {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, 'IrtDefaultItemDifficulty option must be a number or "no_default"');
+                        }
                         if (options.tier === 3 && !options.irtModule) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "Missing IRT module - required for Tier 3 features");
                         }
@@ -7067,7 +7084,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.2.1";
+                    return "1.2.2";
                 }
             }, {
                 key: "destroy",
