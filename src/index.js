@@ -21,6 +21,19 @@ class KidaptiveSdk {
   }
 
   /**
+   * Returns whether or not the SDK instance is currently initialized. 
+   * Since this is a synchronous check, this method is not guaranteed to 
+   * give consistent results while waiting for the promise returned by either 
+   * init() or destory() to resolve.
+   *  
+   * @return
+   *    Boolean indicating whether or not the SDK is currently initialized.
+   */
+  isInitialized() {
+    return State.get('initialized');
+  }
+
+  /**
    * Initialized the Kidaptive SDk with the given apiKey and options
    * 
    * @param {string} apiKey

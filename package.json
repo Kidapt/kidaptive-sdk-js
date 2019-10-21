@@ -26,7 +26,6 @@
     "test": "npm install && npm run test:build && npm run test:server && npm run test:phantomjs && npm run test:cleanup",
     "version": "npm run build && git add -A",
     "preversion": "npm run test",
-    "postversion": "git push --follow-tags origin master",
     "build:beautify": "uglifyjs dist/kidaptive-sdk.js -b -o dist/kidaptive-sdk.js;",
     "build:minify": "uglifyjs dist/kidaptive-sdk.js -m -o dist/kidaptive-sdk.min.js",
     "build:webpack": "webpack",
