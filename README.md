@@ -8,6 +8,7 @@
 * [API Reference](#api-reference)
   * [Core Interface](#core-interface)
     * [KidaptiveSdk.init()](#kidaptivesdkinitapikeystring-optionsobject)
+    * [KidaptiveSdk.isInitialized()](#kidaptivesdkisinitialized)
     * [KidaptiveSdk.getSdkVersion()](#kidaptivesdkgetsdkversion)
     * [KidaptiveSdk.destroy()](#kidaptivesdkdestroy)
   * [Tier 1 Interface](#tier-1-interface)
@@ -154,6 +155,18 @@ autoFlushInterval | number | false | 60000 | The interval in milliseconds that t
 autoFlushCallback | function or array | false |  | A callback function or an array of callback functions to be called with results of auto event flush.
 loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `minimal`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
+
+---
+
+#### KidaptiveSdk.isInitialized()
+
+This returns whether or not the SDK instance is currently initialized. 
+Since this is a synchronous check, this method is not guaranteed to give consistent results while waiting for the promise returned by either init() or destory() to resolve. 
+
+```
+var isSdkInitialized = KidaptiveSdk.isInitialized();
+console.log(isSdkInitialized);
+```
 
 ---
 

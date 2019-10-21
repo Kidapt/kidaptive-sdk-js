@@ -6980,6 +6980,11 @@
                 this.modelManager = _modelManager2.default;
             }
             _createClass(KidaptiveSdk, [ {
+                key: "isInitialized",
+                value: function isInitialized() {
+                    return _state2.default.get("initialized");
+                }
+            }, {
                 key: "init",
                 value: function init(apiKey) {
                     var _this = this;
@@ -7110,7 +7115,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.6";
+                    return "1.1.7";
                 }
             }, {
                 key: "destroy",
