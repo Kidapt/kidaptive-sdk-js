@@ -1695,7 +1695,6 @@
                     return _q2.default.fcall(function() {
                         var settings = _this.getRequestSettings(method, endpoint, data, options);
                         var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
-                        request.withCredentials();
                         if (settings.method === "POST") {
                             request.send(settings.data);
                         } else {
@@ -7115,7 +7114,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.1.8";
+                    return "1.1.9";
                 }
             }, {
                 key: "destroy",
