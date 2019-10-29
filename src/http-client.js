@@ -31,7 +31,7 @@ class KidaptiveSdkHttpClient {
     return Q.fcall(() => {
       const settings = this.getRequestSettings(method, endpoint, data, options);
       const request = Superagent(settings.method, settings.host + settings.endpoint);
-      request.withCredentials();
+      // request.withCredentials();
       if (settings.method === 'POST') {
         request.send(settings.data);
       } else {
