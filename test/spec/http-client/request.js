@@ -31,7 +31,10 @@ export default () => {
       TestUtils.resetStateAndCache();
       TestUtils.setState({
         apiKey: TestConstants.defaultApiKey,
-        options: {environment: 'dev'}
+        options: {
+          environment: 'dev',
+          corsWithCredentials: true
+        },
       });
     });
 
@@ -49,7 +52,7 @@ export default () => {
           Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.DEV).endWith(TestConstants.defaultEndpoint);
           Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
-          Should(request.withCredentials).equal(false);
+          Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
           Should(request.requestBody).equal(null);
           Should(response).deepEqual(responseData);
@@ -66,7 +69,7 @@ export default () => {
           Should(TestUtils.parseUrl(request.url).url).startWith(Constants.HOST.PROD).endWith(TestConstants.defaultEndpoint);
           Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
-          Should(request.withCredentials).equal(false);
+          Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
           Should(request.requestBody).equal(null);
           Should(response).deepEqual(responseData);
@@ -84,7 +87,7 @@ export default () => {
           Should(TestUtils.parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
           Should(TestUtils.parseUrl(request.url).query).equal(requestQueryString);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
-          Should(request.withCredentials).equal(false);
+          Should(request.withCredentials).equal(true);
           Should(request.method).equal('GET');
           Should(request.requestBody).equal(null);
           Should(response).deepEqual(responseData);
@@ -103,7 +106,7 @@ export default () => {
           Should(TestUtils.parseUrl(request.url).query).equal(undefined);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.requestHeaders['Content-Type']).startWith('application/json');
-          Should(request.withCredentials).equal(false);
+          Should(request.withCredentials).equal(true);
           Should(request.method).equal('POST');
           Should(request.requestBody).equal(JSON.stringify(requestData));
           Should(response).deepEqual(responseData);
@@ -121,7 +124,7 @@ export default () => {
           Should(TestUtils.parseUrl(request.url).query).equal(undefined);
           Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
           Should(request.requestHeaders['Content-Type']).startWith('application/json');
-          Should(request.withCredentials).equal(false);
+          Should(request.withCredentials).equal(true);
           Should(request.method).equal('POST');
           Should(request.requestBody).equal(JSON.stringify(requestData));
           Should(response).deepEqual(responseData);
@@ -132,6 +135,26 @@ export default () => {
         TestUtils.setStateOptions({
           baseUrl: TestConstants.customBaseUrl,
           environment: 'custom'
+        });
+        return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
+          Should(server.requests).length(1);
+          const request = server.requests[0];
+          Should(TestUtils.parseUrl(request.url).url).startWith(TestConstants.customBaseUrl).endWith(TestConstants.defaultEndpoint);
+          Should(TestUtils.parseUrl(request.url).query).equal(undefined);
+          Should(request.requestHeaders['api-key']).equal(TestConstants.defaultApiKey);
+          Should(request.requestHeaders['Content-Type']).startWith('application/json');
+          Should(request.withCredentials).equal(true);
+          Should(request.method).equal('POST');
+          Should(request.requestBody).equal(JSON.stringify(requestData));
+          Should(response).deepEqual(responseData);
+        });
+      });
+
+      it('Custom POST, corsWithCredentials false', () => {
+        TestUtils.setStateOptions({
+          baseUrl: TestConstants.customBaseUrl,
+          environment: 'custom',
+          corsWithCredentials: false
         });
         return Should(HttpClient.request('POST', TestConstants.defaultEndpoint, requestData, noCacheOptions)).resolved().then(response => {
           Should(server.requests).length(1);

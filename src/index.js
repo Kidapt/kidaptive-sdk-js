@@ -66,6 +66,7 @@ class KidaptiveSdk {
       options.authMode = options.authMode == null ? Constants.DEFAULT.AUTH_MODE : options.authMode;
       options.autoFlushInterval = options.autoFlushInterval == null ? Constants.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
       options.loggingLevel = options.loggingLevel == null ? Constants.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
+      options.corsWithCredentials = options.corsWithCredentials == null ? Constants.DEFAULT.CORS_WITH_CREDENTIALS : options.corsWithCredentials;
       options.irtMethod = options.irtMethod == null ? Constants.DEFAULT.IRT_METHOD : options.irtMethod;
       options.irtScalingFactor = options.irtScalingFactor == null ? Constants.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
       options.irtDefaultItemDifficulty = options.irtDefaultItemDifficulty == null ? Constants.DEFAULT.IRT_DEFAULT_ITEM_DIFFICULTY : options.irtDefaultItemDifficulty;
@@ -173,6 +174,13 @@ class KidaptiveSdk {
             Utils.localStorageSetItem(cacheKey, options.defaultHttpCache[cacheKey], false);
           }
         });
+      }
+
+      //validate corsWithCredentials
+      if (options.corsWithCredentials != null) {
+        if (!Utils.isBoolean(options.corsWithCredentials)) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'corsWithCredentials must be a boolean');
+        }
       }
 
       // validate irtMethod

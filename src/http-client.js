@@ -31,7 +31,10 @@ class KidaptiveSdkHttpClient {
     return Q.fcall(() => {
       const settings = this.getRequestSettings(method, endpoint, data, options);
       const request = Superagent(settings.method, settings.host + settings.endpoint);
-      // request.withCredentials();  // TODO: make this configurable via an SDK option, with the default behavior being to call withCredentials()
+      const sdkOptions = State.get('options') || {};
+      if (sdkOptions.corsWithCredentials) {
+        request.withCredentials();
+      }
       if (settings.method === 'POST') {
         request.send(settings.data);
       } else {

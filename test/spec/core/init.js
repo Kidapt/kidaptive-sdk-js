@@ -161,6 +161,14 @@ export default () => {
         TestUtils.validatePromiseProperty(testFunction, 'string', true);
       });
 
+      describe('corsWithCredentials is an optional boolean', () => {
+        const testFunction = parameter => {
+          options.corsWithCredentials = parameter;
+          return KidaptiveSdk.init(TestConstants.defaultApiKey, options);
+        };
+        TestUtils.validatePromiseProperty(testFunction, 'bool', false);
+      });
+
       describe('irtMethod is an optional string (irt_learn, irt_cat)', () => {
         const testFunction = parameter => {
           options.irtMethod = parameter;

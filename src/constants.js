@@ -4,6 +4,7 @@ export default {
     AUTO_FLUSH_INTERVAL: 60000,
     LOGGING_LEVEL: 'all',
     TIER: 1,
+    CORS_WITH_CREDENTIALS: true,
     IRT_METHOD: 'irt_cat',
     IRT_SCALING_FACTOR:  Math.sqrt(8 / Math.PI),
     IRT_DEFAULT_ITEM_DIFFICULTY: 0

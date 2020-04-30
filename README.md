@@ -155,6 +155,7 @@ autoFlushInterval | number | false | 60000 | The interval in milliseconds that t
 autoFlushCallback | function or array | false |  | A callback function or an array of callback functions to be called with results of auto event flush.
 loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `minimal`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
+corsWithCredentials | boolean | false | true | Determines the value of the withCredentials property on the underlying request. This generally should be left as the default (true), except possibly in cases where a proxy is used to communicate with the ALP backend.
 irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. Default is 'irt_cat'. Only used for tier 3 functionality.
 irtScalingFactor | number | false | 1.59577 | Override the IRT scaling factor, if a non-default value is needed. Value must be between 0.1 and 10.0, and will generally be between 0.5 and 2.0. Only used for tier 3 functionality.
 irtDefaultItemDifficulty | number or 'no_default' | false | 0 | Override the default IRT item difficulty. This is the value used for items that do not have a calibrated difficulty value. Use a string value of 'no_default' to prevent any default value from being used.

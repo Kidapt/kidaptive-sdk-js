@@ -10,6 +10,7 @@ const completeOptions = {
   autoFlushInterval: 10000,
   autoFlushCallback: [() => {}, () => {}],
   loggingLevel: 'none',
+  corsWithCredentials: true,
   irtMethod: 'irt_learn',
   irtScalingFactor: 1.5,
   irtDefaultItemDifficulty: 7.0
@@ -26,6 +27,7 @@ const defaultState = {
     environment: 'dev', 
     autoFlushInterval: 0, 
     loggingLevel: 'none',
+    corsWithCredentials: true,
     irtMethod: 'irt_cat',
     irtScalingFactor: Math.sqrt(8 / Math.PI),
     irtDefaultItemDifficulty: 0
