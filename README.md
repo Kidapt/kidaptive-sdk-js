@@ -1,6 +1,6 @@
 # kidaptive-sdk-js
 
- The Kidaptive ALP JavaScript Client SDK supports the integration of Kidaptive's Adaptive Learning Platform (ALP) into a javascript application. The following documentation provides introductory material, example code, and references to support the integration process.
+ The Kidaptive ALP JavaScript Client SDK supports the integration of Kidaptive's Adaptive Learning Platform (ALP) into a JavaScript application. The following documentation provides introductory material, example code, and references to support the integration process.
 
 * [Supported Browsers](#supported-browsers)
 * [Installation](#installation)
@@ -8,6 +8,7 @@
 * [API Reference](#api-reference)
   * [Core Interface](#core-interface)
     * [KidaptiveSdk.init()](#kidaptivesdkinitapikeystring-optionsobject)
+    * [KidaptiveSdk.isInitialized()](#kidaptivesdkisinitialized)
     * [KidaptiveSdk.getSdkVersion()](#kidaptivesdkgetsdkversion)
     * [KidaptiveSdk.destroy()](#kidaptivesdkdestroy)
   * [Tier 1 Interface](#tier-1-interface)
@@ -158,6 +159,18 @@ irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. D
 irtScalingFactor | number | false | 1.59577 | Override the IRT scaling factor, if a non-default value is needed. Value must be between 0.1 and 10.0, and will generally be between 0.5 and 2.0. Only used for tier 3 functionality.
 irtDefaultItemDifficulty | number or 'no_default' | false | 0 | Override the default IRT item difficulty. This is the value used for items that do not have a calibrated difficulty value. Use a string value of 'no_default' to prevent any default value from being used.
 irtModule | object | false |  The IRT module instance to be used by the SDK. Generally imported from the access-controlled kidaptive-irt-js package. Only used for tier 3 functionality.
+
+---
+
+#### KidaptiveSdk.isInitialized()
+
+This returns whether or not the SDK instance is currently initialized. 
+Since this is a synchronous check, this method is not guaranteed to give consistent results while waiting for the promise returned by either init() or destory() to resolve. 
+
+```
+var isSdkInitialized = KidaptiveSdk.isInitialized();
+console.log(isSdkInitialized);
+```
 
 ---
 

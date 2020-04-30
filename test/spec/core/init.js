@@ -247,6 +247,10 @@ export default () => {
         Should(State.get('initialized')).not.ok();
       });
 
+      it('before init KidaptiveSdk.isInitialized() is false', () => {
+        Should(KidaptiveSdk.isInitialized()).not.ok();
+      })
+
       it('promise resolved after initialization complete', () => {
         return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, TestConstants.completeOptions)).resolved().then(() => {
           Should(State.get('initialized')).equal(true);
@@ -270,6 +274,12 @@ export default () => {
           return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, TestConstants.completeOptions)).rejected();
         });
       });
+
+      if('after init KidaptiveSdk.isInitialized() is true', () => {
+        return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, TestConstants.completeOptions)).resolved().then(() => {
+          return Should(KidaptiveSdk.isInitialized()).ok();
+        });
+      })
 
       it('sets default option values', () => {
         return Should(KidaptiveSdk.init(TestConstants.defaultApiKey, TestConstants.minimumOptions)).resolved().then(() => {

@@ -44,6 +44,17 @@ export default () => {
       });
     });
 
+    it('after destroy KidaptiveSdk.isInitialized() is false', () => {
+      TestUtils.setState(TestConstants.defaultState);
+      TestUtils.setState({
+        initialized: true
+      });
+      Should(KidaptiveSdk.isInitialized()).ok();
+      return Should(KidaptiveSdk.destroy()).resolved().then(() => {
+        Should(KidaptiveSdk.isInitialized()).not.ok();
+      });
+    });
+
   }); //END destroy
 
 }; //END export
