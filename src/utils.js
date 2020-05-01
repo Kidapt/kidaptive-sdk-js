@@ -164,6 +164,19 @@ class KidaptiveSdkUtils {
   }
 
   /**
+   * Checks if an object is either falsy or a function
+   * 
+   * @param {*} object
+   *   The object to check
+   * 
+   * @return
+   *   A truthy value when the object is a function or falsy. 
+   */
+  isOptionalFunction(object) {
+    return !object || this.isFunction(object);
+  }
+
+  /**
    * Checks if an object is a json string
    * 
    * @param {object} object

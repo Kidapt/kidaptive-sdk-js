@@ -103,6 +103,42 @@ export default () => {
         });
       });
 
+      it('Does use a non-null irt extension implementation to adjust latent ability estimate', () => {
+        const defaultEstimate = {
+          mean: 0.5,
+          standardDeviation: 2.0,
+          timestamp: 0
+        };
+        const updatedEstimate = {
+          mean: 0.7,
+          standardDeviation: 1.5,
+          timestamp: 113
+        };
+        const irtExtension = {
+          getInitialLocalAbilityEstimate: (localDimensionUri) => {
+            return defaultEstimate;
+          },
+          resetLocalAbilityEstimate: (localAbilityEstimate) => {
+            return updatedEstimate;
+          },
+          getInitialLatentAbilityEstimate: (dimensionUri) => {
+            return defaultEstimate;
+          },
+          resetLatentAbilityEstimate: (latentAbilityEstimate) => {
+            return updatedEstimate;
+          }
+        };
+        
+        const abilities = [{mean: 0.4, standardDeviation: 0.25}];
+        const learnerId = 100;
+        State.set('learnerId', learnerId);
+        State.set('latentAbilities.' + learnerId, abilities);
+        State.set('irtExtension', irtExtension);
+        return Should(LearnerManager.startTrial()).resolved().then(() => {
+          Should(State.get('latentAbilities.' + learnerId)).deepEqual([updatedEstimate]);
+        });
+      });
+
       it('Does store adjusted latent ability estimate at start of trial', () => {
         const abilities = [{standardDeviation: 0.25}];
         const learnerId = 100;

@@ -93,17 +93,57 @@ const defaultAbility = {
   timestamp: 0
 };
 
+const defaultExtensionLocalEstimate = {
+  mean: 0.5,
+  standardDeviation: 2.0,
+  timestamp: 11
+};
+const updatedExtensionLocalEstimate = {
+  mean: 0.7,
+  standardDeviation: 1.5,
+  timestamp: 113
+};
+const defaultExtensionLatentEstimate = {
+  mean: 0.6,
+  standardDeviation: 2.2,
+  timestamp: 12
+};
+const updatedExtensionLatentEstimate = {
+  mean: 0.8,
+  standardDeviation: 1.6,
+  timestamp: 114
+};
+const irtExtension = {
+  getInitialLocalAbilityEstimate: (localDimensionUri) => {
+    return defaultExtensionLocalEstimate;
+  },
+  resetLocalAbilityEstimate: (localAbilityEstimate) => {
+    return updatedExtensionLocalEstimate;
+  },
+  getInitialLatentAbilityEstimate: (dimensionUri) => {
+    return defaultExtensionLatentEstimate;
+  },
+  resetLatentAbilityEstimate: (latentAbilityEstimate) => {
+    return updatedExtensionLatentEstimate;
+  }
+};
+
 export default {
   clientUserObject,
   clientUserObjectResponse,
   defaultAbility,
+  defaultExtensionLatentEstimate,
+  defaultExtensionLocalEstimate,
   defaultServerResponse,
   defaultState,
   dimensionList,
+  irtExtension,
   latentAbilities,
   localDimensionList,
   serverUserObject,
   singletonUserObjectResponse,
+  updatedExtensionLatentEstimate,
+  updatedExtensionLocalEstimate,
   uriToDimension,
   uriToLocalDimension
 }

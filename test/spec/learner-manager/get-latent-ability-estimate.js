@@ -64,6 +64,13 @@ export default () => {
       Should(LearnerManager.getLatentAbilityEstimate(TestConstants.dimensionList[0].uri)).deepEqual(expected);
     });
 
+    it('Uses non-null irt extension to return customized default estimate', () => {
+      TestUtils.setState({learnerId: 100, irtExtension: TestConstants.irtExtension});
+      const expected = Utils.copyObject(TestConstants.defaultExtensionLatentEstimate);
+      expected.dimension = TestConstants.dimensionList[0];
+      Should(LearnerManager.getLatentAbilityEstimate(TestConstants.dimensionList[0].uri)).deepEqual(expected);
+    });
+
   }); //END getLatentAbilityEsimate
 
 }; //END export

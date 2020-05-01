@@ -219,6 +219,46 @@ class KidaptiveSdkEventManager {
   }
 
   /**
+   * Set the IRT extension handler. This handler is used to override default logic related to 
+   * the local IRT processing.
+   * 
+   * @param {IRTExtension} irtExtension 
+   */
+  setIrtExtension(irtExtension) {
+    Utils.checkTier(3);
+
+    // If the extension is null or undefined, clear the value
+    if (irtExtension == null) {
+      State.set('irtExtension');
+      return;
+    }
+
+    // validate the extension
+    if (!this.validateIrtExtension(irtExtension)) {
+      throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'IRT Extension is invalid');
+    }
+
+    State.set('irtExtension', irtExtension, false);
+  }
+
+ /**
+   * Checks the provided IRT Extension is valid.
+   * 
+   * @param {object} irtExtension 
+   * @return
+   *   boolean, indicating whether or not the extension is valid. 
+   */
+  validateIrtExtension(irtExtension) {
+    return (irtExtension && 
+            Utils.isObject(irtExtension) &&
+            Utils.isOptionalFunction(irtExtension.getInitialLocalAbilityEstimate) &&
+            Utils.isOptionalFunction(irtExtension.resetLocalAbilityEstimate) &&
+            Utils.isOptionalFunction(irtExtension.getInitialLatentAbilityEstimate) &&
+            Utils.isOptionalFunction(irtExtension.resetLatentAbilityEstimate)
+           ); 
+  }
+
+  /**
    * Internal method to add properties to an event and add it to the event queue
    * 
    * @param {object} event

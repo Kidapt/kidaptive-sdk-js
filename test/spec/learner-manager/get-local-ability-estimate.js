@@ -67,6 +67,13 @@ export default () => {
       Should(LearnerManager.getLocalAbilityEstimate(TestConstants.localDimensionList[0].uri)).deepEqual(expected);
     });
 
+    it('Uses non-null irt extension to return customized default estimate', () => {
+      TestUtils.setState({learnerId: 100, irtExtension: TestConstants.irtExtension});
+      const expected = Utils.copyObject(TestConstants.defaultExtensionLocalEstimate);
+      expected.localDimension = TestConstants.localDimensionList[0];
+      Should(LearnerManager.getLocalAbilityEstimate(TestConstants.localDimensionList[0].uri)).deepEqual(expected);
+    });
+
   }); //END getLocalAbilityEsimate
 
 }; //END export

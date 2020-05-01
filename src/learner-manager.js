@@ -735,9 +735,18 @@ class KidaptiveSdkLearnerManager {
           const updatedLatentAbility = Utils.copyObject(latentAbility);
 
           //adjust latent ability
-          if (updatedLatentAbility.standardDeviation < 0.65) {
-            updatedLatentAbility.standardDeviation = 0.65;
-            updatedLatentAbility.timestamp = trialTime;
+          const irtExtension = State.get('irtExtension');
+          if (irtExtension && irtExtension.resetLatentAbilityEstimate) {
+            const updateFromExtension = irtExtension.resetLatentAbilityEstimate(updatedLatentAbility);
+            updatedLatentAbility.mean = (null != updateFromExtension.mean) ? updateFromExtension.mean : updatedLatentAbility.mean;
+            updatedLatentAbility.standardDeviation = (null != updateFromExtension.standardDeviation) ? updateFromExtension.standardDeviation : updatedLatentAbility.standardDeviation;
+            updatedLatentAbility.timestamp = (null != updateFromExtension.timestamp) ? updateFromExtension.timestamp : updatedLatentAbility.timestamp;
+          } else {
+            // default adjustment
+            if (updatedLatentAbility.standardDeviation < 0.65) {
+              updatedLatentAbility.standardDeviation = 0.65;
+              updatedLatentAbility.timestamp = trialTime;
+            }
           }
 
           //return adjusted latent ability
@@ -832,12 +841,22 @@ class KidaptiveSdkLearnerManager {
       
     //if nothing found return default
     } else {
-      return {
+      let defaultLatentAbility = {
         dimension: dimension,
         mean: 0,
         standardDeviation: 1,
         timestamp: 0
+      };
+
+      const irtExtension = State.get('irtExtension');
+      if (irtExtension && irtExtension.getInitialLatentAbilityEstimate) {
+        const defaultFromExtension = irtExtension.getInitialLatentAbilityEstimate(dimensionUri);
+        defaultLatentAbility.mean = (null != defaultFromExtension.mean) ? defaultFromExtension.mean : defaultLatentAbility.mean;
+        defaultLatentAbility.standardDeviation = (null != defaultFromExtension.standardDeviation) ? defaultFromExtension.standardDeviation : defaultLatentAbility.standardDeviation;
+        defaultLatentAbility.timestamp = (null != defaultFromExtension.timestamp) ? defaultFromExtension.timestamp : defaultLatentAbility.timestamp;
       }
+
+      return defaultLatentAbility;
     }
   }
 
@@ -924,12 +943,22 @@ class KidaptiveSdkLearnerManager {
 
     //if nothing found return default
     } else {
-      return {
+      let defaultLocalAbility = {
         localDimension,
         mean: 0,
         standardDeviation: 1,
         timestamp: 0
+      };
+
+      const irtExtension = State.get('irtExtension');
+      if (irtExtension && irtExtension.getInitialLocalAbilityEstimate) {
+        const defaultFromExtension = irtExtension.getInitialLocalAbilityEstimate(localDimensionUri);
+        defaultLocalAbility.mean = (null != defaultFromExtension.mean) ? defaultFromExtension.mean : defaultLocalAbility.mean;
+        defaultLocalAbility.standardDeviation = (null != defaultFromExtension.standardDeviation) ? defaultFromExtension.standardDeviation : defaultLocalAbility.standardDeviation;
+        defaultLocalAbility.timestamp = (null != defaultFromExtension.timestamp) ? defaultFromExtension.timestamp : defaultLocalAbility.timestamp;
       }
+
+      return defaultLocalAbility;
     }
   }
 
