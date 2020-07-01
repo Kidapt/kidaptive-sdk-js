@@ -171,6 +171,11 @@
                     return Object.prototype.toString.call(object) === "[object Function]";
                 }
             }, {
+                key: "isOptionalFunction",
+                value: function isOptionalFunction(object) {
+                    return !object || this.isFunction(object);
+                }
+            }, {
                 key: "isJson",
                 value: function isJson(object) {
                     if (!this.isString(object)) {
@@ -1602,6 +1607,7 @@
                 AUTO_FLUSH_INTERVAL: 6e4,
                 LOGGING_LEVEL: "all",
                 TIER: 1,
+                CORS_WITH_CREDENTIALS: true,
                 IRT_METHOD: "irt_cat",
                 IRT_SCALING_FACTOR: Math.sqrt(8 / Math.PI),
                 IRT_DEFAULT_ITEM_DIFFICULTY: 0
@@ -1698,7 +1704,10 @@
                     return _q2.default.fcall(function() {
                         var settings = _this.getRequestSettings(method, endpoint, data, options);
                         var request = (0, _superagentQ2.default)(settings.method, settings.host + settings.endpoint);
-                        request.withCredentials();
+                        var sdkOptions = _state2.default.get("options") || {};
+                        if (sdkOptions.corsWithCredentials) {
+                            request.withCredentials();
+                        }
                         if (settings.method === "POST") {
                             request.send(settings.data);
                         } else {
@@ -2661,6 +2670,24 @@
                     }
                     _state2.default.set("eventTransformer", eventTransformer, false);
                 }
+            }, {
+                key: "setIrtExtension",
+                value: function setIrtExtension(irtExtension) {
+                    _utils2.default.checkTier(3);
+                    if (irtExtension == null) {
+                        _state2.default.set("irtExtension");
+                        return;
+                    }
+                    if (!this.validateIrtExtension(irtExtension)) {
+                        throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IRT Extension is invalid");
+                    }
+                    _state2.default.set("irtExtension", irtExtension, false);
+                }
+            }, {
+                key: "validateIrtExtension",
+                value: function validateIrtExtension(irtExtension) {
+                    return irtExtension && _utils2.default.isObject(irtExtension) && _utils2.default.isOptionalFunction(irtExtension.getInitialLocalAbilityEstimate) && _utils2.default.isOptionalFunction(irtExtension.resetLocalAbilityEstimate) && _utils2.default.isOptionalFunction(irtExtension.getInitialLatentAbilityEstimate) && _utils2.default.isOptionalFunction(irtExtension.resetLatentAbilityEstimate);
+                }
             } ], [ {
                 key: "addToEventQueue",
                 value: function addToEventQueue(event) {
@@ -3165,6 +3192,59 @@
                     });
                 }
             }, {
+                key: "getInsightsByUri",
+                value: function getInsightsByUri(insightUri, minTimestamp, maxTimestamp) {
+                    return _q2.default.fcall(function() {
+                        _utils2.default.checkTier(1);
+                        if (insightUri == null) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "insightUri is required");
+                        }
+                        if (!_utils2.default.isString(insightUri)) {
+                            throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "insightUri must be a string");
+                        }
+                        if (minTimestamp != null) {
+                            if (!_utils2.default.isInteger(minTimestamp) || minTimestamp < 0) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "minTimestamp must be an integer that is at least 0");
+                            }
+                        }
+                        if (maxTimestamp != null) {
+                            if (!_utils2.default.isInteger(maxTimestamp) || maxTimestamp < 1) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxTimestamp must be a positive integer greater than 0");
+                            }
+                        }
+                        if (minTimestamp != null && maxTimestamp != null) {
+                            if (minTimestamp >= maxTimestamp) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "maxTimestamp must be greater than minTimestamp");
+                            }
+                        }
+                        var learnerId = _state2.default.get("learnerId");
+                        if (learnerId == null) {
+                            if (_utils2.default.checkLoggingLevel("warn") && console && console.log) {
+                                console.log("Warning: getInsightsByUri called with no active learner selected.");
+                            }
+                            return;
+                        }
+                        if (minTimestamp == null) {
+                            minTimestamp = 0;
+                        }
+                        if (maxTimestamp == null) {
+                            maxTimestamp = Date.now();
+                        }
+                        var data = {
+                            learnerId: learnerId,
+                            uri: insightUri,
+                            minDateCreated: minTimestamp,
+                            maxDateCreated: maxTimestamp
+                        };
+                        var options = {
+                            noCache: true
+                        };
+                        return _httpClient2.default.request("GET", _constants2.default.ENDPOINT.INSIGHT, data, options).then(function(result) {
+                            return result;
+                        });
+                    });
+                }
+            }, {
                 key: "getLatestInsightByUri",
                 value: function getLatestInsightByUri(insightUri, contextKeys) {
                     return _q2.default.fcall(function() {
@@ -3273,9 +3353,17 @@
                             var previousLatentAbilities = _state2.default.get("latentAbilities." + learnerId) || [];
                             var updatedLatentAbilities = previousLatentAbilities.map(function(latentAbility) {
                                 var updatedLatentAbility = _utils2.default.copyObject(latentAbility);
-                                if (updatedLatentAbility.standardDeviation < .65) {
-                                    updatedLatentAbility.standardDeviation = .65;
-                                    updatedLatentAbility.timestamp = trialTime;
+                                var irtExtension = _state2.default.get("irtExtension");
+                                if (irtExtension && irtExtension.resetLatentAbilityEstimate) {
+                                    var updateFromExtension = irtExtension.resetLatentAbilityEstimate(updatedLatentAbility);
+                                    updatedLatentAbility.mean = null != updateFromExtension.mean ? updateFromExtension.mean : updatedLatentAbility.mean;
+                                    updatedLatentAbility.standardDeviation = null != updateFromExtension.standardDeviation ? updateFromExtension.standardDeviation : updatedLatentAbility.standardDeviation;
+                                    updatedLatentAbility.timestamp = null != updateFromExtension.timestamp ? updateFromExtension.timestamp : updatedLatentAbility.timestamp;
+                                } else {
+                                    if (updatedLatentAbility.standardDeviation < .65) {
+                                        updatedLatentAbility.standardDeviation = .65;
+                                        updatedLatentAbility.timestamp = trialTime;
+                                    }
                                 }
                                 return updatedLatentAbility;
                             });
@@ -3327,12 +3415,20 @@
                     if (latentAbility) {
                         return latentAbility;
                     } else {
-                        return {
+                        var defaultLatentAbility = {
                             dimension: dimension,
                             mean: 0,
                             standardDeviation: 1,
                             timestamp: 0
                         };
+                        var irtExtension = _state2.default.get("irtExtension");
+                        if (irtExtension && irtExtension.getInitialLatentAbilityEstimate) {
+                            var defaultFromExtension = irtExtension.getInitialLatentAbilityEstimate(dimensionUri);
+                            defaultLatentAbility.mean = null != defaultFromExtension.mean ? defaultFromExtension.mean : defaultLatentAbility.mean;
+                            defaultLatentAbility.standardDeviation = null != defaultFromExtension.standardDeviation ? defaultFromExtension.standardDeviation : defaultLatentAbility.standardDeviation;
+                            defaultLatentAbility.timestamp = null != defaultFromExtension.timestamp ? defaultFromExtension.timestamp : defaultLatentAbility.timestamp;
+                        }
+                        return defaultLatentAbility;
                     }
                 }
             }, {
@@ -3382,12 +3478,20 @@
                             timestamp: latentAbility.timestamp
                         };
                     } else {
-                        return {
+                        var defaultLocalAbility = {
                             localDimension: localDimension,
                             mean: 0,
                             standardDeviation: 1,
                             timestamp: 0
                         };
+                        var irtExtension = _state2.default.get("irtExtension");
+                        if (irtExtension && irtExtension.getInitialLocalAbilityEstimate) {
+                            var defaultFromExtension = irtExtension.getInitialLocalAbilityEstimate(localDimensionUri);
+                            defaultLocalAbility.mean = null != defaultFromExtension.mean ? defaultFromExtension.mean : defaultLocalAbility.mean;
+                            defaultLocalAbility.standardDeviation = null != defaultFromExtension.standardDeviation ? defaultFromExtension.standardDeviation : defaultLocalAbility.standardDeviation;
+                            defaultLocalAbility.timestamp = null != defaultFromExtension.timestamp ? defaultFromExtension.timestamp : defaultLocalAbility.timestamp;
+                        }
+                        return defaultLocalAbility;
                     }
                 }
             }, {
@@ -6926,6 +7030,11 @@
                 this.modelManager = _modelManager2.default;
             }
             _createClass(KidaptiveSdk, [ {
+                key: "isInitialized",
+                value: function isInitialized() {
+                    return _state2.default.get("initialized");
+                }
+            }, {
                 key: "init",
                 value: function init(apiKey) {
                     var _this = this;
@@ -6943,6 +7052,7 @@
                         options.authMode = options.authMode == null ? _constants2.default.DEFAULT.AUTH_MODE : options.authMode;
                         options.autoFlushInterval = options.autoFlushInterval == null ? _constants2.default.DEFAULT.AUTO_FLUSH_INTERVAL : options.autoFlushInterval;
                         options.loggingLevel = options.loggingLevel == null ? _constants2.default.DEFAULT.LOGGING_LEVEL : options.loggingLevel;
+                        options.corsWithCredentials = options.corsWithCredentials == null ? _constants2.default.DEFAULT.CORS_WITH_CREDENTIALS : options.corsWithCredentials;
                         options.irtMethod = options.irtMethod == null ? _constants2.default.DEFAULT.IRT_METHOD : options.irtMethod;
                         options.irtScalingFactor = options.irtScalingFactor == null ? _constants2.default.DEFAULT.IRT_SCALING_FACTOR : options.irtScalingFactor;
                         options.irtDefaultItemDifficulty = options.irtDefaultItemDifficulty == null ? _constants2.default.DEFAULT.IRT_DEFAULT_ITEM_DIFFICULTY : options.irtDefaultItemDifficulty;
@@ -7027,6 +7137,11 @@
                                 }
                             });
                         }
+                        if (options.corsWithCredentials != null) {
+                            if (!_utils2.default.isBoolean(options.corsWithCredentials)) {
+                                throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "corsWithCredentials must be a boolean");
+                            }
+                        }
                         if (!_utils2.default.isString(options.irtMethod)) {
                             throw new _error2.default(_error2.default.ERROR_CODES.INVALID_PARAMETER, "IrtMethod option must be a string");
                         }
@@ -7084,7 +7199,7 @@
             }, {
                 key: "getSdkVersion",
                 value: function getSdkVersion() {
-                    return "1.2.2";
+                    return "1.3.0";
                 }
             }, {
                 key: "destroy",
