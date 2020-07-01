@@ -2,6 +2,7 @@
 import ClearActiveLearner from './clear-active-learner';
 import GetActiveLearner from './get-active-learner';
 import GetInsights from './get-insights';
+import GetInsightsByUri from './get-insights-by-uri';
 import GetLatentAbilityEstimate from './get-latent-ability-estimate';
 import GetLatentAbilityEstimates from './get-latent-ability-estimates';
 import GetLatestInsightByUri from './get-latest-insight-by-uri';
@@ -32,8 +33,9 @@ export default () => {
     GetActiveLearner();
     GetLearnerList();
     GetInsights();
+    GetInsightsByUri();
     GetLatestInsightByUri();
-    GetMetricsByUri()
+    GetMetricsByUri();
     UpdateAbilityEstimates();
     GetLatentAbilityEstimate();
     GetLatentAbilityEstimates();

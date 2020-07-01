@@ -153,7 +153,7 @@ version | string | false |  | The version reported to the Kidaptive API with eve
 build | string | false |  | The build reported to the Kidaptive API with events.
 autoFlushInterval | number | false | 60000 | The interval in milliseconds that the events should be flushed. A value of 0 will result in the auto flush being disabled.
 autoFlushCallback | function or array | false |  | A callback function or an array of callback functions to be called with results of auto event flush.
-loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `minimal`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
+loggingLevel | string | false | all | Defines the logging level to use. Values can be `all`, `warn`, or `none`. `all` will log all internal errors to console, including those that could potentially be handled in a promise error handler.
 defaultHttpCache | object | false | | Offline support configuration. Configuring this option will require support from Kidaptive.
 corsWithCredentials | boolean | false | true | Determines the value of the withCredentials property on the underlying request. This generally should be left as the default (true), except possibly in cases where a proxy is used to communicate with the ALP backend.
 irtMethod | string | false | irt_cat | Values can be 'irt_learn' or 'irt_cat'. Default is 'irt_cat'. Only used for tier 3 functionality.
@@ -393,6 +393,33 @@ var metricUri = '/metric/uri';
 KidaptiveSdk.learnerManager.getMetricsByUri(metricUri).then(function(metric) {
     //SUCCESS
     console.log(metric)
+}, function(error) {
+    //ERROR
+    console.log(error);
+});
+```
+
+---
+
+#### KidaptiveSdk.learnerManager.getInsightsByUri(insightUri:string, minTimestamp:number, maxTimestamp:number)
+
+This fetches the insights for the given `insightUri` for the current selected learner. The return value is a [Promise] which resolves when the insights are retrieved. The response will be an array (possibly empty) of insight objects. An insight is a JSON object containing customized, learner-specific data, such as a content recommendation, parent report, or progress notification.
+
+There are optional second and third parameters `minTimestamp` and `maxTimestamp` which are numeric values in milliseconds since unix epoch. These parameters determine the time range that the insights should be queried from. 
+
+minTimestamp provided | maxTimestamp provided | Resulting queried period
+--- | --- | ---
+No | No | defaults to all insights with timestamp prior to the current time (effective, all such insights)
+Yes | Yes | `minTimestamp` to `maxTimestamp`
+Yes | No | `minTimestamp` to the current time
+No | Yes | all insights with timestamp prior to `maxTimestamp`
+
+```javascript
+var insightUri = '/example/uri';
+// get all insights having Uri equal to '/example/uri', created between 2020-06-22T00:00:00 and 2020-07-02T00:00:00
+KidaptiveSdk.learnerManager.getInsightsByUri(metricUri, 1592784000000, 1593648000000).then(function(insights) {
+    //SUCCESS
+    console.log(insights)
 }, function(error) {
     //ERROR
     console.log(error);

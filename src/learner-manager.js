@@ -464,10 +464,10 @@ class KidaptiveSdkLearnerManager {
    *   The URI of the metric object that is to be returned
    * 
    * @param {number} minTimestamp
-   *   The start of the time range to start quering for the metric.
+   *   The start of the time range to start querying for the metric.
    *
    * @param {number} maxTimestamp
-   *   The end of the time range to start quering for the metric.
+   *   The end of the time range to start querying for the metric.
    * 
    * @return
    *   A promise that resolves with the result of the server request for the metric
@@ -555,6 +555,93 @@ class KidaptiveSdkLearnerManager {
         return result;
       });
     });
+  }
+
+  /**
+   * Gets all instances of an insight having a specified URI for the active learner,
+   * optionally restricted by the insight creation timestamp.
+   * 
+   * @param {string} insightUri
+   *   The URI of the insights objects that are to be returned (required)
+   * 
+   * @param {number} minTimestamp
+   *   The start of the time range to start querying for the insight (optional).
+   *
+   * @param {number} maxTimestamp
+   *   The end of the time range to start querying for the insight (optional).
+   * 
+   * @return
+   *   A promise that resolves with the result of the server request for the metric
+   */
+  getInsightsByUri(insightUri, minTimestamp, maxTimestamp) {
+    return Q.fcall(() => {
+      Utils.checkTier(1);
+
+      //validate insightUri
+      if (insightUri == null) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'insightUri is required');
+      }
+      if (!Utils.isString(insightUri)) {
+        throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'insightUri must be a string');
+      }
+
+      //validate minTimestamp
+      if (minTimestamp != null) {
+        if (!Utils.isInteger(minTimestamp) || minTimestamp < 0) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'minTimestamp must be an integer that is at least 0');
+        }
+      }
+
+      //validate maxTimestamp
+      if (maxTimestamp != null) {
+        if (!Utils.isInteger(maxTimestamp) || maxTimestamp < 1) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be a positive integer greater than 0');
+        }
+      }
+
+      //validate minTimestamp and maxTimestamp if both provided
+      if (minTimestamp != null && maxTimestamp != null) {
+        if (minTimestamp >= maxTimestamp) {
+          throw new Error(Error.ERROR_CODES.INVALID_PARAMETER, 'maxTimestamp must be greater than minTimestamp');
+        }
+      }
+
+      //if no learner, return
+      const learnerId = State.get('learnerId');
+      if (learnerId == null) {
+        //log a warning
+        if (Utils.checkLoggingLevel('warn') && console && console.log) {
+          console.log('Warning: getInsightsByUri called with no active learner selected.');       
+        }
+        return;
+      }
+
+      // set default minTimestamp (0) and maxTimestamp (current time)
+      if (minTimestamp == null) {
+        minTimestamp = 0;
+      } 
+      if (maxTimestamp  == null) {
+        maxTimestamp = Date.now();
+      }
+
+      //setup request data
+      const data = {
+        learnerId,
+        uri: insightUri,
+        minDateCreated: minTimestamp,
+        maxDateCreated: maxTimestamp
+      };
+
+      //setup options
+      const options = {
+        noCache: true
+      };
+
+      //http request
+      return HttpClient.request('GET', Constants.ENDPOINT.INSIGHT, data, options).then(result => {
+        return result;
+      });
+    })
   }
 
   /**
