@@ -59,31 +59,26 @@ define([
 
         it('events sent', function() {
             var badRequestError = new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "400 error");
-            var otherError = new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "some other error");
 
             ['mock_event1', 'mock_event2', 'mock_event3'].forEach(function(e) {
                 eventManager.queueEvent(e);
             });
-            sdk.httpClient.ajax.onFirstCall().resolves();
-            sdk.httpClient.ajax.onSecondCall().rejects(badRequestError);
-            sdk.httpClient.ajax.onThirdCall().rejects(otherError);
+            sdk.httpClient.ajax.onFirstCall().rejects(badRequestError);
             var promiseTest =  eventManager.flushEvents().then(function(value) {
                 value.should.deepEqual([
-                    {event: 'mock_event1', resolved:true, value: undefined},
-                    {event: 'mock_event2', resolved:false, error: badRequestError},
-                    {event: 'mock_event3', resolved:false, error: otherError}
+                    {event: 'mock_event1', resolved:true, value: 'no-op event forwarding'},
+                    {event: 'mock_event2', resolved:true, value: 'no-op event forwarding'},
+                    {event: 'mock_event3', resolved:true, value: 'no-op event forwarding'}
                 ]);
 
-                eventManager.eventQueue.should.deepEqual(['mock_event3']);
-                JSON.parse(localStorage[MOCK_CACHE_KEY]).should.deepEqual(['mock_event3']);
+                eventManager.eventQueue.should.deepEqual([]);
+                should.not.exist(localStorage[MOCK_CACHE_KEY]);
                 eventManager.batchesPending.should.deepEqual({});
                 JSON.parse(localStorage[MOCK_CACHE_KEY + '.pending']).should.deepEqual({});
 
+                // verify no ajax calls.
                 var calls = sdk.httpClient.ajax.getCalls();
-                calls.length.should.equal(3);
-                calls[0].args.should.deepEqual(['POST','/ingestion','mock_event1',{noCache:true}]);
-                calls[1].args.should.deepEqual(['POST','/ingestion','mock_event2',{noCache:true}]);
-                calls[2].args.should.deepEqual(['POST','/ingestion','mock_event3',{noCache:true}]);
+                calls.length.should.equal(0);
             });
 
             eventManager.eventQueue.should.deepEqual([]);

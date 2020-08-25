@@ -73,14 +73,9 @@ define([
             var queueNext = function() {
                 if (eventQueue.length) {
                     var event = eventQueue[0];
-                    this.sdk.httpClient.ajax('POST', KidaptiveConstants.ENDPOINTS.INGESTION, event, {noCache:true}).then(function(v) {
-                        return {resolved: true, value: v}
-                    }, function(e) {
-                        if (e.type !== KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER) {
-                            this.queueEvent(event);
-                        }
-                        return {resolved: false, error: e}
-                    }.bind(this)).then(function(r) {
+                    KidaptiveUtils.Promise(function(res) {
+                        res({resolved: true, value: 'no-op event forwarding'});
+                    }).then(function(r) {
                         eventQueue.splice(0,1);
                         KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey() + ".pending", this.batchesPending);
                         r.event = KidaptiveUtils.copyObject(event);

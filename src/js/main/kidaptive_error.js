@@ -25,7 +25,8 @@ define([], function() {
         INVALID_PARAMETER: 'INVALID_PARAMETER',
         ILLEGAL_STATE: 'ILLEGAL_STATE',
         API_KEY_ERROR: 'API_KEY_ERROR',
-        WEB_API_ERROR: 'WEB_API_ERROR'
+        WEB_API_ERROR: 'WEB_API_ERROR',
+        NOT_SUPPORTED_ERROR: 'NOT_SUPPORTED_ERROR'
     };
 
     return KidaptiveError

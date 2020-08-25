@@ -2,9 +2,11 @@
  * Created by cameronperry on 2017-11-07.
  */
 define([
-    'kidaptive_sdk'
+    'kidaptive_sdk',
+    '../../test/spec/cache/kidaptive_test_http_cache.js'
 ], function(
-    KidaptiveSdk
+    KidaptiveSdk,
+    KidaptiveTestHttpCache
 ) {
     'use strict';
 
@@ -16,7 +18,8 @@ define([
                 noOidc:true,
                 autoFlushCallbacks:function(resultPromise) {
                     resultPromise.then(console.log);
-                }
+                },
+                defaultHttpCache: KidaptiveTestHttpCache
             }).then(function(sdk) {
                 console.log(sdk);
                 should.exist(sdk);

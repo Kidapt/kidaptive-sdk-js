@@ -5841,7 +5841,8 @@
             INVALID_PARAMETER: "INVALID_PARAMETER",
             ILLEGAL_STATE: "ILLEGAL_STATE",
             API_KEY_ERROR: "API_KEY_ERROR",
-            WEB_API_ERROR: "WEB_API_ERROR"
+            WEB_API_ERROR: "WEB_API_ERROR",
+            NOT_SUPPORTED_ERROR: "NOT_SUPPORTED_ERROR"
         };
         return KidaptiveError;
     }();
@@ -6200,22 +6201,12 @@
                 var queueNext = function() {
                     if (eventQueue.length) {
                         var event = eventQueue[0];
-                        this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.INGESTION, event, {
-                            noCache: true
-                        }).then(function(v) {
-                            return {
+                        KidaptiveUtils.Promise(function(res) {
+                            res({
                                 resolved: true,
-                                value: v
-                            };
-                        }, function(e) {
-                            if (e.type !== KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER) {
-                                this.queueEvent(event);
-                            }
-                            return {
-                                resolved: false,
-                                error: e
-                            };
-                        }.bind(this)).then(function(r) {
+                                value: "no-op event forwarding"
+                            });
+                        }).then(function(r) {
                             eventQueue.splice(0, 1);
                             KidaptiveUtils.localStorageSetItem(this.getEventQueueCacheKey() + ".pending", this.batchesPending);
                             r.event = KidaptiveUtils.copyObject(event);
@@ -7293,7 +7284,7 @@
     "function" === typeof define && define("sjcl", [], function() {
         return sjcl;
     });
-    kidaptive_http_client = function($, sjcl, KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
+    kidaptive_http_client = function(sjcl, KidaptiveConstants, KidaptiveUtils) {
         var KidaptiveHttpClient = function(_apiKey, dev, defaultCache) {
             this.host = dev ? KidaptiveConstants.HOST_DEV : KidaptiveConstants.HOST_PROD;
             this.apiKey = _apiKey;
@@ -7316,52 +7307,26 @@
             });
             return isUserEndpoint;
         };
-        KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
+        KidaptiveHttpClient.prototype.ajaxLocal = function(method, endpoint, params, options) {
             options = options || {};
             return KidaptiveUtils.Promise.wrap(function() {
                 var settings = {};
-                var cacheKey = this.getCacheKey(method, endpoint, params, settings);
-                return $.ajax(settings).then(function(data) {
-                    if (!options.noCache) {
-                        KidaptiveUtils.localStorageSetItem(cacheKey, data);
+                if ("GET" === method) {
+                    var cacheKey = this.getCacheKey(method, endpoint, params, settings);
+                    try {
+                        return KidaptiveUtils.localStorageGetItem(cacheKey);
+                    } catch (e) {
+                        return undefined;
                     }
-                    return data;
-                }, function(xhr) {
-                    if (xhr.status === 400) {
-                        localStorage.removeItem(cacheKey);
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
-                    } else if (xhr.status === 401) {
-                        var appEndpoint = KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0;
-                        if (!KidaptiveUtils.hasStoredAnonymousSession() || appEndpoint) {
-                            KidaptiveHttpClient.deleteUserData();
-                        }
-                        if (appEndpoint) {
-                            KidaptiveHttpClient.deleteAppData();
-                        }
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
-                    } else if (xhr.status) {
-                        localStorage.removeItem(cacheKey);
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
-                    } else {
-                        try {
-                            return KidaptiveUtils.localStorageGetItem(cacheKey);
-                        } catch (e) {
-                            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
-                        }
-                    }
-                });
+                } else {
+                    console.warn("Non-GET http request is now a no-op: " + method + " " + endpoint);
+                    return undefined;
+                }
             }.bind(this));
         };
         KidaptiveHttpClient.deleteUserData = function() {
             Object.keys(localStorage).forEach(function(k) {
                 if (k.match(/^[\w-]*[.]alpUserData$/)) {
-                    localStorage.removeItem(k);
-                }
-            });
-        };
-        KidaptiveHttpClient.deleteAppData = function() {
-            Object.keys(localStorage).forEach(function(k) {
-                if (k.match(/^[\w-]*[.]alpAppData$/)) {
                     localStorage.removeItem(k);
                 }
             });
@@ -7394,82 +7359,29 @@
             return btoa(String.fromCharCode.apply(undefined, d)).replace(/[+]/g, "-").replace(/[\/]/g, "_").replace(/=+/, "") + (KidaptiveHttpClient.isUserEndpoint(endpoint) ? ".alpUserData" : ".alpAppData");
         };
         return KidaptiveHttpClient;
-    }(jquery, sjcl, kidaptive_constants, kidaptive_error, kidaptive_utils);
+    }(sjcl, kidaptive_constants, kidaptive_utils);
     kidaptive_learner_manager = function(KidaptiveConstants, KidaptiveError, KidaptiveUtils) {
         var KidaptiveLearnerManager = function(sdk) {
             this.sdk = sdk;
             this.clearLearnerList();
         };
         KidaptiveLearnerManager.prototype.createLearner = function(params) {
-            params = KidaptiveUtils.copyObject(params) || {};
-            var format = {
-                name: "",
-                birthday: 0,
-                gender: ""
-            };
-            KidaptiveUtils.checkObjectFormat(params, format);
-            if (!params.name) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "name is required");
-            }
-            if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
-            }
-            Object.keys(params).forEach(function(key) {
-                if (format[key] === undefined) {
-                    delete params[key];
-                }
-            });
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER, params, {
-                noCache: true
-            });
+            console.error("KidaptiveLearnerManager.createLearner - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveLearnerManager.createLearner - not supported in offline-only SDK");
         };
         KidaptiveLearnerManager.prototype.updateLearner = function(learnerId, params) {
-            params = KidaptiveUtils.copyObject(params) || {};
-            var format = {
-                name: "",
-                birthday: 0,
-                gender: "",
-                icon: ""
-            };
-            KidaptiveUtils.checkObjectFormat(params, format);
-            if (params.gender && [ "decline", "male", "female" ].indexOf(params.gender) === -1) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "gender must be 'decline', 'male', or 'female'");
-            }
-            Object.keys(params).forEach(function(key) {
-                if (format[key] === undefined) {
-                    delete params[key];
-                }
-            });
-            [ "name", "birthday", "gender", "icon" ].forEach(function(prop) {
-                if (params[prop] === undefined) {
-                    params[prop] = this.idToLearner[learnerId][prop];
-                }
-            }.bind(this));
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, params, {
-                noCache: true
-            });
+            console.error("KidaptiveLearnerManager.updateLearner - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveLearnerManager.updateLearner - not supported in offline-only SDK");
         };
         KidaptiveLearnerManager.prototype.deleteLearner = function(learnerId) {
-            return this.sdk.httpClient.ajax("DELETE", KidaptiveConstants.ENDPOINTS.LEARNER + "/" + learnerId, undefined, {
-                noCache: true
-            });
+            console.error("KidaptiveLearnerManager.deleteLearner - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveLearnerManager.deleteLearner - not supported in offline-only SDK");
         };
         KidaptiveLearnerManager.prototype.refreshLearnerList = function() {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LEARNER).then(function(learners) {
-                var idToLearner = {};
-                var providerIdToLearner = {};
-                learners.forEach(function(l) {
-                    if (l.id) {
-                        idToLearner[l.id] = l;
-                        if (l.providerId) {
-                            providerIdToLearner[l.providerId] = l;
-                        }
-                    }
-                });
-                this.idToLearner = idToLearner;
-                this.providerIdToLearner = providerIdToLearner;
-                return learners;
-            }.bind(this));
+            console.error("KidaptiveLearnerManager.refreshLearnerList - not supported in offline-only SDK; returning empty list");
+            return KidaptiveUtils.Promise(function(resolve) {
+                resolve([]);
+            });
         };
         KidaptiveLearnerManager.prototype.getLearnerList = function() {
             return Object.keys(this.idToLearner).map(function(id) {
@@ -7542,7 +7454,7 @@
         };
         KidaptiveModelManager.prototype.refreshAppModels = function() {
             return KidaptiveUtils.Promise.parallel(KidaptiveModelManager.modelOrder.map(function(model) {
-                return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, "GET", "/" + model);
+                return this.sdk.httpClient.ajaxLocal.bind(this.sdk.httpClient, "GET", "/" + model);
             }.bind(this))).then(function(results) {
                 var uriToModel = {};
                 var idToModel = {};
@@ -7625,10 +7537,8 @@
                     return this.refreshLatentAbilities.bind(this, parseInt(learner));
                 }.bind(this)));
             } else {
-                return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
+                return this.sdk.httpClient.ajaxLocal("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
                     learnerId: learnerId
-                }, {
-                    noCache: true
                 }).then(function(abilities) {
                     if (!this.latentAbilities[learnerId]) {
                         this.getStoredLatentAbilities(learnerId);
@@ -7659,10 +7569,8 @@
                     return this.refreshLocalAbilities.bind(this, parseInt(learner));
                 }.bind(this)));
             } else {
-                return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
+                return this.sdk.httpClient.ajaxLocal("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
                     learnerId: learnerId
-                }, {
-                    noCache: true
                 }).then(function(abilities) {
                     if (!this.localAbilities[learnerId]) {
                         this.getStoredLocalAbilities(learnerId);
@@ -7897,108 +7805,30 @@
                 this.apiKey = sdk.httpClient.apiKey;
             }
         };
-        KidaptiveUserManager.prototype.storeUser = function(user) {
-            if (user.apiKey) {
-                this.apiKey = user.apiKey;
-                KidaptiveUtils.localStorageSetItem(this.apiKeyCacheKey, user);
-                delete user.apiKey;
-            }
-            this.currentUser = user;
-            KidaptiveUtils.localStorageSetItem(this.sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.USER), user);
-        };
         KidaptiveUserManager.prototype.createUser = function(params) {
-            params = KidaptiveUtils.copyObject(params) || {};
-            var format = {
-                email: "",
-                password: "",
-                nickname: ""
-            };
-            KidaptiveUtils.checkObjectFormat(params, format);
-            if (!params.email) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
-            }
-            if (!params.password) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
-            }
-            Object.keys(params).forEach(function(key) {
-                if (format[key] === undefined) {
-                    delete params[key];
-                }
-            });
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.CREATE_USER, params, {
-                noCache: true
-            }).then(function(user) {
-                this.storeUser(user);
-                return user;
-            }.bind(this));
+            console.error("KidaptiveUserManager.createUser - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveUserManager.createUser - not supported in offline-only SDK");
         };
         KidaptiveUserManager.prototype.updateUser = function(params) {
-            params = KidaptiveUtils.copyObject(params) || {};
-            var format = {
-                password: "",
-                nickname: "",
-                deviceId: ""
-            };
-            KidaptiveUtils.checkObjectFormat(params, format);
-            Object.keys(params).forEach(function(key) {
-                if (format[key] === undefined) {
-                    delete params[key];
-                }
-            });
-            [ "nickname", "deviceId" ].forEach(function(prop) {
-                if (params[prop] === undefined) {
-                    params[prop] = this.currentUser[prop];
-                }
-            }.bind(this));
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.USER, params, {
-                noCache: true
-            }).then(function(user) {
-                this.storeUser(user);
-                return user;
-            }.bind(this));
+            console.error("KidaptiveUserManager.updateUser - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveUserManager.updateUser - not supported in offline-only SDK");
         };
         KidaptiveUserManager.prototype.loginUser = function(params) {
-            params = KidaptiveUtils.copyObject(params) || {};
-            var format = {
-                email: "",
-                password: ""
-            };
-            KidaptiveUtils.checkObjectFormat(params, format);
-            if (!params.email) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "email is required");
-            }
-            if (!params.password) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "password is required");
-            }
-            Object.keys(params).forEach(function(key) {
-                if (format[key] === undefined) {
-                    delete params[key];
-                }
-            });
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGIN, params, {
-                noCache: true
-            }).then(function(user) {
-                this.storeUser(user);
-                return user;
-            }.bind(this));
+            console.error("KidaptiveUserManager.updateUser - not supported in offline-only SDK");
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveUserManager.updateUser - not supported in offline-only SDK");
         };
         KidaptiveUserManager.prototype.refreshUser = function() {
-            return this.sdk.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.USER).then(function(user) {
-                this.currentUser = user;
-                return user;
+            console.warn("KidaptiveUserManager.refreshUser - no-op, resolving to currentUser");
+            return KidaptiveUtils.Promise(function(res) {
+                res(this.currentUser);
             }.bind(this));
         };
         KidaptiveUserManager.prototype.logoutUser = function() {
             this.currentUser = undefined;
-            return this.sdk.httpClient.ajax("POST", KidaptiveConstants.ENDPOINTS.LOGOUT, undefined, {
-                noCache: true
-            }).then(function() {
+            return KidaptiveUtils.Promise(function(res) {
                 this.apiKey = this.sdk.httpClient.apiKey;
                 localStorage.removeItem(this.apiKeyCacheKey);
-            }.bind(this), function(error) {
-                this.apiKey = this.sdk.httpClient.apiKey;
-                localStorage.removeItem(this.apiKeyCacheKey);
-                throw error;
+                res();
             }.bind(this));
         };
         return KidaptiveUserManager;
@@ -8029,73 +7859,43 @@
                 throw error;
             }
         };
-        var handleAuthError = function(error) {
-            if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-                return logout(true).then(function() {
-                    throw error;
-                });
-            }
-            throw error;
-        };
-        var logout = function(authError) {
+        var logout = function() {
+            console.log("KidaptiveSDK.logout called");
             return KidaptiveUtils.Promise.wrap(function() {
-                if (!authError) {
-                    return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
-                }
+                return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
             }).then(function() {
-                if (!authError || !KidaptiveUtils.hasStoredAnonymousSession()) {
+                if (!KidaptiveUtils.hasStoredAnonymousSession()) {
                     sdk.trialManager.endAllTrials();
                     sdk.modelManager.clearLearnerModels();
                     sdk.learnerManager.clearLearnerList();
                     KidaptiveHttpClient.deleteUserData();
                 }
                 if (sdk.anonymousSession) {
-                    if (!authError) {
-                        sdk.anonymousSession = false;
-                    }
+                    sdk.anonymousSession = false;
                 } else {
                     return sdk.userManager.logoutUser();
                 }
             });
         };
-        var refreshUserData = function() {
-            return KidaptiveUtils.Promise.serial([ function() {
-                return sdk.userManager.refreshUser();
-            }, function() {
-                return sdk.learnerManager.refreshLearnerList();
-            }, function() {
-                return sdk.modelManager.refreshLatentAbilities().then(function(results) {
-                    results.forEach(function(r) {
-                        if (!r.resolved) {
-                            filterAuthError(r.error);
-                        }
-                    });
-                });
-            }, function() {
-                return sdk.modelManager.refreshLocalAbilities().then(function(results) {
-                    results.forEach(function(r) {
-                        if (!r.resolved) {
-                            filterAuthError(r.error);
-                        }
-                    });
-                });
-            } ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError).catch(function() {}).then(function() {
+        var removeAnonymousSession = function() {
+            console.log("KidaptiveSDK.logout called");
+            return KidaptiveUtils.Promise.wrap(function() {
                 if (KidaptiveUtils.hasStoredAnonymousSession()) {
-                    if (sdk.userManager.currentUser) {
-                        delete localStorage["anonymousSession.alpUserData"];
-                        delete localStorage[sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.ABILITY, {
-                            learnerId: -1
-                        })];
-                        delete localStorage[sdk.httpClient.getCacheKey("GET", KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {
-                            learnerId: -1
-                        })];
-                    } else {
-                        setAnonymousSession();
-                        sdk.modelManager.getStoredLatentAbilities(-1);
-                        sdk.modelManager.getStoredLocalAbilities(-1);
-                    }
+                    sdk.trialManager.endAllTrials();
+                    sdk.modelManager.clearLearnerModels();
+                    sdk.learnerManager.clearLearnerList();
+                    KidaptiveHttpClient.deleteUserData();
+                    sdk.anonymousSession = false;
+                    KidaptiveUtils.localStorageSetItem("anonymousSession.alpUserData", false);
                 }
             });
+        };
+        var refreshUserData = function() {
+            if (KidaptiveUtils.hasStoredAnonymousSession()) {
+                setAnonymousSession();
+                sdk.modelManager.getStoredLatentAbilities(-1);
+                sdk.modelManager.getStoredLocalAbilities(-1);
+            }
         };
         var setAnonymousSession = function() {
             sdk.learnerManager.idToLearner[-1] = {
@@ -8127,7 +7927,7 @@
                             filterAuthError(r.error);
                         }
                     });
-                }).catch(handleAuthError).then(function() {
+                }).then(function() {
                     return r();
                 }, function() {
                     return r();
@@ -8162,7 +7962,8 @@
                 this.options = options;
                 this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
                 this.httpClient.sdk = this;
-                this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function(app) {
+                this.httpClient.ajaxLocal("GET", KidaptiveConstants.ENDPOINTS.APP).then(function(app) {
+                    console.log("app: " + JSON.stringify(app));
                     if (appVersion.version < app.minVersion) {
                         throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, "Version >= " + app.minVersion + " required. Provided " + appVersion.version);
                     }
@@ -8226,6 +8027,12 @@
                 });
             });
         };
+        KidaptiveSdk.clearAnonymousSession = function() {
+            return addToQueue(function() {
+                sdkInitFilter();
+                return removeAnonymousSession();
+            });
+        };
         KidaptiveSdk.isAnonymousSession = function() {
             sdkInitFilter();
             return sdk.anonymousSession;
@@ -8234,7 +8041,7 @@
             return addToQueue(function() {
                 sdkInitFilter();
                 if (sdk.anonymousSession) {
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in an anonymous session");
+                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "KidaptiveSdk.refresh is not permitted in an anonymous session");
                 }
                 return refreshUserData();
             });
@@ -8253,26 +8060,14 @@
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
-                return logout().catch(function() {}).then(function() {
-                    return sdk.userManager.loginUser(params);
-                }).then(function(user) {
-                    return refreshUserData().then(function() {
-                        return user;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.loginUser is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.createUser = function(params) {
             return addToQueue(function() {
                 sdkInitFilter();
                 sdk.checkOidc();
-                return logout().catch(function() {}).then(function() {
-                    return sdk.userManager.createUser(params);
-                }).then(function(user) {
-                    return refreshUserData().then(function() {
-                        return user;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.createUser is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.updateUser = function(params) {
@@ -8280,11 +8075,7 @@
                 sdkInitFilter();
                 sdk.checkOidc();
                 sdk.checkUser();
-                return sdk.userManager.updateUser(params).then(function(user) {
-                    return refreshUserData().then(function() {
-                        return user;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.updateUser is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.createLearner = function(params) {
@@ -8292,11 +8083,7 @@
                 sdkInitFilter();
                 sdk.checkOidc();
                 sdk.checkUser();
-                return sdk.learnerManager.createLearner(params).then(function(learner) {
-                    return refreshUserData().then(function() {
-                        return learner;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.createLearner is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.updateLearner = function(learnerId, params) {
@@ -8305,11 +8092,7 @@
                 sdk.checkOidc();
                 sdk.checkUser();
                 sdk.checkLearner(learnerId);
-                return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
-                    return refreshUserData().then(function() {
-                        return learner;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.updateLearner is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.deleteLearner = function(learnerId) {
@@ -8318,11 +8101,7 @@
                 sdk.checkOidc();
                 sdk.checkUser();
                 sdk.checkLearner(learnerId);
-                return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
-                    return refreshUserData().then(function() {
-                        return learner;
-                    });
-                });
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.deleteLearner is not supported in an offline-only SDK");
             });
         };
         KidaptiveSdk.getLearnerById = function(id) {

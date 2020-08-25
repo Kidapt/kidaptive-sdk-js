@@ -79,7 +79,7 @@ define([
 
     KidaptiveModelManager.prototype.refreshAppModels = function() {
         return KidaptiveUtils.Promise.parallel(KidaptiveModelManager.modelOrder.map(function(model) {
-            return this.sdk.httpClient.ajax.bind(this.sdk.httpClient, 'GET', '/' + model);
+            return this.sdk.httpClient.ajaxLocal.bind(this.sdk.httpClient, 'GET', '/' + model);
         }.bind(this))).then(function(results) {
             var uriToModel = {};
             var idToModel = {};
@@ -167,7 +167,7 @@ define([
                 }.bind(this))
             );
         } else {
-            return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}, {noCache:true}).then(function(abilities) {
+            return this.sdk.httpClient.ajaxLocal('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:learnerId}).then(function(abilities) {
                 //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
                 //abilities from overwriting more recent locally stored abilities.
                 if (!this.latentAbilities[learnerId]) {
@@ -201,7 +201,7 @@ define([
                 }.bind(this))
             );
         } else {
-            return this.sdk.httpClient.ajax('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY , {learnerId:learnerId}, {noCache:true}).then(function(abilities) {
+            return this.sdk.httpClient.ajaxLocal('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY , {learnerId:learnerId}).then(function(abilities) {
                 //load cached abilities first if manager doesn't have an entry for that learner. This prevents fetched
                 //abilities from overwriting more recent locally stored abilities.
                 if (!this.localAbilities[learnerId]) {

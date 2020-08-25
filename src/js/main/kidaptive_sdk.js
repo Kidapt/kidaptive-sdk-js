@@ -61,23 +61,12 @@ define([
         }
     };
 
-    var handleAuthError = function(error) {
-        if (error.type === KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR) {
-            //TODO: attempt automatic reauthentication;
-            return logout(true).then(function(){
-                throw error;
-            });
-        }
-        throw error;
-    };
-
-    var logout = function(authError) {
+    var logout = function() {
+        console.log("KidaptiveSDK.logout called");
         return KidaptiveUtils.Promise.wrap(function() {
-            if (!authError) {
-                return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
-            }
+            return sdk.eventManager.flushEvents(sdk.options.autoFlushCallbacks);
         }).then(function() {
-            if (!authError || !KidaptiveUtils.hasStoredAnonymousSession()) {
+            if (!KidaptiveUtils.hasStoredAnonymousSession()) {
                 sdk.trialManager.endAllTrials();
                 sdk.modelManager.clearLearnerModels();
                 sdk.learnerManager.clearLearnerList();
@@ -85,56 +74,36 @@ define([
             }
 
             if (sdk.anonymousSession) {
-                if (!authError) {
-                    sdk.anonymousSession = false;
-                }
+                sdk.anonymousSession = false;
             } else {
                 return sdk.userManager.logoutUser();
             }
         });
     };
 
-    var refreshUserData = function() {
-        return KidaptiveUtils.Promise.serial([
-            function() {
-                return sdk.userManager.refreshUser();
-            },
-            function() {
-                return sdk.learnerManager.refreshLearnerList();
-            },
-            function() {
-                return sdk.modelManager.refreshLatentAbilities().then(function(results) {
-                    results.forEach(function(r) {
-                        if (!r.resolved) {
-                            filterAuthError(r.error);
-                        }
-                    });
-                });
-            }, function() {
-                return sdk.modelManager.refreshLocalAbilities().then(function(results) {
-                    results.forEach(function(r) {
-                        if (!r.resolved) {
-                            filterAuthError(r.error);
-                        }
-                    });
-                });
-            }
-            //TODO: decide whether insights refresh should be included
-        ], KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR).catch(handleAuthError).catch(function() {}).then(function() {
+    var removeAnonymousSession = function() {
+        console.log("KidaptiveSDK.logout called");
+        return KidaptiveUtils.Promise.wrap(function() {
             if (KidaptiveUtils.hasStoredAnonymousSession()) {
-                if (sdk.userManager.currentUser) {
-                    //remove anonymous session info if user is logged in
-                    delete localStorage['anonymousSession.alpUserData'];
-                    delete localStorage[sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.ABILITY, {learnerId:-1})];
-                    delete localStorage[sdk.httpClient.getCacheKey('GET', KidaptiveConstants.ENDPOINTS.LOCAL_ABILITY, {learnerId:-1})];
-                } else {
-                    //continue anonymous session if no user was loaded and anonymous session exists
-                    setAnonymousSession();
-                    sdk.modelManager.getStoredLatentAbilities(-1);
-                    sdk.modelManager.getStoredLocalAbilities(-1);
-                }
+                sdk.trialManager.endAllTrials();
+                sdk.modelManager.clearLearnerModels();
+                sdk.learnerManager.clearLearnerList();
+                KidaptiveHttpClient.deleteUserData();
+                sdk.anonymousSession = false;
+                KidaptiveUtils.localStorageSetItem('anonymousSession.alpUserData', false);
             }
         });
+    }
+
+    var refreshUserData = function() {
+        
+        // offline-only refreshUserData will simply check for and re-instantiate a stored anonymous session
+        if (KidaptiveUtils.hasStoredAnonymousSession()) {
+            //continue anonymous session if no user was loaded and anonymous session exists
+            setAnonymousSession();
+            sdk.modelManager.getStoredLatentAbilities(-1);
+            sdk.modelManager.getStoredLocalAbilities(-1);
+        }
     };
 
     var setAnonymousSession = function() {
@@ -167,7 +136,7 @@ define([
                         filterAuthError(r.error);
                     }
                 });
-            }).catch(handleAuthError).then(function() {
+            }).then(function() {
                 return r();
             }, function() {
                 return r();
@@ -208,7 +177,8 @@ define([
             this.httpClient = new KidaptiveHttpClient(apiKey, options.dev, options.defaultHttpCache);
             this.httpClient.sdk = this;
 
-            this.httpClient.ajax("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
+            this.httpClient.ajaxLocal("GET", KidaptiveConstants.ENDPOINTS.APP).then(function (app) {
+                console.log("app: " + JSON.stringify(app));
                 if (appVersion.version < app.minVersion) {
                     throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER,
                         "Version >= " + app.minVersion + " required. Provided " + appVersion.version);
@@ -285,6 +255,13 @@ define([
         });
     };
 
+    KidaptiveSdk.clearAnonymousSession = function() {
+        return addToQueue(function() {
+            sdkInitFilter();
+            return removeAnonymousSession();
+        });
+    }
+
     KidaptiveSdk.isAnonymousSession = function() {
         sdkInitFilter();
         return sdk.anonymousSession;
@@ -294,7 +271,7 @@ define([
         return addToQueue(function() {
             sdkInitFilter();
             if (sdk.anonymousSession) {
-                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "This operation is not permitted in an anonymous session");
+                throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.ILLEGAL_STATE, "KidaptiveSdk.refresh is not permitted in an anonymous session");
             }
             return refreshUserData();
         });
@@ -317,13 +294,7 @@ define([
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
-            return logout().catch(function(){}).then(function() {
-                return sdk.userManager.loginUser(params)
-            }).then(function(user) {
-                return refreshUserData().then(function() {
-                    return user;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.loginUser is not supported in an offline-only SDK");
         });
     };
 
@@ -331,14 +302,7 @@ define([
         return addToQueue(function() {
             sdkInitFilter();
             sdk.checkOidc();
-
-            return logout().catch(function(){}).then(function() {
-                return sdk.userManager.createUser(params)
-            }).then(function(user) {
-                return refreshUserData().then(function() {
-                    return user;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.createUser is not supported in an offline-only SDK");
         });
     };
 
@@ -347,11 +311,7 @@ define([
             sdkInitFilter();
             sdk.checkOidc();
             sdk.checkUser();
-            return sdk.userManager.updateUser(params).then(function(user) {
-                return refreshUserData().then(function() {
-                    return user;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.updateUser is not supported in an offline-only SDK");
         });
     };
 
@@ -361,11 +321,13 @@ define([
             sdkInitFilter();
             sdk.checkOidc();
             sdk.checkUser();
-            return sdk.learnerManager.createLearner(params).then(function(learner) {
-                return refreshUserData().then(function() {
-                    return learner;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.createLearner is not supported in an offline-only SDK");
+
+            // return sdk.learnerManager.createLearner(params).then(function(learner) {
+            //     return refreshUserData().then(function() {
+            //         return learner;
+            //     });
+            // });
         });
     };
 
@@ -375,11 +337,7 @@ define([
             sdk.checkOidc();
             sdk.checkUser();
             sdk.checkLearner(learnerId);
-            return sdk.learnerManager.updateLearner(learnerId, params).then(function(learner) {
-                return refreshUserData().then(function() {
-                    return learner;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.updateLearner is not supported in an offline-only SDK");
         });
     };
 
@@ -389,11 +347,7 @@ define([
             sdk.checkOidc();
             sdk.checkUser();
             sdk.checkLearner(learnerId);
-            return sdk.learnerManager.deleteLearner(learnerId).then(function(learner) {
-                return refreshUserData().then(function() {
-                    return learner;
-                });
-            });
+            throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.NOT_SUPPORTED_ERROR, "KidaptiveSdk.deleteLearner is not supported in an offline-only SDK");
         });
     };
 

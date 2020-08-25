@@ -3,16 +3,12 @@
  */
 
 define([
-    'jquery',
     'sjcl',
     'kidaptive_constants',
-    'kidaptive_error',
     'kidaptive_utils'
 ], function(
-    $,
     sjcl,
     KidaptiveConstants,
-    KidaptiveError,
     KidaptiveUtils
 ) {
     'use strict';
@@ -50,57 +46,30 @@ define([
         return isUserEndpoint;
     };
 
-    KidaptiveHttpClient.prototype.ajax = function(method, endpoint, params, options) {
+    KidaptiveHttpClient.prototype.ajaxLocal = function(method, endpoint, params, options) {
         options = options || {};
         return KidaptiveUtils.Promise.wrap(function() {
             var settings = {};
 
-            var cacheKey = this.getCacheKey(method, endpoint, params, settings);
-
-            return $.ajax(settings).then(function(data) {
-                if (!options.noCache) {
-                    KidaptiveUtils.localStorageSetItem(cacheKey, data);
+            // Offline-only behavior: user to local storage for all GET requests
+            if('GET' === method) {
+                var cacheKey = this.getCacheKey(method, endpoint, params, settings);
+                try {
+                    return KidaptiveUtils.localStorageGetItem(cacheKey);
+                } catch (e) {
+                    return undefined;
                 }
-                return data;
-            }, function(xhr) {
-                if (xhr.status === 400) {
-                    localStorage.removeItem(cacheKey);
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.INVALID_PARAMETER, xhr.responseText);
-                } else if (xhr.status === 401) {
-                    //unauthorized. delete cached data
-                    var appEndpoint = KidaptiveHttpClient.USER_ENDPOINTS.indexOf(endpoint) < 0;
-                    if (!KidaptiveUtils.hasStoredAnonymousSession() || appEndpoint) {
-                        KidaptiveHttpClient.deleteUserData();
-                    }
-                    if (appEndpoint) {
-                        KidaptiveHttpClient.deleteAppData();
-                    }
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.API_KEY_ERROR, xhr.responseText);
-                } else if (xhr.status) {
-                    localStorage.removeItem(cacheKey);
-                    throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.WEB_API_ERROR, xhr.responseText);
-                } else {
-                    try {
-                        return KidaptiveUtils.localStorageGetItem(cacheKey);
-                    } catch (e) {
-                        throw new KidaptiveError(KidaptiveError.KidaptiveErrorCode.GENERIC_ERROR, "HTTP Client Error");
-                    }
-                }
-            });
+            } else {
+                // no-op for all other http calls (should be removed from calling code).
+                console.warn("Non-GET http request is now a no-op: " + method + " " + endpoint);
+                return undefined;
+            }
         }.bind(this));
     };
 
     KidaptiveHttpClient.deleteUserData = function() {
         Object.keys(localStorage).forEach(function(k) {
             if (k.match(/^[\w-]*[.]alpUserData$/)) {
-                localStorage.removeItem(k);
-            }
-        });
-    };
-
-    KidaptiveHttpClient.deleteAppData = function() {
-        Object.keys(localStorage).forEach(function(k) {
-            if (k.match(/^[\w-]*[.]alpAppData$/)) {
                 localStorage.removeItem(k);
             }
         });
